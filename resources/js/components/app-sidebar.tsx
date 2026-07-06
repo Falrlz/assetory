@@ -18,6 +18,11 @@ const mainNavItems: NavItem[] = [
         url: '/assets',
         icon: Coins,
     },
+    {
+        title: 'Chart of Accounts',
+        url: '/coas',
+        icon: BookOpen,
+    },
 ];
 
 const footerNavItems: NavItem[] = [

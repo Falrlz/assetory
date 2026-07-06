@@ -56,3 +56,15 @@ export interface Asset {
     created_at: string;
     updated_at: string;
 }
+
+export interface Coa {
+    id: number;
+    user_id: number;
+    kode_akun: string;
+    nama_akun: string;
+    kategori: 'aset' | 'kewajiban' | 'ekuitas' | 'pendapatan' | 'beban';
+    saldo_normal: 'debit' | 'kredit';
+    created_at: string;
+    updated_at: string;
+}
+

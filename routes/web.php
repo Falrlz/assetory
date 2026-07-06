@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\CoaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -15,6 +16,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('assets', [AssetController::class, 'index'])->name('assets.index');
     Route::post('assets', [AssetController::class, 'store'])->name('assets.store');
+
+    Route::resource('coas', CoaController::class)->except(['create', 'edit', 'show']);
 });
 
 require __DIR__.'/settings.php';
