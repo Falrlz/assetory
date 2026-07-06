@@ -38,3 +38,21 @@ export interface User {
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...
 }
+
+export interface Asset {
+    id: number;
+    user_id: number;
+    nama: string;
+    jenis: 'inventaris' | 'kendaraan' | 'gedung';
+    harga_perolehan: number | string;
+    nilai_residu: number | string;
+    tanggal_perolehan: string;
+    periode: 'periode_1' | 'periode_2' | 'periode_3' | 'periode_4';
+    penyusutan_tahunan: number;
+    penyusutan_bulanan: number;
+    masa_penggunaan_bulan: number;
+    akumulasi_penyusutan: number;
+    nilai_buku: number;
+    created_at: string;
+    updated_at: string;
+}
