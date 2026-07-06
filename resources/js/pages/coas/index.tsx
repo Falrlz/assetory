@@ -1,19 +1,12 @@
-import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Coa } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Edit, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -85,7 +78,7 @@ export default function Index({ coas }: CoasProps) {
     const handleUpdate = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedCoa) return;
-        
+
         editForm.put(route('coas.update', selectedCoa.id), {
             onSuccess: () => {
                 setIsEditOpen(false);
@@ -111,12 +104,12 @@ export default function Index({ coas }: CoasProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Chart of Accounts (COA)" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-6 min-w-0">
+            <div className="flex h-full min-w-0 flex-1 flex-col gap-6 p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Chart of Accounts (COA)</h1>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                             Kelola daftar akun untuk mencatat transaksi keuangan organisasi Anda secara terstruktur.
                         </p>
                     </div>
@@ -128,22 +121,13 @@ export default function Index({ coas }: CoasProps) {
 
                 {/* Filter Tabs */}
                 <div className="flex flex-wrap gap-2 border-b pb-4">
-                    <Button
-                        variant={activeTab === 'all' ? 'default' : 'outline'}
-                        onClick={() => setActiveTab('all')}
-                        size="sm"
-                    >
+                    <Button variant={activeTab === 'all' ? 'default' : 'outline'} onClick={() => setActiveTab('all')} size="sm">
                         Semua Akun ({coas.length})
                     </Button>
                     {Object.entries(KATEGORI_LABELS).map(([key, label]) => {
                         const count = coas.filter((c) => c.kategori === key).length;
                         return (
-                            <Button
-                                key={key}
-                                variant={activeTab === key ? 'default' : 'outline'}
-                                onClick={() => setActiveTab(key)}
-                                size="sm"
-                            >
+                            <Button key={key} variant={activeTab === key ? 'default' : 'outline'} onClick={() => setActiveTab(key)} size="sm">
                                 {label} ({count})
                             </Button>
                         );
@@ -151,11 +135,11 @@ export default function Index({ coas }: CoasProps) {
                 </div>
 
                 {/* Table Section */}
-                <div className="w-full overflow-hidden rounded-xl border bg-card shadow-xs">
-                    <div className="overflow-x-auto w-full">
-                        <table className="w-full text-left border-collapse min-w-[800px]">
+                <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
+                    <div className="w-full overflow-x-auto">
+                        <table className="w-full min-w-[800px] border-collapse text-left">
                             <thead>
-                                <tr className="border-b bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
                                     <th className="px-6 py-4">Kode Akun</th>
                                     <th className="px-6 py-4">Nama Akun</th>
                                     <th className="px-6 py-4">Kategori</th>
@@ -166,31 +150,23 @@ export default function Index({ coas }: CoasProps) {
                             <tbody className="divide-y text-sm">
                                 {filteredCoas.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                                        <td colSpan={5} className="text-muted-foreground px-6 py-12 text-center">
                                             Belum ada data akun untuk kategori ini.
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredCoas.map((coa) => (
                                         <tr key={coa.id} className="hover:bg-muted/30 transition-colors">
-                                            <td className="px-6 py-4 font-mono font-bold text-foreground">
-                                                {coa.kode_akun}
-                                            </td>
-                                            <td className="px-6 py-4 font-medium text-foreground">
-                                                {coa.nama_akun}
-                                            </td>
-                                            <td className="px-6 py-4 capitalize text-muted-foreground">
-                                                {KATEGORI_LABELS[coa.kategori]}
-                                            </td>
-                                            <td className="px-6 py-4 capitalize text-muted-foreground">
-                                                {SALDO_LABELS[coa.saldo_normal]}
-                                            </td>
+                                            <td className="text-foreground px-6 py-4 font-mono font-bold">{coa.kode_akun}</td>
+                                            <td className="text-foreground px-6 py-4 font-medium">{coa.nama_akun}</td>
+                                            <td className="text-muted-foreground px-6 py-4 capitalize">{KATEGORI_LABELS[coa.kategori]}</td>
+                                            <td className="text-muted-foreground px-6 py-4 capitalize">{SALDO_LABELS[coa.saldo_normal]}</td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                        className="text-muted-foreground hover:text-foreground h-8 w-8"
                                                         onClick={() => handleOpenEdit(coa)}
                                                     >
                                                         <Edit className="h-4 w-4" />
@@ -198,7 +174,7 @@ export default function Index({ coas }: CoasProps) {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600"
+                                                        className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
                                                         onClick={() => handleDelete(coa.id)}
                                                         title="Hapus Akun"
                                                     >
@@ -221,9 +197,7 @@ export default function Index({ coas }: CoasProps) {
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
                             <DialogTitle>Tambah Akun Baru</DialogTitle>
-                            <DialogDescription>
-                                Buat akun keuangan baru untuk pencatatan transaksi jurnal Anda.
-                            </DialogDescription>
+                            <DialogDescription>Buat akun keuangan baru untuk pencatatan transaksi jurnal Anda.</DialogDescription>
                         </DialogHeader>
 
                         <div className="grid gap-4 py-4">
@@ -237,7 +211,7 @@ export default function Index({ coas }: CoasProps) {
                                     onChange={(e) => setData('kode_akun', e.target.value)}
                                     required
                                 />
-                                <span className="text-[10px] text-muted-foreground">Format umum: [Kategori]-[Nomor Urut] (Contoh: 1-1001)</span>
+                                <span className="text-muted-foreground text-[10px]">Format umum: [Kategori]-[Nomor Urut] (Contoh: 1-1001)</span>
                                 {errors.kode_akun && <span className="text-xs text-red-500">{errors.kode_akun}</span>}
                             </div>
 
@@ -260,7 +234,7 @@ export default function Index({ coas }: CoasProps) {
                                     <Label htmlFor="kategori">Kategori Akun</Label>
                                     <select
                                         id="kategori"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={data.kategori}
                                         onChange={(e) => setData('kategori', e.target.value as Coa['kategori'])}
                                     >
@@ -278,7 +252,7 @@ export default function Index({ coas }: CoasProps) {
                                     <Label htmlFor="saldo_normal">Saldo Normal</Label>
                                     <select
                                         id="saldo_normal"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={data.saldo_normal}
                                         onChange={(e) => setData('saldo_normal', e.target.value as Coa['saldo_normal'])}
                                     >
@@ -315,9 +289,7 @@ export default function Index({ coas }: CoasProps) {
                     <form onSubmit={handleUpdate}>
                         <DialogHeader>
                             <DialogTitle>Edit Detail Akun</DialogTitle>
-                            <DialogDescription>
-                                Perbarui rincian untuk akun keuangan terpilih.
-                            </DialogDescription>
+                            <DialogDescription>Perbarui rincian untuk akun keuangan terpilih.</DialogDescription>
                         </DialogHeader>
 
                         <div className="grid gap-4 py-4">
@@ -351,7 +323,7 @@ export default function Index({ coas }: CoasProps) {
                                     <Label htmlFor="edit_kategori">Kategori Akun</Label>
                                     <select
                                         id="edit_kategori"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={editForm.data.kategori}
                                         onChange={(e) => editForm.setData('kategori', e.target.value as Coa['kategori'])}
                                     >
@@ -369,7 +341,7 @@ export default function Index({ coas }: CoasProps) {
                                     <Label htmlFor="edit_saldo_normal">Saldo Normal</Label>
                                     <select
                                         id="edit_saldo_normal"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={editForm.data.saldo_normal}
                                         onChange={(e) => editForm.setData('saldo_normal', e.target.value as Coa['saldo_normal'])}
                                     >

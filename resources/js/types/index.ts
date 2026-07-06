@@ -67,4 +67,3 @@ export interface Coa {
     created_at: string;
     updated_at: string;
 }
-

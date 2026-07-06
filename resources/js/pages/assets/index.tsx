@@ -1,19 +1,12 @@
-import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Asset } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Plus, Coins, TrendingDown, ClipboardList, Calculator, Calendar } from 'lucide-react';
+import AppLayout from '@/layouts/app-layout';
+import { type Asset, type BreadcrumbItem } from '@/types';
+import { Head, useForm } from '@inertiajs/react';
+import { Calculator, Calendar, ClipboardList, Coins, Plus, TrendingDown } from 'lucide-react';
+import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -150,14 +143,12 @@ export default function Index({ assets }: AssetsProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manajemen Aset & Penyusutan" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-6 min-w-0">
+            <div className="flex h-full min-w-0 flex-1 flex-col gap-6 p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Daftar Aset</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Kelola aset Anda dan pantau depresiasi otomatis dengan metode garis lurus.
-                        </p>
+                        <p className="text-muted-foreground text-sm">Kelola aset Anda dan pantau depresiasi otomatis dengan metode garis lurus.</p>
                     </div>
                     <Button onClick={() => setIsOpen(true)} className="w-full sm:w-auto">
                         <Plus className="mr-2 h-4 w-4" />
@@ -167,53 +158,49 @@ export default function Index({ assets }: AssetsProps) {
 
                 {/* Summary Cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="rounded-xl border bg-card p-6 shadow-xs">
+                    <div className="bg-card rounded-xl border p-6 shadow-xs">
                         <div className="flex items-center justify-between space-y-0 pb-2">
                             <h3 className="text-sm font-medium">Total Aset</h3>
-                            <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                            <ClipboardList className="text-muted-foreground h-4 w-4" />
                         </div>
                         <div className="text-2xl font-bold">{totalAssets}</div>
-                        <p className="text-xs text-muted-foreground">Jumlah aset terdaftar</p>
+                        <p className="text-muted-foreground text-xs">Jumlah aset terdaftar</p>
                     </div>
 
-                    <div className="rounded-xl border bg-card p-6 shadow-xs">
+                    <div className="bg-card rounded-xl border p-6 shadow-xs">
                         <div className="flex items-center justify-between space-y-0 pb-2">
                             <h3 className="text-sm font-medium">Total Nilai Perolehan</h3>
-                            <Coins className="h-4 w-4 text-muted-foreground" />
+                            <Coins className="text-muted-foreground h-4 w-4" />
                         </div>
                         <div className="text-2xl font-bold">{formatRupiah(totalHargaPerolehan)}</div>
-                        <p className="text-xs text-muted-foreground">Kapitalisasi aset awal</p>
+                        <p className="text-muted-foreground text-xs">Kapitalisasi aset awal</p>
                     </div>
 
-                    <div className="rounded-xl border bg-card p-6 shadow-xs">
+                    <div className="bg-card rounded-xl border p-6 shadow-xs">
                         <div className="flex items-center justify-between space-y-0 pb-2">
                             <h3 className="text-sm font-medium">Akumulasi Depresiasi</h3>
-                            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+                            <TrendingDown className="text-muted-foreground h-4 w-4" />
                         </div>
-                        <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                            {formatRupiah(totalAkumulasiPenyusutan)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Total nilai penyusutan berjalan</p>
+                        <div className="text-2xl font-bold text-red-600 dark:text-red-400">{formatRupiah(totalAkumulasiPenyusutan)}</div>
+                        <p className="text-muted-foreground text-xs">Total nilai penyusutan berjalan</p>
                     </div>
 
-                    <div className="rounded-xl border bg-card p-6 shadow-xs">
+                    <div className="bg-card rounded-xl border p-6 shadow-xs">
                         <div className="flex items-center justify-between space-y-0 pb-2">
                             <h3 className="text-sm font-medium">Total Nilai Buku</h3>
-                            <Calculator className="h-4 w-4 text-muted-foreground" />
+                            <Calculator className="text-muted-foreground h-4 w-4" />
                         </div>
-                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                            {formatRupiah(totalNilaiBuku)}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Sisa nilai ekonomis saat ini</p>
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">{formatRupiah(totalNilaiBuku)}</div>
+                        <p className="text-muted-foreground text-xs">Sisa nilai ekonomis saat ini</p>
                     </div>
                 </div>
 
                 {/* Table Section */}
-                <div className="w-full overflow-hidden rounded-xl border bg-card shadow-xs">
-                    <div className="overflow-x-auto w-full">
-                        <table className="w-full min-w-[1000px] text-left border-collapse">
+                <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
+                    <div className="w-full overflow-x-auto">
+                        <table className="w-full min-w-[1000px] border-collapse text-left">
                             <thead>
-                                <tr className="border-b bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
                                     <th className="px-6 py-4">Nama Aset</th>
                                     <th className="px-6 py-4">Jenis</th>
                                     <th className="px-6 py-4">Kelompok Umur</th>
@@ -229,52 +216,38 @@ export default function Index({ assets }: AssetsProps) {
                             <tbody className="divide-y text-sm">
                                 {assets.length === 0 ? (
                                     <tr>
-                                        <td colSpan={10} className="px-6 py-12 text-center text-muted-foreground">
+                                        <td colSpan={10} className="text-muted-foreground px-6 py-12 text-center">
                                             Belum ada data aset. Silakan klik "Tambah Aset" untuk memulai.
                                         </td>
                                     </tr>
                                 ) : (
                                     assets.map((asset) => (
                                         <tr key={asset.id} className="hover:bg-muted/30 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-foreground">{asset.nama}</td>
+                                            <td className="text-foreground px-6 py-4 font-medium">{asset.nama}</td>
                                             <td className="px-6 py-4">
-                                                <span className="capitalize px-2 py-1 text-xs rounded-md bg-accent text-accent-foreground font-semibold">
+                                                <span className="bg-accent text-accent-foreground rounded-md px-2 py-1 text-xs font-semibold capitalize">
                                                     {asset.jenis}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-muted-foreground">
-                                                {PERIODE_LABELS[asset.periode]}
-                                            </td>
-                                            <td className="px-6 py-4 text-muted-foreground">
+                                            <td className="text-muted-foreground px-6 py-4">{PERIODE_LABELS[asset.periode]}</td>
+                                            <td className="text-muted-foreground px-6 py-4">
                                                 <div className="flex items-center gap-1.5">
                                                     <Calendar className="h-3.5 w-3.5" />
                                                     {formatDate(asset.tanggal_perolehan)}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right font-medium">
-                                                {formatRupiah(asset.harga_perolehan)}
-                                            </td>
-                                            <td className="px-6 py-4 text-right text-muted-foreground">
-                                                {formatRupiah(asset.nilai_residu)}
-                                            </td>
-                                            <td className="px-6 py-4 text-right text-muted-foreground">
-                                                {formatRupiah(asset.penyusutan_bulanan)}
-                                            </td>
-                                            <td className="px-6 py-4 text-right text-red-600 dark:text-red-400 font-medium">
+                                            <td className="px-6 py-4 text-right font-medium">{formatRupiah(asset.harga_perolehan)}</td>
+                                            <td className="text-muted-foreground px-6 py-4 text-right">{formatRupiah(asset.nilai_residu)}</td>
+                                            <td className="text-muted-foreground px-6 py-4 text-right">{formatRupiah(asset.penyusutan_bulanan)}</td>
+                                            <td className="px-6 py-4 text-right font-medium text-red-600 dark:text-red-400">
                                                 {formatRupiah(asset.akumulasi_penyusutan)}
-                                                <span className="block text-[10px] text-muted-foreground">
-                                                    ({asset.masa_penggunaan_bulan} bulan)
-                                                </span>
+                                                <span className="text-muted-foreground block text-[10px]">({asset.masa_penggunaan_bulan} bulan)</span>
                                             </td>
-                                            <td className="px-6 py-4 text-right text-green-600 dark:text-green-400 font-semibold">
+                                            <td className="px-6 py-4 text-right font-semibold text-green-600 dark:text-green-400">
                                                 {formatRupiah(asset.nilai_buku)}
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleOpenSchedule(asset)}
-                                                >
+                                                <Button variant="outline" size="sm" onClick={() => handleOpenSchedule(asset)}>
                                                     <Calendar className="mr-1 h-3.5 w-3.5" />
                                                     Jadwal
                                                 </Button>
@@ -294,9 +267,7 @@ export default function Index({ assets }: AssetsProps) {
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
                             <DialogTitle>Tambah Aset Baru</DialogTitle>
-                            <DialogDescription>
-                                Masukkan rincian data aset. Perhitungan penyusutan akan dilakukan secara otomatis.
-                            </DialogDescription>
+                            <DialogDescription>Masukkan rincian data aset. Perhitungan penyusutan akan dilakukan secara otomatis.</DialogDescription>
                         </DialogHeader>
 
                         <div className="grid gap-4 py-4">
@@ -319,7 +290,7 @@ export default function Index({ assets }: AssetsProps) {
                                     <Label htmlFor="jenis">Jenis Aset</Label>
                                     <select
                                         id="jenis"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={data.jenis}
                                         onChange={(e) => setData('jenis', e.target.value)}
                                     >
@@ -335,7 +306,7 @@ export default function Index({ assets }: AssetsProps) {
                                     <Label htmlFor="periode">Kelompok Masa Manfaat</Label>
                                     <select
                                         id="periode"
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={data.periode}
                                         onChange={(e) => setData('periode', e.target.value)}
                                     >
@@ -361,9 +332,7 @@ export default function Index({ assets }: AssetsProps) {
                                         min="0"
                                         required
                                     />
-                                    {errors.harga_perolehan && (
-                                        <span className="text-xs text-red-500">{errors.harga_perolehan}</span>
-                                    )}
+                                    {errors.harga_perolehan && <span className="text-xs text-red-500">{errors.harga_perolehan}</span>}
                                 </div>
 
                                 {/* Nilai Residu */}
@@ -378,9 +347,7 @@ export default function Index({ assets }: AssetsProps) {
                                         min="0"
                                         required
                                     />
-                                    {errors.nilai_residu && (
-                                        <span className="text-xs text-red-500">{errors.nilai_residu}</span>
-                                    )}
+                                    {errors.nilai_residu && <span className="text-xs text-red-500">{errors.nilai_residu}</span>}
                                 </div>
                             </div>
 
@@ -394,9 +361,7 @@ export default function Index({ assets }: AssetsProps) {
                                     onChange={(e) => setData('tanggal_perolehan', e.target.value)}
                                     required
                                 />
-                                {errors.tanggal_perolehan && (
-                                    <span className="text-xs text-red-500">{errors.tanggal_perolehan}</span>
-                                )}
+                                {errors.tanggal_perolehan && <span className="text-xs text-red-500">{errors.tanggal_perolehan}</span>}
                             </div>
                         </div>
 
@@ -421,7 +386,7 @@ export default function Index({ assets }: AssetsProps) {
 
             {/* Depreciation Schedule Dialog */}
             <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-                <DialogContent className="sm:max-w-[720px] max-h-[85vh] flex flex-col">
+                <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-[720px]">
                     <DialogHeader>
                         <DialogTitle>Jadwal Penyusutan Bulanan</DialogTitle>
                         <DialogDescription>
@@ -430,21 +395,32 @@ export default function Index({ assets }: AssetsProps) {
                     </DialogHeader>
 
                     {selectedAsset && (
-                        <div className="flex-1 overflow-y-auto pr-2 mt-4">
-                            <div className="grid grid-cols-2 gap-4 mb-4 text-sm bg-muted/30 p-3 rounded-lg border">
+                        <div className="mt-4 flex-1 overflow-y-auto pr-2">
+                            <div className="bg-muted/30 mb-4 grid grid-cols-2 gap-4 rounded-lg border p-3 text-sm">
                                 <div>
-                                    <p className="text-muted-foreground">Harga Perolehan: <span className="font-semibold text-foreground">{formatRupiah(selectedAsset.harga_perolehan)}</span></p>
-                                    <p className="text-muted-foreground">Nilai Residu: <span className="font-semibold text-foreground">{formatRupiah(selectedAsset.nilai_residu)}</span></p>
+                                    <p className="text-muted-foreground">
+                                        Harga Perolehan:{' '}
+                                        <span className="text-foreground font-semibold">{formatRupiah(selectedAsset.harga_perolehan)}</span>
+                                    </p>
+                                    <p className="text-muted-foreground">
+                                        Nilai Residu:{' '}
+                                        <span className="text-foreground font-semibold">{formatRupiah(selectedAsset.nilai_residu)}</span>
+                                    </p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground">Kelompok Umur: <span className="font-semibold text-foreground">{PERIODE_LABELS[selectedAsset.periode]}</span></p>
-                                    <p className="text-muted-foreground">Penyusutan Bulanan: <span className="font-semibold text-foreground">{formatRupiah(selectedAsset.penyusutan_bulanan)}</span></p>
+                                    <p className="text-muted-foreground">
+                                        Kelompok Umur: <span className="text-foreground font-semibold">{PERIODE_LABELS[selectedAsset.periode]}</span>
+                                    </p>
+                                    <p className="text-muted-foreground">
+                                        Penyusutan Bulanan:{' '}
+                                        <span className="text-foreground font-semibold">{formatRupiah(selectedAsset.penyusutan_bulanan)}</span>
+                                    </p>
                                 </div>
                             </div>
 
-                            <table className="w-full text-left border-collapse">
+                            <table className="w-full border-collapse text-left">
                                 <thead>
-                                    <tr className="border-b bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground sticky top-0 bg-card z-10">
+                                    <tr className="bg-muted/40 text-muted-foreground bg-card sticky top-0 z-10 border-b text-xs font-semibold tracking-wider uppercase">
                                         <th className="px-4 py-2 text-center">Bulan Ke</th>
                                         <th className="px-4 py-2">Periode</th>
                                         <th className="px-4 py-2 text-right">Penyusutan</th>
@@ -455,19 +431,22 @@ export default function Index({ assets }: AssetsProps) {
                                 </thead>
                                 <tbody className="divide-y text-xs">
                                     {generateDepreciationSchedule(selectedAsset).map((row) => (
-                                        <tr key={row.bulanKe} className={`hover:bg-muted/20 transition-colors ${row.isTerlewati ? 'bg-muted/10 font-normal text-muted-foreground' : ''}`}>
+                                        <tr
+                                            key={row.bulanKe}
+                                            className={`hover:bg-muted/20 transition-colors ${row.isTerlewati ? 'bg-muted/10 text-muted-foreground font-normal' : ''}`}
+                                        >
                                             <td className="px-4 py-2 text-center font-medium">{row.bulanKe}</td>
                                             <td className="px-4 py-2 font-medium">{row.periode}</td>
                                             <td className="px-4 py-2 text-right">{formatRupiah(row.penyusutanBulanan)}</td>
                                             <td className="px-4 py-2 text-right">{formatRupiah(row.akumulasiPenyusutan)}</td>
-                                            <td className="px-4 py-2 text-right font-semibold text-foreground">{formatRupiah(row.nilaiBuku)}</td>
+                                            <td className="text-foreground px-4 py-2 text-right font-semibold">{formatRupiah(row.nilaiBuku)}</td>
                                             <td className="px-4 py-2 text-center">
                                                 {row.isTerlewati ? (
-                                                    <span className="px-2 py-0.5 text-[10px] rounded bg-neutral-200 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
+                                                    <span className="rounded bg-neutral-200 px-2 py-0.5 text-[10px] text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
                                                         Terlewati
                                                     </span>
                                                 ) : (
-                                                    <span className="px-2 py-0.5 text-[10px] rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                                    <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
                                                         Proyeksi
                                                     </span>
                                                 )}
