@@ -57,4 +57,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Asset::class);
     }
+
+    /**
+     * Get the chart of accounts for the user.
+     *
+     * @return HasMany<Coa>
+     */
+    public function coas(): HasMany
+    {
+        return $this->hasMany(Coa::class);
+    }
 }
