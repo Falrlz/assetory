@@ -101,7 +101,7 @@ export default function Index({ assets }: AssetsProps) {
         const schedule: ScheduleRow[] = [];
         const hargaPerolehan = parseFloat(asset.harga_perolehan as string);
         const nilaiResidu = parseFloat(asset.nilai_residu as string);
-        
+
         const MAP_TAHUN: Record<string, number> = {
             periode_1: 4,
             periode_2: 8,
@@ -110,27 +110,27 @@ export default function Index({ assets }: AssetsProps) {
         };
         const totalTahun = MAP_TAHUN[asset.periode] || 4;
         const totalBulan = totalTahun * 12;
-        
+
         const totalPenyusutan = hargaPerolehan - nilaiResidu;
         const penyusutanPerBulan = totalPenyusutan / totalBulan;
-        
+
         const tglMulai = new Date(asset.tanggal_perolehan);
         const hariIni = new Date();
-        
+
         let akumulasi = 0;
 
         for (let i = 1; i <= totalBulan; i++) {
             const tglBaris = new Date(tglMulai.getFullYear(), tglMulai.getMonth() + i - 1, 1);
             const isTerlewati = tglBaris <= new Date(hariIni.getFullYear(), hariIni.getMonth(), 1);
-            
+
             let bebanBulanIni = penyusutanPerBulan;
             if (i === totalBulan) {
                 bebanBulanIni = totalPenyusutan - akumulasi;
             }
-            
+
             akumulasi += bebanBulanIni;
             const nilaiBuku = hargaPerolehan - akumulasi;
-            
+
             const namaBulan = tglBaris.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
 
             schedule.push({
@@ -187,7 +187,7 @@ export default function Index({ assets }: AssetsProps) {
 
                     <div className="rounded-xl border bg-card p-6 shadow-xs">
                         <div className="flex items-center justify-between space-y-0 pb-2">
-                            <h3 className="text-sm font-medium">Total Akumulasi Depresiasi</h3>
+                            <h3 className="text-sm font-medium">Akumulasi Depresiasi</h3>
                             <TrendingDown className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <div className="text-2xl font-bold text-red-600 dark:text-red-400">
