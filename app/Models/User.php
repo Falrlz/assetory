@@ -67,4 +67,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Coa::class);
     }
+
+    /**
+     * Get the journals for the user.
+     *
+     * @return HasMany<Journal>
+     */
+    public function journals(): HasMany
+    {
+        return $this->hasMany(Journal::class);
+    }
 }
