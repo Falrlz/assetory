@@ -33,8 +33,19 @@ const PERIODE_LABELS: Record<string, string> = {
     periode_4: 'Kelompok 4 (20 Tahun)',
 };
 
+interface ScheduleRow {
+    bulanKe: number;
+    periode: string;
+    penyusutanBulanan: number;
+    akumulasiPenyusutan: number;
+    nilaiBuku: number;
+    isTerlewati: boolean;
+}
+
 export default function Index({ assets }: AssetsProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+    const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         nama: '',
@@ -81,11 +92,65 @@ export default function Index({ assets }: AssetsProps) {
         });
     };
 
+    const handleOpenSchedule = (asset: Asset) => {
+        setSelectedAsset(asset);
+        setIsScheduleOpen(true);
+    };
+
+    const generateDepreciationSchedule = (asset: Asset): ScheduleRow[] => {
+        const schedule: ScheduleRow[] = [];
+        const hargaPerolehan = parseFloat(asset.harga_perolehan as string);
+        const nilaiResidu = parseFloat(asset.nilai_residu as string);
+        
+        const MAP_TAHUN: Record<string, number> = {
+            periode_1: 4,
+            periode_2: 8,
+            periode_3: 16,
+            periode_4: 20,
+        };
+        const totalTahun = MAP_TAHUN[asset.periode] || 4;
+        const totalBulan = totalTahun * 12;
+        
+        const totalPenyusutan = hargaPerolehan - nilaiResidu;
+        const penyusutanPerBulan = totalPenyusutan / totalBulan;
+        
+        const tglMulai = new Date(asset.tanggal_perolehan);
+        const hariIni = new Date();
+        
+        let akumulasi = 0;
+
+        for (let i = 1; i <= totalBulan; i++) {
+            const tglBaris = new Date(tglMulai.getFullYear(), tglMulai.getMonth() + i - 1, 1);
+            const isTerlewati = tglBaris <= new Date(hariIni.getFullYear(), hariIni.getMonth(), 1);
+            
+            let bebanBulanIni = penyusutanPerBulan;
+            if (i === totalBulan) {
+                bebanBulanIni = totalPenyusutan - akumulasi;
+            }
+            
+            akumulasi += bebanBulanIni;
+            const nilaiBuku = hargaPerolehan - akumulasi;
+            
+            const namaBulan = tglBaris.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+
+            schedule.push({
+                bulanKe: i,
+                periode: namaBulan,
+                penyusutanBulanan: Math.round(bebanBulanIni),
+                akumulasiPenyusutan: Math.round(akumulasi),
+                nilaiBuku: Math.round(Math.max(nilaiResidu, nilaiBuku)),
+                isTerlewati,
+            });
+        }
+
+        return schedule;
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manajemen Aset & Penyusutan" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-6">
+            <div className="flex h-full flex-1 flex-col gap-6 p-6 min-w-0">
                 {/* Header */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -144,9 +209,9 @@ export default function Index({ assets }: AssetsProps) {
                 </div>
 
                 {/* Table Section */}
-                <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                <div className="w-full overflow-hidden rounded-xl border bg-card shadow-xs">
+                    <div className="overflow-x-auto w-full">
+                        <table className="w-full min-w-[1000px] text-left border-collapse">
                             <thead>
                                 <tr className="border-b bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                     <th className="px-6 py-4">Nama Aset</th>
@@ -158,12 +223,13 @@ export default function Index({ assets }: AssetsProps) {
                                     <th className="px-6 py-4 text-right">Penyusutan/Bulan</th>
                                     <th className="px-6 py-4 text-right">Akumulasi Penyusutan</th>
                                     <th className="px-6 py-4 text-right">Nilai Buku</th>
+                                    <th className="px-6 py-4 text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y text-sm">
                                 {assets.length === 0 ? (
                                     <tr>
-                                        <td colSpan={9} className="px-6 py-12 text-center text-muted-foreground">
+                                        <td colSpan={10} className="px-6 py-12 text-center text-muted-foreground">
                                             Belum ada data aset. Silakan klik "Tambah Aset" untuk memulai.
                                         </td>
                                     </tr>
@@ -202,6 +268,16 @@ export default function Index({ assets }: AssetsProps) {
                                             </td>
                                             <td className="px-6 py-4 text-right text-green-600 dark:text-green-400 font-semibold">
                                                 {formatRupiah(asset.nilai_buku)}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleOpenSchedule(asset)}
+                                                >
+                                                    <Calendar className="mr-1 h-3.5 w-3.5" />
+                                                    Jadwal
+                                                </Button>
                                             </td>
                                         </tr>
                                     ))
@@ -340,6 +416,72 @@ export default function Index({ assets }: AssetsProps) {
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Depreciation Schedule Dialog */}
+            <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
+                <DialogContent className="sm:max-w-[720px] max-h-[85vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Jadwal Penyusutan Bulanan</DialogTitle>
+                        <DialogDescription>
+                            Proyeksi penyusutan bulanan untuk aset <strong>{selectedAsset?.nama}</strong> hingga masa manfaat berakhir.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedAsset && (
+                        <div className="flex-1 overflow-y-auto pr-2 mt-4">
+                            <div className="grid grid-cols-2 gap-4 mb-4 text-sm bg-muted/30 p-3 rounded-lg border">
+                                <div>
+                                    <p className="text-muted-foreground">Harga Perolehan: <span className="font-semibold text-foreground">{formatRupiah(selectedAsset.harga_perolehan)}</span></p>
+                                    <p className="text-muted-foreground">Nilai Residu: <span className="font-semibold text-foreground">{formatRupiah(selectedAsset.nilai_residu)}</span></p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground">Kelompok Umur: <span className="font-semibold text-foreground">{PERIODE_LABELS[selectedAsset.periode]}</span></p>
+                                    <p className="text-muted-foreground">Penyusutan Bulanan: <span className="font-semibold text-foreground">{formatRupiah(selectedAsset.penyusutan_bulanan)}</span></p>
+                                </div>
+                            </div>
+
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground sticky top-0 bg-card z-10">
+                                        <th className="px-4 py-2 text-center">Bulan Ke</th>
+                                        <th className="px-4 py-2">Periode</th>
+                                        <th className="px-4 py-2 text-right">Penyusutan</th>
+                                        <th className="px-4 py-2 text-right">Akumulasi</th>
+                                        <th className="px-4 py-2 text-right">Nilai Buku</th>
+                                        <th className="px-4 py-2 text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y text-xs">
+                                    {generateDepreciationSchedule(selectedAsset).map((row) => (
+                                        <tr key={row.bulanKe} className={`hover:bg-muted/20 transition-colors ${row.isTerlewati ? 'bg-muted/10 font-normal text-muted-foreground' : ''}`}>
+                                            <td className="px-4 py-2 text-center font-medium">{row.bulanKe}</td>
+                                            <td className="px-4 py-2 font-medium">{row.periode}</td>
+                                            <td className="px-4 py-2 text-right">{formatRupiah(row.penyusutanBulanan)}</td>
+                                            <td className="px-4 py-2 text-right">{formatRupiah(row.akumulasiPenyusutan)}</td>
+                                            <td className="px-4 py-2 text-right font-semibold text-foreground">{formatRupiah(row.nilaiBuku)}</td>
+                                            <td className="px-4 py-2 text-center">
+                                                {row.isTerlewati ? (
+                                                    <span className="px-2 py-0.5 text-[10px] rounded bg-neutral-200 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
+                                                        Terlewati
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2 py-0.5 text-[10px] rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                                        Proyeksi
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    <DialogFooter className="mt-4 border-t pt-4">
+                        <Button onClick={() => setIsScheduleOpen(false)}>Tutup</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </AppLayout>
