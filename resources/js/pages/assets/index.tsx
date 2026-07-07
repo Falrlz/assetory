@@ -28,6 +28,13 @@ const PERIODE_LABELS: Record<string, string> = {
     periode_4: 'Kelompok 4 (20 Tahun)',
 };
 
+const PERIODE_BULAN: Record<string, number> = {
+    periode_1: 48,
+    periode_2: 96,
+    periode_3: 192,
+    periode_4: 240,
+};
+
 interface ScheduleRow {
     bulanKe: number;
     periode: string;
@@ -409,6 +416,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                     <th className="px-6 py-4">Jenis</th>
                                     <th className="px-6 py-4">Kelompok Umur</th>
                                     <th className="px-6 py-4">Tgl Perolehan</th>
+                                    <th className="px-6 py-4 text-center">Umur (Bulan)</th>
                                     <th className="px-6 py-4 text-right">Harga Perolehan</th>
                                     <th className="px-6 py-4 text-right">Nilai Residu</th>
                                     <th className="px-6 py-4 text-right">Penyusutan/Bulan</th>
@@ -420,7 +428,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                             <tbody className="divide-y text-sm">
                                 {filteredAssets.length === 0 ? (
                                     <tr>
-                                        <td colSpan={10} className="text-muted-foreground px-6 py-12 text-center">
+                                        <td colSpan={11} className="text-muted-foreground px-6 py-12 text-center">
                                             Tidak ada aset yang cocok dengan filter atau pencarian Anda.
                                         </td>
                                     </tr>
@@ -440,12 +448,15 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                                     {formatDate(asset.tanggal_perolehan)}
                                                 </div>
                                             </td>
+                                            <td className="text-foreground px-6 py-4 text-center font-mono">
+                                                {PERIODE_BULAN[asset.periode]} Bulan
+                                            </td>
                                             <td className="px-6 py-4 text-right font-medium">{formatRupiah(asset.harga_perolehan)}</td>
                                             <td className="text-muted-foreground px-6 py-4 text-right">{formatRupiah(asset.nilai_residu)}</td>
                                             <td className="text-muted-foreground px-6 py-4 text-right">{formatRupiah(asset.penyusutan_bulanan)}</td>
                                             <td className="px-6 py-4 text-right font-medium text-red-600 dark:text-red-400">
                                                 {formatRupiah(asset.akumulasi_penyusutan)}
-                                                <span className="text-muted-foreground block text-[10px]">({asset.masa_penggunaan_bulan} bulan)</span>
+                                                <span className="text-muted-foreground block text-[10px]">({asset.masa_penggunaan_bulan} bulan berjalan)</span>
                                             </td>
                                             <td className="px-6 py-4 text-right font-semibold text-green-600 dark:text-green-400">
                                                 {formatRupiah(asset.nilai_buku)}
@@ -485,10 +496,11 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                 <thead>
                                     <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
                                         <th className="px-6 py-3 w-[120px]">Tanggal</th>
-                                        <th className="px-6 py-3 w-[160px]">No. Jurnal</th>
-                                        <th className="px-6 py-3 w-[120px]">Tipe</th>
+                                        <th className="px-6 py-3 w-[160px]">No. Referensi</th>
                                         <th className="px-6 py-3">Keterangan</th>
-                                        <th className="px-6 py-3">Akun</th>
+                                        <th className="px-6 py-3 w-[110px] text-center">No Arus Kas</th>
+                                        <th className="px-6 py-3 w-[120px]">Kode Akun</th>
+                                        <th className="px-6 py-3">Nama Akun</th>
                                         <th className="px-6 py-3 text-right w-[140px]">Debit</th>
                                         <th className="px-6 py-3 text-right w-[140px]">Kredit</th>
                                     </tr>
@@ -502,11 +514,11 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                                         <td className="px-6 py-4 font-medium text-muted-foreground align-top" rowSpan={journal.items.length}>
                                                             {formatDate(journal.tanggal)}
                                                         </td>
-                                                        <td className="px-6 py-4 font-mono font-bold text-foreground align-top" rowSpan={journal.items.length}>
-                                                            {journal.nomor_jurnal}
-                                                        </td>
                                                         <td className="px-6 py-4 align-top" rowSpan={journal.items.length}>
-                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${journal.tipe_jurnal === 'penyusutan'
+                                                            <span className="font-mono font-bold text-foreground block mb-1">
+                                                                {journal.nomor_jurnal}
+                                                            </span>
+                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold ${journal.tipe_jurnal === 'penyusutan'
                                                                     ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
                                                                     : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                                                                 }`}>
@@ -518,13 +530,14 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                                         </td>
                                                     </>
                                                 ) : null}
-                                                <td className="px-6 py-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-mono text-muted-foreground text-[10px] w-12">{item.coa?.kode_akun}</span>
-                                                        <span className={`font-medium ${Number(item.kredit) > 0 ? 'pl-6 text-muted-foreground' : 'text-foreground'}`}>
-                                                            {item.coa?.nama_akun}
-                                                        </span>
-                                                    </div>
+                                                <td className="px-6 py-3 text-center text-muted-foreground font-mono text-xs">
+                                                    -
+                                                </td>
+                                                <td className="px-6 py-3 font-mono text-muted-foreground text-xs">
+                                                    {item.coa?.kode_akun}
+                                                </td>
+                                                <td className={`px-6 py-3 font-medium ${Number(item.kredit) > 0 ? 'pl-6 text-muted-foreground' : 'text-foreground'}`}>
+                                                    {item.coa?.nama_akun}
                                                 </td>
                                                 <td className="px-6 py-3 text-right font-mono font-medium text-foreground">
                                                     {Number(item.debit) > 0 ? formatRupiah(item.debit) : '-'}
