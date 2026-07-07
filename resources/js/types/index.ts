@@ -87,6 +87,9 @@ export interface Journal {
     keterangan: string;
     tipe_jurnal: 'umum' | 'perolehan_aset' | 'penyusutan';
     ref_id?: number;
+    jenis_transaksi?: string;
+    kategori_arus_kas?: string;
+    kode_arus_kas?: string;
     items?: JournalItem[];
     created_at: string;
     updated_at: string;

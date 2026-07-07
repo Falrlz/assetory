@@ -530,8 +530,8 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                                         </td>
                                                     </>
                                                 ) : null}
-                                                <td className="px-6 py-3 text-center text-muted-foreground font-mono text-xs">
-                                                    -
+                                                <td className="px-6 py-3 text-center text-foreground font-mono text-xs">
+                                                    {journal.kode_arus_kas || '-'}
                                                 </td>
                                                 <td className="px-6 py-3 font-mono text-muted-foreground text-xs">
                                                     {item.coa?.kode_akun}

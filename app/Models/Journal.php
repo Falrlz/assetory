@@ -18,6 +18,9 @@ class Journal extends Model
         'keterangan',
         'tipe_jurnal',
         'ref_id',
+        'jenis_transaksi',
+        'kategori_arus_kas',
+        'kode_arus_kas',
     ];
 
     /**

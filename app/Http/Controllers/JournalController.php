@@ -110,6 +110,9 @@ class JournalController extends Controller
 
         $validated = $request->validate([
             'tanggal' => 'required|date',
+            'jenis_transaksi' => 'required|string|in:jurnal_umum,kas_masuk,kas_keluar,bank_masuk,bank_keluar,jurnal_koreksi',
+            'kategori_arus_kas' => 'required|string|in:operasional,investasi,pendanaan',
+            'kode_arus_kas' => 'required|string|max:50',
             'keterangan' => 'required|string|max:1000',
             'items' => 'required|array|min:2',
             'items.*.coa_id' => 'required|exists:coas,id',
@@ -145,12 +148,25 @@ class JournalController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($user, $validated) {
+        $prefix = match ($validated['jenis_transaksi']) {
+            'jurnal_umum' => 'JU',
+            'kas_masuk' => 'KM',
+            'kas_keluar' => 'KK',
+            'bank_masuk' => 'BM',
+            'bank_keluar' => 'BK',
+            'jurnal_koreksi' => 'JK',
+            default => 'JU',
+        };
+
+        DB::transaction(function () use ($user, $validated, $prefix) {
             $journal = $user->journals()->create([
                 'tanggal' => $validated['tanggal'],
-                'nomor_jurnal' => Journal::generateNumber($user, 'JV'),
+                'nomor_jurnal' => Journal::generateNumber($user, $prefix),
                 'keterangan' => $validated['keterangan'],
                 'tipe_jurnal' => 'umum',
+                'jenis_transaksi' => $validated['jenis_transaksi'],
+                'kategori_arus_kas' => $validated['kategori_arus_kas'],
+                'kode_arus_kas' => $validated['kode_arus_kas'],
             ]);
 
             foreach ($validated['items'] as $item) {
@@ -262,9 +278,12 @@ class JournalController extends Controller
 
                 $journal = $user->journals()->create([
                     'tanggal' => $targetDate->format('Y-m-d'),
-                    'nomor_jurnal' => Journal::generateNumber($user, 'DP'),
+                    'nomor_jurnal' => Journal::generateNumber($user, 'DP-A'),
                     'keterangan' => "Penyusutan bulanan aset tetap: {$asset->nama} - Periode {$bulan}",
                     'tipe_jurnal' => 'penyusutan',
+                    'jenis_transaksi' => null,
+                    'kategori_arus_kas' => null,
+                    'kode_arus_kas' => null,
                     'ref_id' => $asset->id,
                 ]);
 

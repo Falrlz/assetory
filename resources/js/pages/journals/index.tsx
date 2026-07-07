@@ -6,7 +6,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { AlertCircle, Calculator, Calendar, FileText, Landmark, Plus, ShieldCheck, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -62,12 +62,36 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
     // Form for manual journal entry
     const { data, setData, post, processing, errors, reset } = useForm({
         tanggal: today.toISOString().split('T')[0],
+        jenis_transaksi: 'jurnal_umum',
+        kategori_arus_kas: 'operasional',
+        kode_arus_kas: 'JU-O',
         keterangan: '',
         items: [
             { coa_id: '', debit: 0, kredit: 0 },
             { coa_id: '', debit: 0, kredit: 0 },
         ],
     });
+
+    // Auto-update Cash Flow Code (kode_arus_kas) when transaction type or category changes
+    useEffect(() => {
+        const typePrefixes: Record<string, string> = {
+            jurnal_umum: 'JU',
+            kas_masuk: 'KM',
+            kas_keluar: 'KK',
+            bank_masuk: 'BM',
+            bank_keluar: 'BK',
+            jurnal_koreksi: 'JK',
+        };
+        const categorySuffixes: Record<string, string> = {
+            operasional: 'O',
+            investasi: 'I',
+            pendanaan: 'P',
+        };
+
+        const prefix = typePrefixes[data.jenis_transaksi] || 'JU';
+        const suffix = categorySuffixes[data.kategori_arus_kas] || 'O';
+        setData('kode_arus_kas', `${prefix}-${suffix}`);
+    }, [data.jenis_transaksi, data.kategori_arus_kas]);
 
     // Form for monthly depreciation posting
     const depForm = useForm({
@@ -267,85 +291,87 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                                 </p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                {journals.map((journal) => (
-                                    <div key={journal.id} className="bg-card text-card-foreground overflow-hidden rounded-xl border shadow-xs">
-                                        {/* Header Jurnal */}
-                                        <div className="bg-muted/30 flex flex-col justify-between gap-2 border-b p-4 sm:flex-row">
-                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                                <span className="text-foreground font-mono text-base font-bold">{journal.nomor_jurnal}</span>
-                                                <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                                                    <Calendar className="h-3.5 w-3.5" />
-                                                    {new Date(journal.tanggal).toLocaleDateString('id-ID', {
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric',
-                                                    })}
-                                                </span>
-                                                <span
-                                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                                                        journal.tipe_jurnal === 'penyusutan'
-                                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                            : journal.tipe_jurnal === 'perolehan_aset'
-                                                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                              : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
-                                                    }`}
-                                                >
-                                                    {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-muted-foreground line-clamp-1 max-w-md text-sm italic">{journal.keterangan}</p>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="ml-auto h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
-                                                    onClick={() => handleDeleteJournal(journal.id)}
-                                                    title="Hapus Jurnal"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {/* Items Jurnal */}
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm">
-                                                <thead>
-                                                    <tr className="bg-muted/10 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
-                                                        <th className="px-6 py-2.5 text-left">Akun</th>
-                                                        <th className="w-1/4 px-6 py-2.5 text-right">Debit</th>
-                                                        <th className="w-1/4 px-6 py-2.5 text-right">Kredit</th>
+                            <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
+                                <div className="w-full overflow-x-auto">
+                                    <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
+                                        <thead>
+                                            <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
+                                                <th className="px-6 py-3 w-[120px]">Tanggal</th>
+                                                <th className="px-6 py-3 w-[160px]">No. Referensi</th>
+                                                <th className="px-6 py-3">Keterangan</th>
+                                                <th className="px-6 py-3 w-[110px] text-center">No Arus Kas</th>
+                                                <th className="px-6 py-3 w-[120px]">Kode Akun</th>
+                                                <th className="px-6 py-3">Nama Akun</th>
+                                                <th className="px-6 py-3 text-right w-[140px]">Debit</th>
+                                                <th className="px-6 py-3 text-right w-[140px]">Kredit</th>
+                                                <th className="px-6 py-3 text-center w-[80px]">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {journals.flatMap((journal) =>
+                                                journal.items?.map((item, index) => (
+                                                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                                                        {index === 0 ? (
+                                                            <>
+                                                                <td className="px-6 py-4 font-medium text-muted-foreground align-top animate-none" rowSpan={journal.items.length}>
+                                                                    {new Date(journal.tanggal).toLocaleDateString('id-ID', {
+                                                                        year: 'numeric',
+                                                                        month: '2-digit',
+                                                                        day: '2-digit',
+                                                                    })}
+                                                                </td>
+                                                                <td className="px-6 py-4 align-top" rowSpan={journal.items.length}>
+                                                                    <span className="font-mono font-bold text-foreground block mb-1">
+                                                                        {journal.nomor_jurnal}
+                                                                    </span>
+                                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold ${journal.tipe_jurnal === 'penyusutan'
+                                                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                            : journal.tipe_jurnal === 'perolehan_aset'
+                                                                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                              : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
+                                                                        }`}>
+                                                                        {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-muted-foreground text-xs align-top max-w-[200px] break-words" rowSpan={journal.items.length}>
+                                                                    {journal.keterangan}
+                                                                </td>
+                                                            </>
+                                                        ) : null}
+                                                        <td className="px-6 py-3 text-center text-foreground font-mono text-xs">
+                                                            {journal.kode_arus_kas || '-'}
+                                                        </td>
+                                                        <td className="px-6 py-3 font-mono text-muted-foreground text-xs">
+                                                            {item.coa?.kode_akun}
+                                                        </td>
+                                                        <td className={`px-6 py-3 font-medium ${Number(item.kredit) > 0 ? 'pl-6 text-muted-foreground' : 'text-foreground'}`}>
+                                                            {item.coa?.nama_akun}
+                                                        </td>
+                                                        <td className="px-6 py-3 text-right font-mono font-medium text-foreground">
+                                                            {Number(item.debit) > 0 ? formatIDR(item.debit) : '-'}
+                                                        </td>
+                                                        <td className="px-6 py-3 text-right font-mono font-medium text-foreground">
+                                                            {Number(item.kredit) > 0 ? formatIDR(item.kredit) : '-'}
+                                                        </td>
+                                                        {index === 0 ? (
+                                                            <td className="px-6 py-4 text-center align-top" rowSpan={journal.items.length}>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
+                                                                    onClick={() => handleDeleteJournal(journal.id)}
+                                                                    title="Hapus Jurnal"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </td>
+                                                        ) : null}
                                                     </tr>
-                                                </thead>
-                                                <tbody className="divide-y">
-                                                    {journal.items?.map((item) => (
-                                                        <tr key={item.id} className="hover:bg-muted/10">
-                                                            <td className="px-6 py-3">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-muted-foreground w-16 font-mono text-xs">
-                                                                        {item.coa?.kode_akun}
-                                                                    </span>
-                                                                    <span
-                                                                        className={`font-medium ${Number(item.kredit) > 0 ? 'text-muted-foreground pl-8' : 'text-foreground'}`}
-                                                                    >
-                                                                        {item.coa?.nama_akun}
-                                                                    </span>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-3 text-right font-mono">
-                                                                {Number(item.debit) > 0 ? formatIDR(item.debit) : '-'}
-                                                            </td>
-                                                            <td className="px-6 py-3 text-right font-mono">
-                                                                {Number(item.kredit) > 0 ? formatIDR(item.kredit) : '-'}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                ))}
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -560,10 +586,10 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                         </DialogHeader>
 
                         <div className="grid gap-4 py-4">
-                            {/* Row 1: Tanggal & Keterangan */}
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            {/* Row 1: Tanggal, Jenis Transaksi, Kategori, Kode Arus Kas */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="tanggal">Tanggal</Label>
+                                    <Label htmlFor="tanggal">Tanggal Transaksi</Label>
                                     <Input
                                         id="tanggal"
                                         type="date"
@@ -573,17 +599,62 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                                     />
                                     {errors.tanggal && <span className="text-xs text-red-500">{errors.tanggal}</span>}
                                 </div>
-                                <div className="grid gap-2 md:col-span-2">
-                                    <Label htmlFor="keterangan">Keterangan / Deskripsi</Label>
-                                    <Input
-                                        id="keterangan"
-                                        placeholder="Contoh: Pembayaran sewa gedung kantor"
-                                        value={data.keterangan}
-                                        onChange={(e) => setData('keterangan', e.target.value)}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="jenis_transaksi">Jenis Transaksi</Label>
+                                    <select
+                                        id="jenis_transaksi"
+                                        value={data.jenis_transaksi}
+                                        onChange={(e) => setData('jenis_transaksi', e.target.value)}
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                                         required
-                                    />
-                                    {errors.keterangan && <span className="text-xs text-red-500">{errors.keterangan}</span>}
+                                    >
+                                        <option value="jurnal_umum">Jurnal Umum</option>
+                                        <option value="kas_masuk">Kas Masuk</option>
+                                        <option value="kas_keluar">Kas Keluar</option>
+                                        <option value="bank_masuk">Bank Masuk</option>
+                                        <option value="bank_keluar">Bank Keluar</option>
+                                        <option value="jurnal_koreksi">Jurnal Koreksi</option>
+                                    </select>
+                                    {errors.jenis_transaksi && <span className="text-xs text-red-500">{errors.jenis_transaksi}</span>}
                                 </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="kategori_arus_kas">Kategori Arus Kas</Label>
+                                    <select
+                                        id="kategori_arus_kas"
+                                        value={data.kategori_arus_kas}
+                                        onChange={(e) => setData('kategori_arus_kas', e.target.value)}
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                        required
+                                    >
+                                        <option value="operasional">Operasional (O)</option>
+                                        <option value="investasi">Investasi (I)</option>
+                                        <option value="pendanaan">Pendanaan (P)</option>
+                                    </select>
+                                    {errors.kategori_arus_kas && <span className="text-xs text-red-500">{errors.kategori_arus_kas}</span>}
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="kode_arus_kas">Kode Arus Kas</Label>
+                                    <Input
+                                        id="kode_arus_kas"
+                                        value={data.kode_arus_kas}
+                                        readOnly
+                                        className="bg-muted h-9 font-mono font-semibold"
+                                    />
+                                    {errors.kode_arus_kas && <span className="text-xs text-red-500">{errors.kode_arus_kas}</span>}
+                                </div>
+                            </div>
+
+                            {/* Row 2: Uraian Transaksi */}
+                            <div className="grid gap-2">
+                                <Label htmlFor="keterangan">Uraian Transaksi</Label>
+                                <Input
+                                    id="keterangan"
+                                    placeholder="Contoh: Pembelian perlengkapan kantor secara tunai"
+                                    value={data.keterangan}
+                                    onChange={(e) => setData('keterangan', e.target.value)}
+                                    required
+                                />
+                                {errors.keterangan && <span className="text-xs text-red-500">{errors.keterangan}</span>}
                             </div>
 
                             {/* Baris Debit/Kredit Dinamis */}
