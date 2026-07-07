@@ -206,12 +206,12 @@ export default function Index({ coas }: CoasProps) {
                                 <Label htmlFor="kode_akun">Kode Akun</Label>
                                 <Input
                                     id="kode_akun"
-                                    placeholder="Contoh: 1-1001 atau 5-1005"
+                                    placeholder="Contoh: 01.1000.01.01 atau 05.2000.03.01"
                                     value={data.kode_akun}
                                     onChange={(e) => setData('kode_akun', e.target.value)}
                                     required
                                 />
-                                <span className="text-muted-foreground text-[10px]">Format umum: [Kategori]-[Nomor Urut] (Contoh: 1-1001)</span>
+                                <span className="text-muted-foreground text-[10px]">Format umum: XX.XXXX.XX.XX (Contoh: 01.1000.01.01)</span>
                                 {errors.kode_akun && <span className="text-xs text-red-500">{errors.kode_akun}</span>}
                             </div>
 

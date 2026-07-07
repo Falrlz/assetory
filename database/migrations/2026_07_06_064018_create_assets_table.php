@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('assets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('coa_debit_id')->nullable()->constrained('coas')->onDelete('set null');
-            $table->foreignId('coa_kredit_id')->nullable()->constrained('coas')->onDelete('set null');
+            $table->foreignId('coa_debit_id')->nullable();
+            $table->foreignId('coa_kredit_id')->nullable();
             $table->string('nama');
             $table->enum('jenis', ['inventaris', 'kendaraan', 'gedung']);
             $table->decimal('harga_perolehan', 15, 2);

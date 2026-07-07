@@ -27,7 +27,7 @@ test('authenticated users can visit the coa page and see default accounts', func
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('coas/index')
-            ->has('coas', 12)
+            ->has('coas', 76)
         );
 });
 
@@ -35,8 +35,8 @@ test('authenticated users can create a new custom coa', function () {
     actingAs($this->user);
 
     $payload = [
-        'kode_akun' => '1-1001',
-        'nama_akun' => 'Kas Kecil',
+        'kode_akun' => '01.1000.01.03',
+        'nama_akun' => 'Kas Sona',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
     ];
@@ -46,8 +46,8 @@ test('authenticated users can create a new custom coa', function () {
 
     $this->assertDatabaseHas('coas', [
         'user_id' => $this->user->id,
-        'kode_akun' => '1-1001',
-        'nama_akun' => 'Kas Kecil',
+        'kode_akun' => '01.1000.01.03',
+        'nama_akun' => 'Kas Sona',
     ]);
 });
 
@@ -56,7 +56,7 @@ test('authenticated users cannot create duplicate coa code', function () {
     $this->seed(CoaSeeder::class);
 
     $payload = [
-        'kode_akun' => '1-1000',
+        'kode_akun' => '01.1000.01.01',
         'nama_akun' => 'Kas Toko',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
@@ -71,14 +71,14 @@ test('authenticated users can update custom coa', function () {
 
     $coa = Coa::create([
         'user_id' => $this->user->id,
-        'kode_akun' => '1-1005',
+        'kode_akun' => '01.2000.01.05',
         'nama_akun' => 'Piutang Lama',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
     ]);
 
     $payload = [
-        'kode_akun' => '1-1006',
+        'kode_akun' => '01.2000.01.06',
         'nama_akun' => 'Piutang Baru',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
@@ -89,7 +89,7 @@ test('authenticated users can update custom coa', function () {
 
     $this->assertDatabaseHas('coas', [
         'id' => $coa->id,
-        'kode_akun' => '1-1006',
+        'kode_akun' => '01.2000.01.06',
         'nama_akun' => 'Piutang Baru',
     ]);
 });
@@ -99,7 +99,7 @@ test('authenticated users can delete custom coa', function () {
 
     $coa = Coa::create([
         'user_id' => $this->user->id,
-        'kode_akun' => '1-1005',
+        'kode_akun' => '01.2000.01.05',
         'nama_akun' => 'Piutang Lama',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
