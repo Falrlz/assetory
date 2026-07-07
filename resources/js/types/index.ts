@@ -67,3 +67,27 @@ export interface Coa {
     created_at: string;
     updated_at: string;
 }
+
+export interface JournalItem {
+    id: number;
+    journal_id: number;
+    coa_id: number;
+    debit: string;
+    kredit: string;
+    coa?: Coa;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Journal {
+    id: number;
+    user_id: number;
+    tanggal: string;
+    nomor_jurnal: string;
+    keterangan: string;
+    tipe_jurnal: 'umum' | 'perolehan_aset' | 'penyusutan';
+    ref_id?: number;
+    items?: JournalItem[];
+    created_at: string;
+    updated_at: string;
+}

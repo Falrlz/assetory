@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asset;
+use App\Models\Journal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -34,7 +35,41 @@ class AssetController extends Controller
             'periode' => ['required', 'string', 'in:periode_1,periode_2,periode_3,periode_4'],
         ]);
 
-        $request->user()->assets()->create($validated);
+        $asset = $request->user()->assets()->create($validated);
+
+        // Otomatisasi Jurnal Perolehan Aset
+        $cashCoa = $request->user()->coas()->where('kode_akun', '1-1000')->first();
+        $assetCoaCode = match ($asset->jenis) {
+            'inventaris' => '1-3000',
+            'kendaraan' => '1-4000',
+            'gedung' => '1-5000',
+            default => null,
+        };
+        $assetCoa = $assetCoaCode ? $request->user()->coas()->where('kode_akun', $assetCoaCode)->first() : null;
+
+        if ($cashCoa && $assetCoa) {
+            $journal = $request->user()->journals()->create([
+                'tanggal' => $asset->tanggal_perolehan,
+                'nomor_jurnal' => Journal::generateNumber($request->user()),
+                'keterangan' => "Pencatatan perolehan aset tetap: {$asset->nama}",
+                'tipe_jurnal' => 'perolehan_aset',
+                'ref_id' => $asset->id,
+            ]);
+
+            // Debit: Akun Aset Tetap
+            $journal->items()->create([
+                'coa_id' => $assetCoa->id,
+                'debit' => $asset->harga_perolehan,
+                'kredit' => 0,
+            ]);
+
+            // Kredit: Kas & Bank
+            $journal->items()->create([
+                'coa_id' => $cashCoa->id,
+                'debit' => 0,
+                'kredit' => $asset->harga_perolehan,
+            ]);
+        }
 
         return redirect()->route('assets.index');
     }
