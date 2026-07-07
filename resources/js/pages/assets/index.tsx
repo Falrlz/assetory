@@ -130,18 +130,28 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
     const totalAkumulasiPenyusutan = filteredAssets.reduce((sum, asset) => sum + asset.akumulasi_penyusutan, 0);
     const totalNilaiBuku = filteredAssets.reduce((sum, asset) => sum + asset.nilai_buku, 0);
 
-    // Dynamic COA filters to help user choose relevant accounts
+    // Dynamic COA filters to help user choose relevant accounts (supporting new dotted format 'XX.XXXX.XX.XX')
     const debitCoas = coas.filter(
-        (coa) => coa.kode_akun.startsWith('1-3') || coa.kode_akun.startsWith('1-4') || coa.kode_akun.startsWith('1-5'),
+        (coa) =>
+            coa.kode_akun.startsWith('01.3') || // Aset Tetap kustom baru (Tanah, Gedung, Kendaraan, Inventaris)
+            coa.kode_akun.startsWith('1-3') ||  // Fallback format lama
+            coa.kode_akun.startsWith('1-4') ||
+            coa.kode_akun.startsWith('1-5'),
     );
-    const displayDebitCoas = debitCoas.length > 0 ? debitCoas : coas.filter((coa) => coa.kode_akun.startsWith('1'));
+    const displayDebitCoas =
+        debitCoas.length > 0
+            ? debitCoas
+            : coas.filter((coa) => coa.kode_akun.startsWith('01.') || coa.kode_akun.startsWith('1'));
 
     const creditCoas = coas.filter(
         (coa) =>
-            coa.kode_akun.startsWith('1-1') || // Kas & Bank
-            coa.kode_akun.startsWith('1-2') || // Piutang/Aset Lancar lain
+            coa.kode_akun.startsWith('01.1') || // Kas & Bank kustom baru
+            coa.kode_akun.startsWith('01.2') || // Piutang/Aset Lancar lain kustom baru
+            coa.kode_akun.startsWith('02.') ||  // Kewajiban / Utang kustom baru
+            coa.kode_akun.startsWith('1-1') ||  // Fallback Kas & Bank lama
+            coa.kode_akun.startsWith('1-2') ||  // Fallback Aset Lancar lama
             coa.kode_akun.startsWith('1-0') ||
-            coa.kode_akun.startsWith('2-'), // Kewajiban / Utang
+            coa.kode_akun.startsWith('2-'),     // Fallback Kewajiban lama
     );
     const displayCreditCoas = creditCoas.length > 0 ? creditCoas : coas;
 
