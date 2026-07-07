@@ -230,14 +230,14 @@ class JournalController extends Controller
 
         // Gather COAs
         // Beban COAs
-        $bebanInventaris = $user->coas()->where('kode_akun', '5-1000')->first();
-        $bebanKendaraan = $user->coas()->where('kode_akun', '5-1001')->first();
-        $bebanGedung = $user->coas()->where('kode_akun', '5-1002')->first();
+        $bebanInventaris = $user->coas()->where('kode_akun', '05.2000.03.03')->first();
+        $bebanKendaraan = $user->coas()->where('kode_akun', '05.2000.03.02')->first();
+        $bebanGedung = $user->coas()->where('kode_akun', '05.2000.03.01')->first();
 
         // Akumulasi COAs
-        $akmInventaris = $user->coas()->where('kode_akun', '1-3001')->first();
-        $akmKendaraan = $user->coas()->where('kode_akun', '1-4001')->first();
-        $akmGedung = $user->coas()->where('kode_akun', '1-5001')->first();
+        $akmInventaris = $user->coas()->where('kode_akun', '01.3000.02.03')->first();
+        $akmKendaraan = $user->coas()->where('kode_akun', '01.3000.02.02')->first();
+        $akmGedung = $user->coas()->where('kode_akun', '01.3000.02.01')->first();
 
         DB::transaction(function () use ($user, $depreciatedAssets, $targetDate, $bulan, $bebanInventaris, $bebanKendaraan, $bebanGedung, $akmInventaris, $akmKendaraan, $akmGedung) {
             foreach ($depreciatedAssets as $asset) {

@@ -27,17 +27,17 @@ test('authenticated users can create a new asset', function () {
     // Create COAs for the user
     $coaDebit = \App\Models\Coa::create([
         'user_id' => $user->id,
-        'kode_akun' => '1-3000',
+        'kode_akun' => '01.3000.01.04',
         'nama_akun' => 'Peralatan Kantor',
-        'kategori' => 'aset_tetap',
+        'kategori' => 'aset',
         'saldo_normal' => 'debit',
     ]);
 
     $coaKredit = \App\Models\Coa::create([
         'user_id' => $user->id,
-        'kode_akun' => '1-1000',
+        'kode_akun' => '01.1000.01.01',
         'nama_akun' => 'Kas & Bank',
-        'kategori' => 'aset_lancar',
+        'kategori' => 'aset',
         'saldo_normal' => 'debit',
     ]);
 

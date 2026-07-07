@@ -37,8 +37,8 @@ test('authenticated users can create balanced manual journal', function () {
     actingAs($this->user);
     $this->seed(CoaSeeder::class);
 
-    $coaDebit = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-1000')->first(); // Kas
-    $coaKredit = Coa::where('user_id', $this->user->id)->where('kode_akun', '3-1000')->first(); // Modal
+    $coaDebit = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.1000.01.01')->first(); // Kas
+    $coaKredit = Coa::where('user_id', $this->user->id)->where('kode_akun', '03.1000.01.01')->first(); // Modal
 
     $payload = [
         'tanggal' => '2026-07-06',
@@ -87,8 +87,8 @@ test('authenticated users cannot create unbalanced manual journal', function () 
     actingAs($this->user);
     $this->seed(CoaSeeder::class);
 
-    $coaDebit = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-1000')->first();
-    $coaKredit = Coa::where('user_id', $this->user->id)->where('kode_akun', '3-1000')->first();
+    $coaDebit = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.1000.01.01')->first();
+    $coaKredit = Coa::where('user_id', $this->user->id)->where('kode_akun', '03.1000.01.01')->first();
 
     $payload = [
         'tanggal' => '2026-07-06',
@@ -115,8 +115,8 @@ test('creating a new asset automatically posts asset acquisition journal', funct
     actingAs($this->user);
     $this->seed(CoaSeeder::class);
 
-    $coaInventaris = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-3000')->first();
-    $coaKas = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-1000')->first();
+    $coaInventaris = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.3000.01.04')->first();
+    $coaKas = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.1000.01.01')->first();
 
     $payload = [
         'nama' => 'Meja Kerja Premium',
@@ -145,8 +145,8 @@ test('creating a new asset automatically posts asset acquisition journal', funct
         ->where('tipe_jurnal', 'perolehan_aset')
         ->first();
 
-    $coaInventaris = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-3000')->first();
-    $coaKas = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-1000')->first();
+    $coaInventaris = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.3000.01.04')->first();
+    $coaKas = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.1000.01.01')->first();
 
     // Debit: Inventaris
     $this->assertDatabaseHas('journal_items', [
@@ -185,8 +185,8 @@ test('posting monthly depreciation creates appropriate journal entries and preve
         'bulan' => '2026-07',
     ])->assertRedirect();
 
-    $coaBeban = Coa::where('user_id', $this->user->id)->where('kode_akun', '5-1000')->first(); // Beban Penyusutan Peralatan
-    $coaAkm = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-3001')->first(); // Akumulasi Penyusutan Peralatan
+    $coaBeban = Coa::where('user_id', $this->user->id)->where('kode_akun', '05.2000.03.03')->first(); // Beban Penyusutan Inventaris
+    $coaAkm = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.3000.02.03')->first(); // Akumulasi Penyusutan Inventaris
 
     $this->assertDatabaseHas('journals', [
         'user_id' => $this->user->id,
@@ -223,8 +223,8 @@ test('ledger queries return rolling balances correctly', function () {
     actingAs($this->user);
     $this->seed(CoaSeeder::class);
 
-    $coa = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-1000')->first(); // Kas (Normal: Debit)
-    $coaModal = Coa::where('user_id', $this->user->id)->where('kode_akun', '3-1000')->first();
+    $coa = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.1000.01.01')->first(); // Kas (Normal: Debit)
+    $coaModal = Coa::where('user_id', $this->user->id)->where('kode_akun', '03.1000.01.01')->first();
 
     // Transaction 1: Add Cash 10,000,000 (Debit)
     $j1 = Journal::create([

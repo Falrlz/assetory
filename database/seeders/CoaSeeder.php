@@ -19,80 +19,45 @@ class CoaSeeder extends Seeder
             return;
         }
 
-        $defaultAccounts = [
-            [
-                'kode_akun' => '1-1000',
-                'nama_akun' => 'Kas & Bank',
-                'kategori' => 'aset',
-                'saldo_normal' => 'debit',
-            ],
-            [
-                'kode_akun' => '1-3000',
-                'nama_akun' => 'Inventaris & Peralatan',
-                'kategori' => 'aset',
-                'saldo_normal' => 'debit',
-            ],
-            [
-                'kode_akun' => '1-3001',
-                'nama_akun' => 'Akumulasi Penyusutan Peralatan',
-                'kategori' => 'aset',
-                'saldo_normal' => 'kredit',
-            ],
-            [
-                'kode_akun' => '1-4000',
-                'nama_akun' => 'Aset Kendaraan',
-                'kategori' => 'aset',
-                'saldo_normal' => 'debit',
-            ],
-            [
-                'kode_akun' => '1-4001',
-                'nama_akun' => 'Akumulasi Penyusutan Kendaraan',
-                'kategori' => 'aset',
-                'saldo_normal' => 'kredit',
-            ],
-            [
-                'kode_akun' => '1-5000',
-                'nama_akun' => 'Aset Gedung',
-                'kategori' => 'aset',
-                'saldo_normal' => 'debit',
-            ],
-            [
-                'kode_akun' => '1-5001',
-                'nama_akun' => 'Akumulasi Penyusutan Gedung',
-                'kategori' => 'aset',
-                'saldo_normal' => 'kredit',
-            ],
-            [
-                'kode_akun' => '2-1000',
-                'nama_akun' => 'Utang Usaha',
-                'kategori' => 'kewajiban',
-                'saldo_normal' => 'kredit',
-            ],
-            [
-                'kode_akun' => '3-1000',
-                'nama_akun' => 'Modal Pemilik',
-                'kategori' => 'ekuitas',
-                'saldo_normal' => 'kredit',
-            ],
-            [
-                'kode_akun' => '5-1000',
-                'nama_akun' => 'Beban Penyusutan Peralatan',
-                'kategori' => 'beban',
-                'saldo_normal' => 'debit',
-            ],
-            [
-                'kode_akun' => '5-1001',
-                'nama_akun' => 'Beban Penyusutan Kendaraan',
-                'kategori' => 'beban',
-                'saldo_normal' => 'debit',
-            ],
-            [
-                'kode_akun' => '5-1002',
-                'nama_akun' => 'Beban Penyusutan Gedung',
-                'kategori' => 'beban',
-                'saldo_normal' => 'debit',
-            ],
-        ];
+        $csvPath = base_path('docs/acount.csv');
+        if (!file_exists($csvPath)) {
+            return;
+        }
+
+        $file = fopen($csvPath, 'r');
+        $header = fgetcsv($file); // skip header line
+
+        $defaultAccounts = [];
+        while (($row = fgetcsv($file)) !== false) {
+            if (count($row) < 6) {
+                continue;
+            }
+
+            // CSV columns: "id_acount","id_perusahaan","code_acount","nama_acount","jenis_laporan","saldo_normal"
+            // Example: "174","1","01.1000.01.01","Kas Kecil","LPK","D"
+            $code = $row[2];
+            $name = $row[3];
+            $normalBalance = strtolower($row[5]) === 'k' ? 'kredit' : 'debit';
+
+            // Map prefix to category
+            $prefix = substr($code, 0, 2);
+            $category = match ($prefix) {
+                '01' => 'aset',
+                '02' => 'kewajiban',
+                '03' => 'ekuitas',
+                '04' => 'pendapatan',
+                '05' => 'beban',
+                default => 'aset',
+            };
+
+            $defaultAccounts[] = [
+                'kode_akun' => $code,
+                'nama_akun' => $name,
+                'kategori' => $category,
+                'saldo_normal' => $normalBalance,
+            ];
+        }
+        fclose($file);
 
         foreach ($users as $user) {
             foreach ($defaultAccounts as $account) {
@@ -105,7 +70,7 @@ class CoaSeeder extends Seeder
                         'nama_akun' => $account['nama_akun'],
                         'kategori' => $account['kategori'],
                         'saldo_normal' => $account['saldo_normal'],
-                    ]
+                    ],
                 );
             }
         }
