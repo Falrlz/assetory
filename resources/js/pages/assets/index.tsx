@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Calculator, Calendar, ClipboardList, Coins, Plus, TrendingDown } from 'lucide-react';
+import { Calculator, Calendar, ClipboardList, Coins, Plus, TrendingDown, Search, X } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -40,6 +40,13 @@ export default function Index({ assets }: AssetsProps) {
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
     const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
+    // Filter states
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterJenis, setFilterJenis] = useState('all');
+    const [filterTahun, setFilterTahun] = useState('all');
+    const [filterBulan, setFilterBulan] = useState('all');
+    const [filterTanggal, setFilterTanggal] = useState('');
+
     const { data, setData, post, processing, errors, reset } = useForm({
         nama: '',
         jenis: 'inventaris',
@@ -69,11 +76,55 @@ export default function Index({ assets }: AssetsProps) {
         }).format(new Date(dateString));
     };
 
-    // Calculate Summary Stats
-    const totalAssets = assets.length;
-    const totalHargaPerolehan = assets.reduce((sum, asset) => sum + parseFloat(asset.harga_perolehan as string), 0);
-    const totalAkumulasiPenyusutan = assets.reduce((sum, asset) => sum + asset.akumulasi_penyusutan, 0);
-    const totalNilaiBuku = assets.reduce((sum, asset) => sum + asset.nilai_buku, 0);
+    // Dynamically retrieve unique years present in user's assets
+    const uniqueYears = Array.from(
+        new Set(
+            assets
+                .map((asset) => {
+                    if (!asset.tanggal_perolehan) return '';
+                    return new Date(asset.tanggal_perolehan).getFullYear().toString();
+                })
+                .filter(Boolean),
+        ),
+    ).sort((a, b) => b.localeCompare(a));
+
+    // Dynamic Client-Side Filtering
+    const filteredAssets = assets.filter((asset) => {
+        // 1. Search name
+        const matchesSearch = asset.nama.toLowerCase().includes(searchQuery.toLowerCase());
+
+        // 2. Filter asset type
+        const matchesJenis = filterJenis === 'all' ? true : asset.jenis === filterJenis;
+
+        // 3. Date filters
+        if (filterTanggal) {
+            // Match exact date (ignoring year/month dropdowns)
+            const assetDateStr = new Date(asset.tanggal_perolehan).toISOString().split('T')[0];
+            return matchesSearch && matchesJenis && assetDateStr === filterTanggal;
+        }
+
+        let matchesYear = true;
+        let matchesMonth = true;
+
+        if (asset.tanggal_perolehan) {
+            const date = new Date(asset.tanggal_perolehan);
+            if (filterTahun !== 'all') {
+                matchesYear = date.getFullYear().toString() === filterTahun;
+            }
+            if (filterBulan !== 'all') {
+                const monthStr = String(date.getMonth() + 1).padStart(2, '0');
+                matchesMonth = monthStr === filterBulan;
+            }
+        }
+
+        return matchesSearch && matchesJenis && matchesYear && matchesMonth;
+    });
+
+    // Summary Stats recalculated dynamically based on filtered list
+    const totalAssets = filteredAssets.length;
+    const totalHargaPerolehan = filteredAssets.reduce((sum, asset) => sum + parseFloat(asset.harga_perolehan as string), 0);
+    const totalAkumulasiPenyusutan = filteredAssets.reduce((sum, asset) => sum + asset.akumulasi_penyusutan, 0);
+    const totalNilaiBuku = filteredAssets.reduce((sum, asset) => sum + asset.nilai_buku, 0);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -139,6 +190,16 @@ export default function Index({ assets }: AssetsProps) {
         return schedule;
     };
 
+    const handleResetFilters = () => {
+        setSearchQuery('');
+        setFilterJenis('all');
+        setFilterTahun('all');
+        setFilterBulan('all');
+        setFilterTanggal('');
+    };
+
+    const isFilterActive = searchQuery || filterJenis !== 'all' || filterTahun !== 'all' || filterBulan !== 'all' || filterTanggal;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manajemen Aset & Penyusutan" />
@@ -195,6 +256,120 @@ export default function Index({ assets }: AssetsProps) {
                     </div>
                 </div>
 
+                {/* Filter Controls (Placed Below Cards, Above Table) */}
+                <div className="bg-card border rounded-xl p-4 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-5 items-end">
+                    {/* Searching */}
+                    <div className="grid gap-1.5 flex-1 relative">
+                        <Label htmlFor="search">Cari Nama Aset</Label>
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                id="search"
+                                placeholder="Ketik nama aset..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 h-9"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Filter Jenis */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="jenis_filter">Jenis Aset</Label>
+                        <select
+                            id="jenis_filter"
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                            value={filterJenis}
+                            onChange={(e) => setFilterJenis(e.target.value)}
+                        >
+                            <option value="all">Semua Jenis</option>
+                            <option value="inventaris">Inventaris</option>
+                            <option value="kendaraan">Kendaraan</option>
+                            <option value="gedung">Gedung</option>
+                        </select>
+                    </div>
+
+                    {/* Filter Tahun */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="tahun_filter">Tahun Perolehan</Label>
+                        <select
+                            id="tahun_filter"
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                            value={filterTahun}
+                            onChange={(e) => {
+                                setFilterTahun(e.target.value);
+                                setFilterTanggal(''); // clear specific date to avoid filter conflicts
+                            }}
+                        >
+                            <option value="all">Semua Tahun</option>
+                            {uniqueYears.map((yr) => (
+                                <option key={yr} value={yr}>
+                                    {yr}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Filter Bulan */}
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="bulan_filter">Bulan Perolehan</Label>
+                        <select
+                            id="bulan_filter"
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                            value={filterBulan}
+                            onChange={(e) => {
+                                setFilterBulan(e.target.value);
+                                setFilterTanggal(''); // clear specific date to avoid filter conflicts
+                            }}
+                        >
+                            <option value="all">Semua Bulan</option>
+                            <option value="01">Januari</option>
+                            <option value="02">Februari</option>
+                            <option value="03">Maret</option>
+                            <option value="04">April</option>
+                            <option value="05">Mei</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">Agustus</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                        </select>
+                    </div>
+
+                    {/* Filter Tanggal Spesifik & Reset */}
+                    <div className="flex gap-2 items-end">
+                        <div className="grid gap-1.5 flex-grow">
+                            <Label htmlFor="tanggal_filter">Tanggal Spesifik</Label>
+                            <Input
+                                id="tanggal_filter"
+                                type="date"
+                                value={filterTanggal}
+                                onChange={(e) => {
+                                    setFilterTanggal(e.target.value);
+                                    if (e.target.value) {
+                                        setFilterTahun('all');
+                                        setFilterBulan('all');
+                                    }
+                                }}
+                                className="h-9"
+                            />
+                        </div>
+                        {isFilterActive && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="h-9 px-3 flex-shrink-0"
+                                onClick={handleResetFilters}
+                                title="Reset Filter"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
                 {/* Table Section */}
                 <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
                     <div className="w-full overflow-x-auto">
@@ -214,14 +389,14 @@ export default function Index({ assets }: AssetsProps) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y text-sm">
-                                {assets.length === 0 ? (
+                                {filteredAssets.length === 0 ? (
                                     <tr>
                                         <td colSpan={10} className="text-muted-foreground px-6 py-12 text-center">
-                                            Belum ada data aset. Silakan klik "Tambah Aset" untuk memulai.
+                                            Tidak ada aset yang cocok dengan filter atau pencarian Anda.
                                         </td>
                                     </tr>
                                 ) : (
-                                    assets.map((asset) => (
+                                    filteredAssets.map((asset) => (
                                         <tr key={asset.id} className="hover:bg-muted/30 transition-colors">
                                             <td className="text-foreground px-6 py-4 font-medium">{asset.nama}</td>
                                             <td className="px-6 py-4">
