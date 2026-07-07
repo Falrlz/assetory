@@ -13,11 +13,33 @@ test('authenticated users can visit the assets page', function () {
 
     $this->actingAs($user)
         ->get('/assets')
-        ->assertOk();
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('assets/index')
+            ->has('assets')
+            ->has('assetJournals')
+        );
 });
 
 test('authenticated users can create a new asset', function () {
     $user = User::factory()->create();
+
+    // Create COAs for the user
+    $coaDebit = \App\Models\Coa::create([
+        'user_id' => $user->id,
+        'kode_akun' => '1-3000',
+        'nama_akun' => 'Peralatan Kantor',
+        'kategori' => 'aset_tetap',
+        'saldo_normal' => 'debit',
+    ]);
+
+    $coaKredit = \App\Models\Coa::create([
+        'user_id' => $user->id,
+        'kode_akun' => '1-1000',
+        'nama_akun' => 'Kas & Bank',
+        'kategori' => 'aset_lancar',
+        'saldo_normal' => 'debit',
+    ]);
 
     $data = [
         'nama' => 'Laptop MacBook Air',
@@ -26,6 +48,8 @@ test('authenticated users can create a new asset', function () {
         'nilai_residu' => 3000000,
         'tanggal_perolehan' => '2026-01-01',
         'periode' => 'periode_1',
+        'coa_debit_id' => $coaDebit->id,
+        'coa_kredit_id' => $coaKredit->id,
     ];
 
     $this->actingAs($user)
@@ -40,6 +64,14 @@ test('authenticated users can create a new asset', function () {
         'nilai_residu' => 3000000.00,
         'tanggal_perolehan' => '2026-01-01 00:00:00',
         'periode' => 'periode_1',
+        'coa_debit_id' => $coaDebit->id,
+        'coa_kredit_id' => $coaKredit->id,
+    ]);
+
+    // Verify journal was automatically created using these COAs
+    $this->assertDatabaseHas('journals', [
+        'user_id' => $user->id,
+        'tipe_jurnal' => 'perolehan_aset',
     ]);
 });
 

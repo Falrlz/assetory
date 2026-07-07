@@ -35,6 +35,8 @@ class Asset extends Model
         'nilai_residu',
         'tanggal_perolehan',
         'periode',
+        'coa_debit_id',
+        'coa_kredit_id',
     ];
 
     /**
@@ -70,6 +72,22 @@ class Asset extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Relationship to the COA model for Debit (Asset Account).
+     */
+    public function coaDebit(): BelongsTo
+    {
+        return $this->belongsTo(Coa::class, 'coa_debit_id');
+    }
+
+    /**
+     * Relationship to the COA model for Credit (Payment Account).
+     */
+    public function coaKredit(): BelongsTo
+    {
+        return $this->belongsTo(Coa::class, 'coa_kredit_id');
     }
 
     /**

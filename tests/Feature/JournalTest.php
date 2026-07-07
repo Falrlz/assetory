@@ -115,6 +115,9 @@ test('creating a new asset automatically posts asset acquisition journal', funct
     actingAs($this->user);
     $this->seed(CoaSeeder::class);
 
+    $coaInventaris = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-3000')->first();
+    $coaKas = Coa::where('user_id', $this->user->id)->where('kode_akun', '1-1000')->first();
+
     $payload = [
         'nama' => 'Meja Kerja Premium',
         'jenis' => 'inventaris',
@@ -122,6 +125,8 @@ test('creating a new asset automatically posts asset acquisition journal', funct
         'nilai_residu' => 1000000.00,
         'tanggal_perolehan' => '2026-07-01',
         'periode' => 'periode_1',
+        'coa_debit_id' => $coaInventaris->id,
+        'coa_kredit_id' => $coaKas->id,
     ];
 
     post(route('assets.store'), $payload)
