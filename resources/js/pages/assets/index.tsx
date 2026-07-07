@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import { type Asset, type BreadcrumbItem, type Journal } from '@/types';
+import { type Asset, type BreadcrumbItem, type Journal, type Coa } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Calculator, Calendar, ClipboardList, Coins, Plus, TrendingDown, Search, X, FileText } from 'lucide-react';
 import { useState } from 'react';
@@ -18,6 +18,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface AssetsProps {
     assets: Asset[];
     assetJournals: Journal[];
+    coas: Coa[];
 }
 
 const PERIODE_LABELS: Record<string, string> = {
@@ -36,7 +37,7 @@ interface ScheduleRow {
     isTerlewati: boolean;
 }
 
-export default function Index({ assets, assetJournals = [] }: AssetsProps) {
+export default function Index({ assets, assetJournals = [], coas = [] }: AssetsProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
     const [isScheduleOpen, setIsScheduleOpen] = useState(false);
@@ -55,6 +56,8 @@ export default function Index({ assets, assetJournals = [] }: AssetsProps) {
         nilai_residu: '',
         tanggal_perolehan: '',
         periode: 'periode_1',
+        coa_debit_id: '',
+        coa_kredit_id: '',
     });
 
     const formatRupiah = (value: number | string) => {
@@ -126,6 +129,21 @@ export default function Index({ assets, assetJournals = [] }: AssetsProps) {
     const totalHargaPerolehan = filteredAssets.reduce((sum, asset) => sum + parseFloat(asset.harga_perolehan as string), 0);
     const totalAkumulasiPenyusutan = filteredAssets.reduce((sum, asset) => sum + asset.akumulasi_penyusutan, 0);
     const totalNilaiBuku = filteredAssets.reduce((sum, asset) => sum + asset.nilai_buku, 0);
+
+    // Dynamic COA filters to help user choose relevant accounts
+    const debitCoas = coas.filter(
+        (coa) => coa.kode_akun.startsWith('1-3') || coa.kode_akun.startsWith('1-4') || coa.kode_akun.startsWith('1-5'),
+    );
+    const displayDebitCoas = debitCoas.length > 0 ? debitCoas : coas.filter((coa) => coa.kode_akun.startsWith('1'));
+
+    const creditCoas = coas.filter(
+        (coa) =>
+            coa.kode_akun.startsWith('1-1') || // Kas & Bank
+            coa.kode_akun.startsWith('1-2') || // Piutang/Aset Lancar lain
+            coa.kode_akun.startsWith('1-0') ||
+            coa.kode_akun.startsWith('2-'), // Kewajiban / Utang
+    );
+    const displayCreditCoas = creditCoas.length > 0 ? creditCoas : coas;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -519,7 +537,7 @@ export default function Index({ assets, assetJournals = [] }: AssetsProps) {
 
             {/* Create Asset Dialog */}
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-[480px]">
+                <DialogContent className="sm:max-w-[500px]">
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
                             <DialogTitle>Tambah Aset Baru</DialogTitle>
@@ -604,6 +622,49 @@ export default function Index({ assets, assetJournals = [] }: AssetsProps) {
                                         required
                                     />
                                     {errors.nilai_residu && <span className="text-xs text-red-500">{errors.nilai_residu}</span>}
+                                </div>
+                            </div>
+
+                            {/* Akun Debit & Kredit Selection */}
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Akun Aset Tetap (Debit) */}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="coa_debit_id">Akun Aset Tetap (Debit)</Label>
+                                    <select
+                                        id="coa_debit_id"
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
+                                        value={data.coa_debit_id}
+                                        onChange={(e) => setData('coa_debit_id', e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Pilih Akun Aset</option>
+                                        {displayDebitCoas.map((coa) => (
+                                            <option key={coa.id} value={coa.id}>
+                                                {coa.kode_akun} - {coa.nama_akun}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.coa_debit_id && <span className="text-xs text-red-500">{errors.coa_debit_id}</span>}
+                                </div>
+
+                                {/* Akun Pembayaran (Kredit) */}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="coa_kredit_id">Akun Pembayaran (Kredit)</Label>
+                                    <select
+                                        id="coa_kredit_id"
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
+                                        value={data.coa_kredit_id}
+                                        onChange={(e) => setData('coa_kredit_id', e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Pilih Akun Pembayaran</option>
+                                        {displayCreditCoas.map((coa) => (
+                                            <option key={coa.id} value={coa.id}>
+                                                {coa.kode_akun} - {coa.nama_akun}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.coa_kredit_id && <span className="text-xs text-red-500">{errors.coa_kredit_id}</span>}
                                 </div>
                             </div>
 
