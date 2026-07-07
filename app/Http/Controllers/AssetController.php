@@ -16,8 +16,19 @@ class AssetController extends Controller
      */
     public function index(Request $request): Response
     {
+        $user = $request->user();
+        $assets = $user->assets()->latest()->get();
+
+        $assetJournals = $user->journals()
+            ->whereIn('tipe_jurnal', ['perolehan_aset', 'penyusutan'])
+            ->with(['items.coa'])
+            ->latest()
+            ->take(10)
+            ->get();
+
         return Inertia::render('assets/index', [
-            'assets' => $request->user()->assets()->latest()->get(),
+            'assets' => $assets,
+            'assetJournals' => $assetJournals,
         ]);
     }
 

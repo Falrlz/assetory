@@ -13,7 +13,12 @@ test('authenticated users can visit the assets page', function () {
 
     $this->actingAs($user)
         ->get('/assets')
-        ->assertOk();
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('assets/index')
+            ->has('assets')
+            ->has('assetJournals')
+        );
 });
 
 test('authenticated users can create a new asset', function () {
