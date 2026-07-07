@@ -456,7 +456,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
 
                 {/* Recent Asset Journals Section */}
                 <div className="flex flex-col gap-2 mt-6">
-                    <h2 className="text-xl font-bold tracking-tight text-foreground">Log Jurnal Aset Terbaru</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-foreground">Jurnal Terbentuk</h2>
                     <p className="text-muted-foreground text-sm">Menampilkan hingga 10 transaksi perolehan dan depresiasi aset terbaru yang tercatat secara resmi di jurnal.</p>
                 </div>
 
@@ -469,68 +469,65 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {assetJournals.map((journal) => (
-                            <div key={journal.id} className="rounded-xl border bg-card text-card-foreground shadow-xs overflow-hidden">
-                                {/* Header Jurnal */}
-                                <div className="flex flex-col sm:flex-row justify-between bg-muted/20 border-b p-4 gap-2">
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                        <span className="font-mono font-bold text-foreground text-base">
-                                            {journal.nomor_jurnal}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <Calendar className="h-3.5 w-3.5" />
-                                            {formatDate(journal.tanggal)}
-                                        </span>
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                            journal.tipe_jurnal === 'penyusutan' 
-                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' 
-                                                : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                        }`}>
-                                            {journal.tipe_jurnal === 'penyusutan' ? 'Penyusutan Aset' : 'Perolehan Aset'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        <p className="text-sm text-muted-foreground italic">
-                                            {journal.keterangan}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Items Jurnal */}
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b bg-muted/10 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                                <th className="px-6 py-2.5 text-left">Akun</th>
-                                                <th className="px-6 py-2.5 text-right w-1/4">Debit</th>
-                                                <th className="px-6 py-2.5 text-right w-1/4">Kredit</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            {journal.items?.map((item) => (
-                                                <tr key={item.id} className="hover:bg-muted/10">
-                                                    <td className="px-6 py-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-mono text-muted-foreground text-xs w-16">{item.coa?.kode_akun}</span>
-                                                            <span className={`font-medium ${Number(item.kredit) > 0 ? 'pl-8 text-muted-foreground' : 'text-foreground'}`}>
-                                                                {item.coa?.nama_akun}
+                    <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
+                        <div className="w-full overflow-x-auto">
+                            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+                                <thead>
+                                    <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
+                                        <th className="px-6 py-3 w-[120px]">Tanggal</th>
+                                        <th className="px-6 py-3 w-[160px]">No. Jurnal</th>
+                                        <th className="px-6 py-3 w-[120px]">Tipe</th>
+                                        <th className="px-6 py-3">Keterangan</th>
+                                        <th className="px-6 py-3">Akun</th>
+                                        <th className="px-6 py-3 text-right w-[140px]">Debit</th>
+                                        <th className="px-6 py-3 text-right w-[140px]">Kredit</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {assetJournals.flatMap((journal) =>
+                                        journal.items.map((item, index) => (
+                                            <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                                                {index === 0 ? (
+                                                    <>
+                                                        <td className="px-6 py-4 font-medium text-muted-foreground align-top" rowSpan={journal.items.length}>
+                                                            {formatDate(journal.tanggal)}
+                                                        </td>
+                                                        <td className="px-6 py-4 font-mono font-bold text-foreground align-top" rowSpan={journal.items.length}>
+                                                            {journal.nomor_jurnal}
+                                                        </td>
+                                                        <td className="px-6 py-4 align-top" rowSpan={journal.items.length}>
+                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${journal.tipe_jurnal === 'penyusutan'
+                                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                }`}>
+                                                                {journal.tipe_jurnal === 'penyusutan' ? 'Penyusutan' : 'Perolehan'}
                                                             </span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-3 text-right font-mono">
-                                                        {Number(item.debit) > 0 ? formatRupiah(item.debit) : '-'}
-                                                    </td>
-                                                    <td className="px-6 py-3 text-right font-mono">
-                                                        {Number(item.kredit) > 0 ? formatRupiah(item.kredit) : '-'}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        ))}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-muted-foreground text-xs align-top max-w-[200px] break-words" rowSpan={journal.items.length}>
+                                                            {journal.keterangan}
+                                                        </td>
+                                                    </>
+                                                ) : null}
+                                                <td className="px-6 py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-mono text-muted-foreground text-[10px] w-12">{item.coa?.kode_akun}</span>
+                                                        <span className={`font-medium ${Number(item.kredit) > 0 ? 'pl-6 text-muted-foreground' : 'text-foreground'}`}>
+                                                            {item.coa?.nama_akun}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-3 text-right font-mono font-medium text-foreground">
+                                                    {Number(item.debit) > 0 ? formatRupiah(item.debit) : '-'}
+                                                </td>
+                                                <td className="px-6 py-3 text-right font-mono font-medium text-foreground">
+                                                    {Number(item.kredit) > 0 ? formatRupiah(item.kredit) : '-'}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </div>
