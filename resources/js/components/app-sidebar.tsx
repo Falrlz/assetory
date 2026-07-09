@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, BookOpenCheck, Coins, Folder, LayoutGrid } from 'lucide-react';
+import { BarChart3, BookOpen, Coins, Folder, LayoutGrid, Notebook } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -24,9 +24,42 @@ const mainNavItems: NavItem[] = [
         icon: BookOpen,
     },
     {
-        title: 'Journals & Ledger',
-        url: '/journals',
-        icon: BookOpenCheck,
+        title: 'Ledger',
+        url: '#',
+        icon: Notebook,
+        items: [
+            {
+                title: 'Jurnal Umum',
+                url: '/journals',
+            },
+            {
+                title: 'Buku Besar Umum',
+                url: '/journals?tab=ledger',
+            },
+            {
+                title: 'Neraca Saldo',
+                url: '/reports/trial-balance',
+            },
+        ],
+    },
+    {
+        title: 'Laporan',
+        url: '#',
+        icon: BarChart3,
+        items: [
+            {
+                title: 'Neraca Keuangan',
+                url: '/reports/balance-sheet',
+            },
+            {
+                title: 'Laba dan Rugi',
+                url: '/reports/profit-loss',
+            },
+            {
+                title: 'Laporan Arus Kas',
+                url: '/reports/cash-flow',
+            },
+        ],
     },
 ];
 

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { AlertCircle, Calculator, FileText, Landmark, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -52,7 +52,41 @@ const KATEGORI_LABELS: Record<string, string> = {
 
 
 export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMonths, assets }: IndexProps) {
-    const [activeTab, setActiveTab] = useState<'umum' | 'ledger' | 'depresiasi'>('umum');
+    const page = usePage();
+    const [activeTab, setActiveTab] = useState<'umum' | 'ledger' | 'depresiasi'>(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            if (tab === 'ledger' || tab === 'depresiasi') {
+                return tab;
+            }
+        }
+        return 'umum';
+    });
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        if (tab === 'ledger' || tab === 'depresiasi') {
+            setActiveTab(tab);
+        } else {
+            setActiveTab('umum');
+        }
+    }, [page.url]);
+
+    const handleTabChange = (tab: 'umum' | 'ledger' | 'depresiasi') => {
+        setActiveTab(tab);
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            if (tab === 'umum') {
+                url.searchParams.delete('tab');
+            } else {
+                url.searchParams.set('tab', tab);
+            }
+            window.history.pushState({}, '', url.toString());
+        }
+    };
+
     const [isOpen, setIsOpen] = useState(false);
     const [selectedCoaId, setSelectedCoaId] = useState<string>(ledgerCoa?.id.toString() || '');
 
@@ -337,14 +371,14 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                 {/* Tab Header Navigation */}
                 <div className="flex border-b">
                     <button
-                        onClick={() => setActiveTab('umum')}
+                        onClick={() => handleTabChange('umum')}
                         className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'umum' ? 'border-primary text-foreground' : 'text-muted-foreground hover:text-foreground border-transparent'
                             }`}
                     >
                         Jurnal Umum
                     </button>
                     <button
-                        onClick={() => setActiveTab('ledger')}
+                        onClick={() => handleTabChange('ledger')}
                         className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'ledger'
                                 ? 'border-primary text-foreground'
                                 : 'text-muted-foreground hover:text-foreground border-transparent'
@@ -353,7 +387,7 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                         Buku Besar (Ledger)
                     </button>
                     <button
-                        onClick={() => setActiveTab('depresiasi')}
+                        onClick={() => handleTabChange('depresiasi')}
                         className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'depresiasi'
                                 ? 'border-primary text-foreground'
                                 : 'text-muted-foreground hover:text-foreground border-transparent'
