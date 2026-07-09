@@ -23,9 +23,9 @@ class JournalController extends Controller
     {
         $user = $request->user();
 
-        // 1. Jurnal Umum List (with items & coa)
+        // 1. Jurnal Umum List (with items, coa & asset)
         $journals = $user->journals()
-            ->with(['items.coa'])
+            ->with(['items.coa', 'asset'])
             ->orderBy('tanggal', 'desc')
             ->orderBy('id', 'desc')
             ->get();
@@ -244,33 +244,35 @@ class JournalController extends Controller
             ]);
         }
 
-        // Gather COAs
-        // Beban COAs
-        $bebanInventaris = $user->coas()->where('kode_akun', '05.2000.03.03')->first();
-        $bebanKendaraan = $user->coas()->where('kode_akun', '05.2000.03.02')->first();
-        $bebanGedung = $user->coas()->where('kode_akun', '05.2000.03.01')->first();
-
-        // Akumulasi COAs
-        $akmInventaris = $user->coas()->where('kode_akun', '01.3000.02.03')->first();
-        $akmKendaraan = $user->coas()->where('kode_akun', '01.3000.02.02')->first();
-        $akmGedung = $user->coas()->where('kode_akun', '01.3000.02.01')->first();
-
-        DB::transaction(function () use ($user, $depreciatedAssets, $targetDate, $bulan, $bebanInventaris, $bebanKendaraan, $bebanGedung, $akmInventaris, $akmKendaraan, $akmGedung) {
+        DB::transaction(function () use ($user, $depreciatedAssets, $targetDate, $bulan) {
             foreach ($depreciatedAssets as $asset) {
-                // Determine COAs based on asset type
-                $bebanCoa = match ($asset->jenis) {
-                    'inventaris' => $bebanInventaris,
-                    'kendaraan' => $bebanKendaraan,
-                    'gedung' => $bebanGedung,
-                    default => null,
-                };
+                // Find Expense COA dynamically (name pattern match first, then code fallback)
+                $bebanCoa = $user->coas()
+                    ->where('nama_akun', 'like', 'Beban Penyusutan%')
+                    ->where('nama_akun', 'like', '%'.$asset->jenis.'%')
+                    ->first();
 
-                $akmCoa = match ($asset->jenis) {
-                    'inventaris' => $akmInventaris,
-                    'kendaraan' => $akmKendaraan,
-                    'gedung' => $akmGedung,
-                    default => null,
-                };
+                if (! $bebanCoa) {
+                    $suffixMap = ['gedung' => '01', 'kendaraan' => '02', 'inventaris' => '03'];
+                    $suffix = $suffixMap[$asset->jenis] ?? '';
+                    $bebanCoa = $user->coas()
+                        ->where('kode_akun', '05.2000.03.'.$suffix)
+                        ->first();
+                }
+
+                // Find Accumulation COA dynamically (name pattern match first, then code fallback)
+                $akmCoa = $user->coas()
+                    ->where('nama_akun', 'like', 'Akumulasi%')
+                    ->where('nama_akun', 'like', '%'.$asset->jenis.'%')
+                    ->first();
+
+                if (! $akmCoa) {
+                    $suffixMap = ['gedung' => '01', 'kendaraan' => '02', 'inventaris' => '03'];
+                    $suffix = $suffixMap[$asset->jenis] ?? '';
+                    $akmCoa = $user->coas()
+                        ->where('kode_akun', '01.3000.02.'.$suffix)
+                        ->first();
+                }
 
                 if (! $bebanCoa || ! $akmCoa) {
                     throw new \Exception("Akun COA penyusutan untuk jenis aset '{$asset->jenis}' tidak ditemukan. Mohon pastikan akun beban dan akumulasi penyusutan tersedia di COA.");

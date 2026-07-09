@@ -44,6 +44,7 @@ class CoaController extends Controller
             'nama_akun' => 'required|string|max:255',
             'kategori' => 'required|in:aset,kewajiban,ekuitas,pendapatan,beban',
             'saldo_normal' => 'required|in:debit,kredit',
+            'jenis_laporan' => 'required|in:LPK,LR',
         ]);
 
         auth()->user()->coas()->create($validated);
@@ -72,6 +73,7 @@ class CoaController extends Controller
             'nama_akun' => 'required|string|max:255',
             'kategori' => 'required|in:aset,kewajiban,ekuitas,pendapatan,beban',
             'saldo_normal' => 'required|in:debit,kredit',
+            'jenis_laporan' => 'required|in:LPK,LR',
         ]);
 
         $coa->update($validated);

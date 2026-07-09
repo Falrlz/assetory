@@ -27,7 +27,7 @@ test('authenticated users can visit the coa page and see default accounts', func
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('coas/index')
-            ->has('coas', 75)
+            ->has('coas', 125)
         );
 });
 
@@ -39,6 +39,7 @@ test('authenticated users can create a new custom coa', function () {
         'nama_akun' => 'Kas Sona',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
+        'jenis_laporan' => 'LPK',
     ];
 
     post(route('coas.store'), $payload)
@@ -48,6 +49,7 @@ test('authenticated users can create a new custom coa', function () {
         'user_id' => $this->user->id,
         'kode_akun' => '01.1000.01.03',
         'nama_akun' => 'Kas Sona',
+        'jenis_laporan' => 'LPK',
     ]);
 });
 
@@ -60,6 +62,7 @@ test('authenticated users cannot create duplicate coa code', function () {
         'nama_akun' => 'Kas Toko',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
+        'jenis_laporan' => 'LPK',
     ];
 
     post(route('coas.store'), $payload)
@@ -75,6 +78,7 @@ test('authenticated users can update custom coa', function () {
         'nama_akun' => 'Piutang Lama',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
+        'jenis_laporan' => 'LPK',
     ]);
 
     $payload = [
@@ -82,6 +86,7 @@ test('authenticated users can update custom coa', function () {
         'nama_akun' => 'Piutang Baru',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
+        'jenis_laporan' => 'LPK',
     ];
 
     put(route('coas.update', $coa->id), $payload)
@@ -91,6 +96,7 @@ test('authenticated users can update custom coa', function () {
         'id' => $coa->id,
         'kode_akun' => '01.2000.01.06',
         'nama_akun' => 'Piutang Baru',
+        'jenis_laporan' => 'LPK',
     ]);
 });
 
@@ -103,6 +109,7 @@ test('authenticated users can delete custom coa', function () {
         'nama_akun' => 'Piutang Lama',
         'kategori' => 'aset',
         'saldo_normal' => 'debit',
+        'jenis_laporan' => 'LPK',
     ]);
 
     delete(route('coas.destroy', $coa->id))

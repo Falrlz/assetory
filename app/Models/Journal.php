@@ -52,6 +52,14 @@ class Journal extends Model
     }
 
     /**
+     * Get the associated asset if the journal is related to an asset.
+     */
+    public function asset(): BelongsTo
+    {
+        return $this->belongsTo(Asset::class, 'ref_id');
+    }
+
+    /**
      * Generate a unique sequential journal number for a user.
      */
     public static function generateNumber($user, string $prefix = 'JV'): string

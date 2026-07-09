@@ -64,6 +64,7 @@ export interface Coa {
     nama_akun: string;
     kategori: 'aset' | 'kewajiban' | 'ekuitas' | 'pendapatan' | 'beban';
     saldo_normal: 'debit' | 'kredit';
+    jenis_laporan: 'LPK' | 'LR';
     created_at: string;
     updated_at: string;
 }
