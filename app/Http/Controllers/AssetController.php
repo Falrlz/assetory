@@ -68,9 +68,12 @@ class AssetController extends Controller
         // Otomatisasi Jurnal Perolehan Aset
         $journal = $request->user()->journals()->create([
             'tanggal' => $asset->tanggal_perolehan,
-            'nomor_jurnal' => Journal::generateNumber($request->user()),
+            'nomor_jurnal' => Journal::generateNumber($request->user(), 'JU-A'),
             'keterangan' => "Pencatatan perolehan aset tetap: {$asset->nama}",
             'tipe_jurnal' => 'perolehan_aset',
+            'jenis_transaksi' => 'jurnal_umum',
+            'kategori_arus_kas' => 'investasi',
+            'kode_arus_kas' => 'JU-A',
             'ref_id' => $asset->id,
         ]);
 

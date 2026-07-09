@@ -5,8 +5,8 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { AlertCircle, Calculator, Calendar, FileText, Landmark, Plus, ShieldCheck, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { AlertCircle, Calculator, FileText, Landmark, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -49,25 +49,136 @@ const KATEGORI_LABELS: Record<string, string> = {
     beban: 'Beban',
 };
 
+
+
 export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMonths, assets }: IndexProps) {
     const [activeTab, setActiveTab] = useState<'umum' | 'ledger' | 'depresiasi'>('umum');
     const [isOpen, setIsOpen] = useState(false);
     const [selectedCoaId, setSelectedCoaId] = useState<string>(ledgerCoa?.id.toString() || '');
+
+    // Split coas into Parent and Transaction (Child) accounts
+    const parentCoas = coas.filter((c) => c.kode_akun.split('.').length === 3);
+    const transactionCoas = coas.filter((c) => c.kode_akun.split('.').length > 3);
+
+    const groupCoasByParent = (coasList: Coa[]) => {
+        const groups: Record<string, Coa[]> = {};
+        coasList.forEach((coa) => {
+            const parts = coa.kode_akun.split('.');
+            let parentLabel = 'Lainnya';
+            if (parts.length >= 3) {
+                const prefix = parts.slice(0, 3).join('.');
+                const parent = parentCoas.find((p) => p.kode_akun === prefix);
+                if (parent) {
+                    parentLabel = parent.nama_akun;
+                } else {
+                    parentLabel = prefix;
+                }
+            }
+            if (!groups[parentLabel]) {
+                groups[parentLabel] = [];
+            }
+            groups[parentLabel].push(coa);
+        });
+        return groups;
+    };
 
     // Default select current month (YYYY-MM)
     const today = new Date();
     const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
     const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
 
+    // Search and filter states for Jurnal Umum
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterJenis, setFilterJenis] = useState('all');
+    const [filterTahun, setFilterTahun] = useState('all');
+    const [filterBulan, setFilterBulan] = useState('all');
+    const [filterTanggal, setFilterTanggal] = useState('');
+
+    // Dynamic years list based on journal dates
+    const listTahun = Array.from(
+        new Set(
+            journals
+                .map((j) => {
+                    const date = new Date(j.tanggal);
+                    return isNaN(date.getTime()) ? '' : date.getFullYear().toString();
+                })
+                .filter(Boolean),
+        ),
+    ).sort((a, b) => b.localeCompare(a));
+
+    // Dynamic journal filtering
+    const filteredJournals = journals.filter((journal) => {
+        const query = searchQuery.toLowerCase().trim();
+
+        // 1. Filter Cari Nama Aset / Uraian / No. Referensi
+        const matchSearch =
+            !query ||
+            journal.nomor_jurnal.toLowerCase().includes(query) ||
+            journal.keterangan.toLowerCase().includes(query) ||
+            (journal.asset && journal.asset.nama.toLowerCase().includes(query));
+
+        // 2. Filter Jenis Aset (Inventaris/Kendaraan/Gedung)
+        const matchJenis = filterJenis === 'all' || (journal.asset && journal.asset.jenis === filterJenis);
+
+        // Date check
+        const dateObj = new Date(journal.tanggal);
+        const isValidDate = !isNaN(dateObj.getTime());
+
+        // 3. Filter Tahun
+        const matchTahun = filterTahun === 'all' || (isValidDate && dateObj.getFullYear().toString() === filterTahun);
+
+        // 4. Filter Bulan
+        const matchBulan = filterBulan === 'all' || (isValidDate && (dateObj.getMonth() + 1).toString().padStart(2, '0') === filterBulan);
+
+        // 5. Filter Tanggal Spesifik
+        const matchTanggal = !filterTanggal || journal.tanggal.split('T')[0] === filterTanggal;
+
+        return matchSearch && matchJenis && matchTahun && matchBulan && matchTanggal;
+    });
+
+    const isFilterActive = searchQuery !== '' || filterJenis !== 'all' || filterTahun !== 'all' || filterBulan !== 'all' || filterTanggal !== '';
+
+    const handleResetFilters = () => {
+        setSearchQuery('');
+        setFilterJenis('all');
+        setFilterTahun('all');
+        setFilterBulan('all');
+        setFilterTanggal('');
+    };
+
     // Form for manual journal entry
     const { data, setData, post, processing, errors, reset } = useForm({
         tanggal: today.toISOString().split('T')[0],
+        jenis_transaksi: 'jurnal_umum',
+        kategori_arus_kas: 'operasional',
+        kode_arus_kas: 'JU-O',
         keterangan: '',
         items: [
             { coa_id: '', debit: 0, kredit: 0 },
             { coa_id: '', debit: 0, kredit: 0 },
         ],
     });
+
+    // Auto-update Cash Flow Code (kode_arus_kas) when transaction type or category changes
+    useEffect(() => {
+        const typePrefixes: Record<string, string> = {
+            jurnal_umum: 'JU',
+            kas_masuk: 'KM',
+            kas_keluar: 'KK',
+            bank_masuk: 'BM',
+            bank_keluar: 'BK',
+            jurnal_koreksi: 'JK',
+        };
+        const categorySuffixes: Record<string, string> = {
+            operasional: 'O',
+            investasi: 'I',
+            pendanaan: 'P',
+        };
+
+        const prefix = typePrefixes[data.jenis_transaksi] || 'JU';
+        const suffix = categorySuffixes[data.kategori_arus_kas] || 'O';
+        setData('kode_arus_kas', `${prefix}-${suffix}`);
+    }, [data.jenis_transaksi, data.kategori_arus_kas]);
 
     // Form for monthly depreciation posting
     const depForm = useForm({
@@ -227,29 +338,26 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                 <div className="flex border-b">
                     <button
                         onClick={() => setActiveTab('umum')}
-                        className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                            activeTab === 'umum' ? 'border-primary text-foreground' : 'text-muted-foreground hover:text-foreground border-transparent'
-                        }`}
+                        className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'umum' ? 'border-primary text-foreground' : 'text-muted-foreground hover:text-foreground border-transparent'
+                            }`}
                     >
                         Jurnal Umum
                     </button>
                     <button
                         onClick={() => setActiveTab('ledger')}
-                        className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                            activeTab === 'ledger'
+                        className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'ledger'
                                 ? 'border-primary text-foreground'
                                 : 'text-muted-foreground hover:text-foreground border-transparent'
-                        }`}
+                            }`}
                     >
                         Buku Besar (Ledger)
                     </button>
                     <button
                         onClick={() => setActiveTab('depresiasi')}
-                        className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                            activeTab === 'depresiasi'
+                        className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'depresiasi'
                                 ? 'border-primary text-foreground'
                                 : 'text-muted-foreground hover:text-foreground border-transparent'
-                        }`}
+                            }`}
                     >
                         Penyusutan Bulanan
                     </button>
@@ -267,86 +375,227 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                                 </p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                {journals.map((journal) => (
-                                    <div key={journal.id} className="bg-card text-card-foreground overflow-hidden rounded-xl border shadow-xs">
-                                        {/* Header Jurnal */}
-                                        <div className="bg-muted/30 flex flex-col justify-between gap-2 border-b p-4 sm:flex-row">
-                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                                <span className="text-foreground font-mono text-base font-bold">{journal.nomor_jurnal}</span>
-                                                <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                                                    <Calendar className="h-3.5 w-3.5" />
-                                                    {new Date(journal.tanggal).toLocaleDateString('id-ID', {
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric',
-                                                    })}
-                                                </span>
-                                                <span
-                                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                                                        journal.tipe_jurnal === 'penyusutan'
-                                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                            : journal.tipe_jurnal === 'perolehan_aset'
-                                                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                              : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
-                                                    }`}
-                                                >
-                                                    {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-muted-foreground line-clamp-1 max-w-md text-sm italic">{journal.keterangan}</p>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="ml-auto h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
-                                                    onClick={() => handleDeleteJournal(journal.id)}
-                                                    title="Hapus Jurnal"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {/* Items Jurnal */}
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-sm">
-                                                <thead>
-                                                    <tr className="bg-muted/10 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
-                                                        <th className="px-6 py-2.5 text-left">Akun</th>
-                                                        <th className="w-1/4 px-6 py-2.5 text-right">Debit</th>
-                                                        <th className="w-1/4 px-6 py-2.5 text-right">Kredit</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y">
-                                                    {journal.items?.map((item) => (
-                                                        <tr key={item.id} className="hover:bg-muted/10">
-                                                            <td className="px-6 py-3">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-muted-foreground w-16 font-mono text-xs">
-                                                                        {item.coa?.kode_akun}
-                                                                    </span>
-                                                                    <span
-                                                                        className={`font-medium ${Number(item.kredit) > 0 ? 'text-muted-foreground pl-8' : 'text-foreground'}`}
-                                                                    >
-                                                                        {item.coa?.nama_akun}
-                                                                    </span>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-3 text-right font-mono">
-                                                                {Number(item.debit) > 0 ? formatIDR(item.debit) : '-'}
-                                                            </td>
-                                                            <td className="px-6 py-3 text-right font-mono">
-                                                                {Number(item.kredit) > 0 ? formatIDR(item.kredit) : '-'}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                            <>
+                                {/* Filter Controls */}
+                                <div className="bg-card grid grid-cols-1 items-end gap-4 rounded-xl border p-4 sm:grid-cols-2 md:grid-cols-5">
+                                    {/* Searching */}
+                                    <div className="relative grid flex-1 gap-1.5">
+                                        <Label htmlFor="search">Cari Nama Aset</Label>
+                                        <div className="relative">
+                                            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+                                            <Input
+                                                id="search"
+                                                placeholder="Ketik nama aset..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="h-9 pl-9"
+                                            />
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+
+                                    {/* Filter Jenis */}
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="jenis_filter">Jenis Aset</Label>
+                                        <select
+                                            id="jenis_filter"
+                                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                            value={filterJenis}
+                                            onChange={(e) => setFilterJenis(e.target.value)}
+                                        >
+                                            <option value="all">Semua Jenis</option>
+                                            <option value="inventaris">Inventaris</option>
+                                            <option value="kendaraan">Kendaraan</option>
+                                            <option value="gedung">Gedung</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Filter Tahun */}
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="tahun_filter">Tahun Perolehan</Label>
+                                        <select
+                                            id="tahun_filter"
+                                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                            value={filterTahun}
+                                            onChange={(e) => {
+                                                setFilterTahun(e.target.value);
+                                                setFilterTanggal('');
+                                            }}
+                                        >
+                                            <option value="all">Semua Tahun</option>
+                                            {listTahun.map((yr) => (
+                                                <option key={yr} value={yr}>
+                                                    {yr}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Filter Bulan */}
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="bulan_filter">Bulan Perolehan</Label>
+                                        <select
+                                            id="bulan_filter"
+                                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                            value={filterBulan}
+                                            onChange={(e) => {
+                                                setFilterBulan(e.target.value);
+                                                setFilterTanggal('');
+                                            }}
+                                        >
+                                            <option value="all">Semua Bulan</option>
+                                            <option value="01">Januari</option>
+                                            <option value="02">Februari</option>
+                                            <option value="03">Maret</option>
+                                            <option value="04">April</option>
+                                            <option value="05">Mei</option>
+                                            <option value="06">Juni</option>
+                                            <option value="07">Juli</option>
+                                            <option value="08">Agustus</option>
+                                            <option value="09">September</option>
+                                            <option value="10">Oktober</option>
+                                            <option value="11">November</option>
+                                            <option value="12">Desember</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Filter Tanggal Spesifik & Reset */}
+                                    <div className="flex items-end gap-2">
+                                        <div className="grid flex-grow gap-1.5">
+                                            <Label htmlFor="tanggal_filter">Tanggal Spesifik</Label>
+                                            <Input
+                                                id="tanggal_filter"
+                                                type="date"
+                                                value={filterTanggal}
+                                                onChange={(e) => {
+                                                    setFilterTanggal(e.target.value);
+                                                    if (e.target.value) {
+                                                        setFilterTahun('all');
+                                                        setFilterBulan('all');
+                                                    }
+                                                }}
+                                                className="h-9"
+                                            />
+                                        </div>
+                                        {isFilterActive && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="h-9 flex-shrink-0 px-3"
+                                                onClick={handleResetFilters}
+                                                title="Reset Filter"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Table */}
+                                <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
+                                    <div className="w-full overflow-x-auto">
+                                        <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
+                                            <thead>
+                                                <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
+                                                    <th className="w-[120px] px-6 py-3">Tanggal</th>
+                                                    <th className="w-[160px] px-6 py-3">No. Referensi</th>
+                                                    <th className="px-6 py-3">Keterangan</th>
+                                                    <th className="w-[110px] px-6 py-3 text-center">No Arus Kas</th>
+                                                    <th className="w-[120px] px-6 py-3">Kode Akun</th>
+                                                    <th className="px-6 py-3">Nama Akun</th>
+                                                    <th className="w-[140px] px-6 py-3 text-right">Debit</th>
+                                                    <th className="w-[140px] px-6 py-3 text-right">Kredit</th>
+                                                    <th className="w-[80px] px-6 py-3 text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {filteredJournals.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={9} className="text-muted-foreground px-6 py-16 text-center">
+                                                            <Search className="text-muted-foreground/35 mx-auto mb-3 h-10 w-10" />
+                                                            <h4 className="text-foreground text-base font-semibold">Tidak Ada Hasil Cocok</h4>
+                                                            <p className="text-muted-foreground mt-1 text-sm">
+                                                                Coba sesuaikan kata kunci pencarian atau bersihkan filter Anda.
+                                                            </p>
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredJournals.flatMap((journal) =>
+                                                        journal.items?.map((item, index) => (
+                                                            <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                                                                {index === 0 ? (
+                                                                    <>
+                                                                        <td
+                                                                            className="text-muted-foreground animate-none px-6 py-4 align-top font-medium"
+                                                                            rowSpan={journal.items.length}
+                                                                        >
+                                                                            {new Date(journal.tanggal).toLocaleDateString('id-ID', {
+                                                                                year: 'numeric',
+                                                                                month: '2-digit',
+                                                                                day: '2-digit',
+                                                                            })}
+                                                                        </td>
+                                                                        <td className="px-6 py-4 align-top" rowSpan={journal.items.length}>
+                                                                            <span className="text-foreground mb-1 block font-mono font-bold">
+                                                                                {journal.nomor_jurnal}
+                                                                            </span>
+                                                                            <span
+                                                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${journal.tipe_jurnal === 'penyusutan'
+                                                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                                        : journal.tipe_jurnal === 'perolehan_aset'
+                                                                                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                                            : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
+                                                                                    }`}
+                                                                            >
+                                                                                {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td
+                                                                            className="text-muted-foreground max-w-[200px] px-6 py-4 align-top text-xs break-words"
+                                                                            rowSpan={journal.items.length}
+                                                                        >
+                                                                            {journal.keterangan}
+                                                                        </td>
+                                                                    </>
+                                                                ) : null}
+                                                                <td className="text-foreground px-6 py-3 text-center font-mono text-xs">
+                                                                    {journal.kode_arus_kas || '-'}
+                                                                </td>
+                                                                <td className="text-muted-foreground px-6 py-3 font-mono text-xs">
+                                                                    {item.coa?.kode_akun}
+                                                                </td>
+                                                                <td
+                                                                    className={`px-6 py-3 font-medium ${Number(item.kredit) > 0 ? 'text-muted-foreground pl-6' : 'text-foreground'}`}
+                                                                >
+                                                                    {item.coa?.nama_akun}
+                                                                </td>
+                                                                <td className="text-foreground px-6 py-3 text-right font-mono font-medium">
+                                                                    {Number(item.debit) > 0 ? formatIDR(item.debit) : '-'}
+                                                                </td>
+                                                                <td className="text-foreground px-6 py-3 text-right font-mono font-medium">
+                                                                    {Number(item.kredit) > 0 ? formatIDR(item.kredit) : '-'}
+                                                                </td>
+                                                                {index === 0 ? (
+                                                                    <td className="px-6 py-4 text-center align-top" rowSpan={journal.items.length}>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
+                                                                            onClick={() => handleDeleteJournal(journal.id)}
+                                                                            title="Hapus Jurnal"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </td>
+                                                                ) : null}
+                                                            </tr>
+                                                        )),
+                                                    )
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 )}
@@ -364,10 +613,14 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                                 onChange={(e) => handleCoaChange(e.target.value)}
                             >
                                 <option value="">-- Pilih Akun --</option>
-                                {coas.map((coa) => (
-                                    <option key={coa.id} value={coa.id}>
-                                        [{coa.kode_akun}] {coa.nama_akun} ({KATEGORI_LABELS[coa.kategori]})
-                                    </option>
+                                {Object.entries(groupCoasByParent(transactionCoas)).map(([parentLabel, items]) => (
+                                    <optgroup key={parentLabel} label={parentLabel}>
+                                        {items.map((coa) => (
+                                            <option key={coa.id} value={coa.id}>
+                                                {coa.nama_akun}
+                                            </option>
+                                        ))}
+                                    </optgroup>
                                 ))}
                             </select>
                         </div>
@@ -560,10 +813,10 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                         </DialogHeader>
 
                         <div className="grid gap-4 py-4">
-                            {/* Row 1: Tanggal & Keterangan */}
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            {/* Row 1: Tanggal, Jenis Transaksi, Kategori, Kode Arus Kas */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="tanggal">Tanggal</Label>
+                                    <Label htmlFor="tanggal">Tanggal Transaksi</Label>
                                     <Input
                                         id="tanggal"
                                         type="date"
@@ -573,17 +826,57 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                                     />
                                     {errors.tanggal && <span className="text-xs text-red-500">{errors.tanggal}</span>}
                                 </div>
-                                <div className="grid gap-2 md:col-span-2">
-                                    <Label htmlFor="keterangan">Keterangan / Deskripsi</Label>
-                                    <Input
-                                        id="keterangan"
-                                        placeholder="Contoh: Pembayaran sewa gedung kantor"
-                                        value={data.keterangan}
-                                        onChange={(e) => setData('keterangan', e.target.value)}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="jenis_transaksi">Jenis Transaksi</Label>
+                                    <select
+                                        id="jenis_transaksi"
+                                        value={data.jenis_transaksi}
+                                        onChange={(e) => setData('jenis_transaksi', e.target.value)}
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                                         required
-                                    />
-                                    {errors.keterangan && <span className="text-xs text-red-500">{errors.keterangan}</span>}
+                                    >
+                                        <option value="jurnal_umum">Jurnal Umum</option>
+                                        <option value="kas_masuk">Kas Masuk</option>
+                                        <option value="kas_keluar">Kas Keluar</option>
+                                        <option value="bank_masuk">Bank Masuk</option>
+                                        <option value="bank_keluar">Bank Keluar</option>
+                                        <option value="jurnal_koreksi">Jurnal Koreksi</option>
+                                    </select>
+                                    {errors.jenis_transaksi && <span className="text-xs text-red-500">{errors.jenis_transaksi}</span>}
                                 </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="kategori_arus_kas">Kategori Arus Kas</Label>
+                                    <select
+                                        id="kategori_arus_kas"
+                                        value={data.kategori_arus_kas}
+                                        onChange={(e) => setData('kategori_arus_kas', e.target.value)}
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                        required
+                                    >
+                                        <option value="operasional">Operasional (O)</option>
+                                        <option value="investasi">Investasi (I)</option>
+                                        <option value="pendanaan">Pendanaan (P)</option>
+                                    </select>
+                                    {errors.kategori_arus_kas && <span className="text-xs text-red-500">{errors.kategori_arus_kas}</span>}
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="kode_arus_kas">Kode Arus Kas</Label>
+                                    <Input id="kode_arus_kas" value={data.kode_arus_kas} readOnly className="bg-muted h-9 font-mono font-semibold" />
+                                    {errors.kode_arus_kas && <span className="text-xs text-red-500">{errors.kode_arus_kas}</span>}
+                                </div>
+                            </div>
+
+                            {/* Row 2: Uraian Transaksi */}
+                            <div className="grid gap-2">
+                                <Label htmlFor="keterangan">Uraian Transaksi</Label>
+                                <Input
+                                    id="keterangan"
+                                    placeholder="Contoh: Pembelian perlengkapan kantor secara tunai"
+                                    value={data.keterangan}
+                                    onChange={(e) => setData('keterangan', e.target.value)}
+                                    required
+                                />
+                                {errors.keterangan && <span className="text-xs text-red-500">{errors.keterangan}</span>}
                             </div>
 
                             {/* Baris Debit/Kredit Dinamis */}
@@ -611,10 +904,14 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                                                     required
                                                 >
                                                     <option value="">-- Pilih Akun --</option>
-                                                    {coas.map((coa) => (
-                                                        <option key={coa.id} value={coa.id}>
-                                                            [{coa.kode_akun}] {coa.nama_akun}
-                                                        </option>
+                                                    {Object.entries(groupCoasByParent(transactionCoas)).map(([parentLabel, items]) => (
+                                                        <optgroup key={parentLabel} label={parentLabel}>
+                                                            {items.map((coa) => (
+                                                                <option key={coa.id} value={coa.id}>
+                                                                    {coa.nama_akun}
+                                                                </option>
+                                                            ))}
+                                                        </optgroup>
                                                     ))}
                                                 </select>
                                             </div>

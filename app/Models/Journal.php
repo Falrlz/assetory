@@ -18,6 +18,9 @@ class Journal extends Model
         'keterangan',
         'tipe_jurnal',
         'ref_id',
+        'jenis_transaksi',
+        'kategori_arus_kas',
+        'kode_arus_kas',
     ];
 
     /**
@@ -46,6 +49,14 @@ class Journal extends Model
     public function items(): HasMany
     {
         return $this->hasMany(JournalItem::class);
+    }
+
+    /**
+     * Get the associated asset if the journal is related to an asset.
+     */
+    public function asset(): BelongsTo
+    {
+        return $this->belongsTo(Asset::class, 'ref_id');
     }
 
     /**

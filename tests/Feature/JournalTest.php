@@ -42,6 +42,9 @@ test('authenticated users can create balanced manual journal', function () {
 
     $payload = [
         'tanggal' => '2026-07-06',
+        'jenis_transaksi' => 'jurnal_umum',
+        'kategori_arus_kas' => 'operasional',
+        'kode_arus_kas' => 'JU-O',
         'keterangan' => 'Suntikan Modal Pemilik',
         'items' => [
             [
@@ -64,6 +67,9 @@ test('authenticated users can create balanced manual journal', function () {
         'user_id' => $this->user->id,
         'keterangan' => 'Suntikan Modal Pemilik',
         'tipe_jurnal' => 'umum',
+        'jenis_transaksi' => 'jurnal_umum',
+        'kategori_arus_kas' => 'operasional',
+        'kode_arus_kas' => 'JU-O',
     ]);
 
     $journal = Journal::where('user_id', $this->user->id)->first();
@@ -92,6 +98,9 @@ test('authenticated users cannot create unbalanced manual journal', function () 
 
     $payload = [
         'tanggal' => '2026-07-06',
+        'jenis_transaksi' => 'jurnal_umum',
+        'kategori_arus_kas' => 'operasional',
+        'kode_arus_kas' => 'JU-O',
         'keterangan' => 'Suntikan Modal Pemilik Tidak Seimbang',
         'items' => [
             [

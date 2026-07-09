@@ -18,6 +18,7 @@ return new class extends Migration
             $blueprint->string('nama_akun');
             $blueprint->enum('kategori', ['aset', 'kewajiban', 'ekuitas', 'pendapatan', 'beban']);
             $blueprint->enum('saldo_normal', ['debit', 'kredit']);
+            $blueprint->enum('jenis_laporan', ['LPK', 'LR'])->nullable();
             $blueprint->timestamps();
 
             // Kode akun harus unik per masing-masing pengguna

@@ -16,6 +16,7 @@ class Coa extends Model
         'nama_akun',
         'kategori',
         'saldo_normal',
+        'jenis_laporan',
     ];
 
     /**

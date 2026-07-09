@@ -3,9 +3,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
-import { type Asset, type BreadcrumbItem, type Journal, type Coa } from '@/types';
+import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Calculator, Calendar, ClipboardList, Coins, Plus, TrendingDown, Search, X, FileText } from 'lucide-react';
+import { Calculator, Calendar, ClipboardList, Coins, FileText, Plus, Search, TrendingDown, X } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -34,6 +34,8 @@ const PERIODE_BULAN: Record<string, number> = {
     periode_3: 192,
     periode_4: 240,
 };
+
+
 
 interface ScheduleRow {
     bulanKe: number;
@@ -137,30 +139,43 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
     const totalAkumulasiPenyusutan = filteredAssets.reduce((sum, asset) => sum + asset.akumulasi_penyusutan, 0);
     const totalNilaiBuku = filteredAssets.reduce((sum, asset) => sum + asset.nilai_buku, 0);
 
-    // Dynamic COA filters to help user choose relevant accounts (supporting new dotted format 'XX.XXXX.XX.XX')
-    const debitCoas = coas.filter(
-        (coa) =>
-            coa.kode_akun.startsWith('01.3') || // Aset Tetap kustom baru (Tanah, Gedung, Kendaraan, Inventaris)
-            coa.kode_akun.startsWith('1-3') ||  // Fallback format lama
-            coa.kode_akun.startsWith('1-4') ||
-            coa.kode_akun.startsWith('1-5'),
-    );
-    const displayDebitCoas =
-        debitCoas.length > 0
-            ? debitCoas
-            : coas.filter((coa) => coa.kode_akun.startsWith('01.') || coa.kode_akun.startsWith('1'));
+    // Split coas into Parent and Transaction (Child) accounts
+    const parentCoas = coas.filter((c) => c.kode_akun.split('.').length < 4);
+    const transactionCoas = coas.filter((c) => c.kode_akun.split('.').length === 4);
 
-    const creditCoas = coas.filter(
-        (coa) =>
-            coa.kode_akun.startsWith('01.1') || // Kas & Bank kustom baru
-            coa.kode_akun.startsWith('01.2') || // Piutang/Aset Lancar lain kustom baru
-            coa.kode_akun.startsWith('02.') ||  // Kewajiban / Utang kustom baru
-            coa.kode_akun.startsWith('1-1') ||  // Fallback Kas & Bank lama
-            coa.kode_akun.startsWith('1-2') ||  // Fallback Aset Lancar lama
-            coa.kode_akun.startsWith('1-0') ||
-            coa.kode_akun.startsWith('2-'),     // Fallback Kewajiban lama
+    // Debit: Semua akun Aset (yang akan BERTAMBAH saat dibeli)
+    const displayDebitCoas = transactionCoas.filter((coa) => coa.kategori === 'aset');
+
+    // Kredit: Kas/Bank (Aset) + Hutang (Kewajiban) — sumber pembayaran
+    const displayCreditCoas = transactionCoas.filter(
+        (coa) => coa.kategori === 'aset' || coa.kategori === 'kewajiban',
     );
-    const displayCreditCoas = creditCoas.length > 0 ? creditCoas : coas;
+
+    const groupCoasByParent = (coasList: Coa[]) => {
+        const groups: Record<string, Coa[]> = {};
+        coasList.forEach((coa) => {
+            const parts = coa.kode_akun.split('.');
+            let parentLabel = 'Lainnya';
+            if (parts.length >= 3) {
+                // Use Level 3 parent (e.g. 01.1000.01) as group label
+                const prefix3 = parts.slice(0, 3).join('.');
+                const parent3 = parentCoas.find((p) => p.kode_akun === prefix3);
+                if (parent3) {
+                    parentLabel = parent3.nama_akun;
+                } else {
+                    // Fallback to Level 2 prefix
+                    const prefix2 = parts.slice(0, 2).join('.');
+                    const parent2 = parentCoas.find((p) => p.kode_akun === prefix2);
+                    parentLabel = parent2 ? parent2.nama_akun : prefix3;
+                }
+            }
+            if (!groups[parentLabel]) {
+                groups[parentLabel] = [];
+            }
+            groups[parentLabel].push(coa);
+        });
+        return groups;
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -293,18 +308,18 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                 </div>
 
                 {/* Filter Controls (Placed Below Cards, Above Table) */}
-                <div className="bg-card border rounded-xl p-4 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-5 items-end">
+                <div className="bg-card grid grid-cols-1 items-end gap-4 rounded-xl border p-4 sm:grid-cols-2 md:grid-cols-5">
                     {/* Searching */}
-                    <div className="grid gap-1.5 flex-1 relative">
+                    <div className="relative grid flex-1 gap-1.5">
                         <Label htmlFor="search">Cari Nama Aset</Label>
                         <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
                             <Input
                                 id="search"
                                 placeholder="Ketik nama aset..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 h-9"
+                                className="h-9 pl-9"
                             />
                         </div>
                     </div>
@@ -314,7 +329,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                         <Label htmlFor="jenis_filter">Jenis Aset</Label>
                         <select
                             id="jenis_filter"
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                             value={filterJenis}
                             onChange={(e) => setFilterJenis(e.target.value)}
                         >
@@ -330,7 +345,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                         <Label htmlFor="tahun_filter">Tahun Perolehan</Label>
                         <select
                             id="tahun_filter"
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                             value={filterTahun}
                             onChange={(e) => {
                                 setFilterTahun(e.target.value);
@@ -351,7 +366,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                         <Label htmlFor="bulan_filter">Bulan Perolehan</Label>
                         <select
                             id="bulan_filter"
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-hidden focus:ring-2 focus:ring-ring"
+                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                             value={filterBulan}
                             onChange={(e) => {
                                 setFilterBulan(e.target.value);
@@ -375,8 +390,8 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                     </div>
 
                     {/* Filter Tanggal Spesifik & Reset */}
-                    <div className="flex gap-2 items-end">
-                        <div className="grid gap-1.5 flex-grow">
+                    <div className="flex items-end gap-2">
+                        <div className="grid flex-grow gap-1.5">
                             <Label htmlFor="tanggal_filter">Tanggal Spesifik</Label>
                             <Input
                                 id="tanggal_filter"
@@ -396,7 +411,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="h-9 px-3 flex-shrink-0"
+                                className="h-9 flex-shrink-0 px-3"
                                 onClick={handleResetFilters}
                                 title="Reset Filter"
                             >
@@ -448,15 +463,15 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                                     {formatDate(asset.tanggal_perolehan)}
                                                 </div>
                                             </td>
-                                            <td className="text-foreground px-6 py-4 text-center font-mono">
-                                                {PERIODE_BULAN[asset.periode]} Bulan
-                                            </td>
+                                            <td className="text-foreground px-6 py-4 text-center font-mono">{PERIODE_BULAN[asset.periode]} Bulan</td>
                                             <td className="px-6 py-4 text-right font-medium">{formatRupiah(asset.harga_perolehan)}</td>
                                             <td className="text-muted-foreground px-6 py-4 text-right">{formatRupiah(asset.nilai_residu)}</td>
                                             <td className="text-muted-foreground px-6 py-4 text-right">{formatRupiah(asset.penyusutan_bulanan)}</td>
                                             <td className="px-6 py-4 text-right font-medium text-red-600 dark:text-red-400">
                                                 {formatRupiah(asset.akumulasi_penyusutan)}
-                                                <span className="text-muted-foreground block text-[10px]">({asset.masa_penggunaan_bulan} bulan berjalan)</span>
+                                                <span className="text-muted-foreground block text-[10px]">
+                                                    ({asset.masa_penggunaan_bulan} bulan berjalan)
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 text-right font-semibold text-green-600 dark:text-green-400">
                                                 {formatRupiah(asset.nilai_buku)}
@@ -476,16 +491,18 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                 </div>
 
                 {/* Recent Asset Journals Section */}
-                <div className="flex flex-col gap-2 mt-6">
-                    <h2 className="text-xl font-bold tracking-tight text-foreground">Jurnal Terbentuk</h2>
-                    <p className="text-muted-foreground text-sm">Menampilkan hingga 10 transaksi perolehan dan depresiasi aset terbaru yang tercatat secara resmi di jurnal.</p>
+                <div className="mt-6 flex flex-col gap-2">
+                    <h2 className="text-foreground text-xl font-bold tracking-tight">Jurnal Terbentuk</h2>
+                    <p className="text-muted-foreground text-sm">
+                        Menampilkan hingga 10 transaksi perolehan dan depresiasi aset terbaru yang tercatat secara resmi di jurnal.
+                    </p>
                 </div>
 
                 {assetJournals.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center border rounded-xl bg-card">
-                        <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                    <div className="bg-card flex flex-col items-center justify-center rounded-xl border py-12 text-center">
+                        <FileText className="text-muted-foreground/40 mb-3 h-10 w-10" />
                         <h3 className="text-base font-semibold">Belum Ada Jurnal Aset</h3>
-                        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                        <p className="text-muted-foreground mt-1 max-w-sm text-sm">
                             Jurnal akan otomatis terbentuk saat aset ditambahkan atau ketika Anda memposting penyusutan bulanan.
                         </p>
                     </div>
@@ -495,14 +512,14 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                             <table className="w-full min-w-[900px] border-collapse text-left text-sm">
                                 <thead>
                                     <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
-                                        <th className="px-6 py-3 w-[120px]">Tanggal</th>
-                                        <th className="px-6 py-3 w-[160px]">No. Referensi</th>
+                                        <th className="w-[120px] px-6 py-3">Tanggal</th>
+                                        <th className="w-[160px] px-6 py-3">No. Referensi</th>
                                         <th className="px-6 py-3">Keterangan</th>
-                                        <th className="px-6 py-3 w-[110px] text-center">No Arus Kas</th>
-                                        <th className="px-6 py-3 w-[120px]">Kode Akun</th>
+                                        <th className="w-[110px] px-6 py-3 text-center">No Arus Kas</th>
+                                        <th className="w-[120px] px-6 py-3">Kode Akun</th>
                                         <th className="px-6 py-3">Nama Akun</th>
-                                        <th className="px-6 py-3 text-right w-[140px]">Debit</th>
-                                        <th className="px-6 py-3 text-right w-[140px]">Kredit</th>
+                                        <th className="w-[140px] px-6 py-3 text-right">Debit</th>
+                                        <th className="w-[140px] px-6 py-3 text-right">Kredit</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -511,42 +528,51 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                             <tr key={item.id} className="hover:bg-muted/30 transition-colors">
                                                 {index === 0 ? (
                                                     <>
-                                                        <td className="px-6 py-4 font-medium text-muted-foreground align-top" rowSpan={journal.items.length}>
+                                                        <td
+                                                            className="text-muted-foreground px-6 py-4 align-top font-medium"
+                                                            rowSpan={journal.items.length}
+                                                        >
                                                             {formatDate(journal.tanggal)}
                                                         </td>
                                                         <td className="px-6 py-4 align-top" rowSpan={journal.items.length}>
-                                                            <span className="font-mono font-bold text-foreground block mb-1">
+                                                            <span className="text-foreground mb-1 block font-mono font-bold">
                                                                 {journal.nomor_jurnal}
                                                             </span>
-                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold ${journal.tipe_jurnal === 'penyusutan'
-                                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                                }`}>
+                                                            <span
+                                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${
+                                                                    journal.tipe_jurnal === 'penyusutan'
+                                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                }`}
+                                                            >
                                                                 {journal.tipe_jurnal === 'penyusutan' ? 'Penyusutan' : 'Perolehan'}
                                                             </span>
                                                         </td>
-                                                        <td className="px-6 py-4 text-muted-foreground text-xs align-top max-w-[200px] break-words" rowSpan={journal.items.length}>
+                                                        <td
+                                                            className="text-muted-foreground max-w-[200px] px-6 py-4 align-top text-xs break-words"
+                                                            rowSpan={journal.items.length}
+                                                        >
                                                             {journal.keterangan}
                                                         </td>
                                                     </>
                                                 ) : null}
-                                                <td className="px-6 py-3 text-center text-muted-foreground font-mono text-xs">
-                                                    -
+                                                <td className="text-foreground px-6 py-3 text-center font-mono text-xs">
+                                                    {journal.kode_arus_kas || '-'}
                                                 </td>
-                                                <td className="px-6 py-3 font-mono text-muted-foreground text-xs">
-                                                    {item.coa?.kode_akun}
-                                                </td>
-                                                <td className={`px-6 py-3 font-medium ${Number(item.kredit) > 0 ? 'pl-6 text-muted-foreground' : 'text-foreground'}`}>
+                                                <td className="text-muted-foreground px-6 py-3 font-mono text-xs">{item.coa?.kode_akun}</td>
+                                                <td
+                                                    className={`px-6 py-3 font-medium ${Number(item.kredit) > 0 ? 'text-muted-foreground pl-6' : 'text-foreground'}`}
+                                                >
                                                     {item.coa?.nama_akun}
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-mono font-medium text-foreground">
+                                                <td className="text-foreground px-6 py-3 text-right font-mono font-medium">
                                                     {Number(item.debit) > 0 ? formatRupiah(item.debit) : '-'}
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-mono font-medium text-foreground">
+                                                <td className="text-foreground px-6 py-3 text-right font-mono font-medium">
                                                     {Number(item.kredit) > 0 ? formatRupiah(item.kredit) : '-'}
                                                 </td>
                                             </tr>
-                                        ))
+                                        )),
                                     )}
                                 </tbody>
                             </table>
@@ -649,41 +675,55 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                             <div className="grid grid-cols-2 gap-4">
                                 {/* Akun Aset Tetap (Debit) */}
                                 <div className="grid gap-2">
-                                    <Label htmlFor="coa_debit_id">Akun Aset Tetap (Debit)</Label>
+                                    <Label htmlFor="coa_debit_id">Akun Debit — Aset yang Dibeli</Label>
                                     <select
                                         id="coa_debit_id"
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
+                                        className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={data.coa_debit_id}
                                         onChange={(e) => setData('coa_debit_id', e.target.value)}
                                         required
                                     >
-                                        <option value="">Pilih Akun Aset</option>
-                                        {displayDebitCoas.map((coa) => (
-                                            <option key={coa.id} value={coa.id}>
-                                                {coa.kode_akun} - {coa.nama_akun}
-                                            </option>
+                                        <option value="">-- Pilih Akun Aset --</option>
+                                        {Object.entries(groupCoasByParent(displayDebitCoas)).map(([parentLabel, items]) => (
+                                            <optgroup key={parentLabel} label={parentLabel}>
+                                                {items.map((coa) => (
+                                                    <option key={coa.id} value={coa.id}>
+                                                        [{coa.kode_akun}] {coa.nama_akun}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
                                         ))}
                                     </select>
+                                    <span className="text-muted-foreground text-[11px]">
+                                        Pilih akun aset yang dibeli (Inventaris, Kendaraan, Gedung, dll.)
+                                    </span>
                                     {errors.coa_debit_id && <span className="text-xs text-red-500">{errors.coa_debit_id}</span>}
                                 </div>
 
                                 {/* Akun Pembayaran (Kredit) */}
                                 <div className="grid gap-2">
-                                    <Label htmlFor="coa_kredit_id">Akun Pembayaran (Kredit)</Label>
+                                    <Label htmlFor="coa_kredit_id">Akun Kredit — Sumber Pembayaran</Label>
                                     <select
                                         id="coa_kredit_id"
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
+                                        className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={data.coa_kredit_id}
                                         onChange={(e) => setData('coa_kredit_id', e.target.value)}
                                         required
                                     >
-                                        <option value="">Pilih Akun Pembayaran</option>
-                                        {displayCreditCoas.map((coa) => (
-                                            <option key={coa.id} value={coa.id}>
-                                                {coa.kode_akun} - {coa.nama_akun}
-                                            </option>
+                                        <option value="">-- Pilih Sumber Pembayaran --</option>
+                                        {Object.entries(groupCoasByParent(displayCreditCoas)).map(([parentLabel, items]) => (
+                                            <optgroup key={parentLabel} label={parentLabel}>
+                                                {items.map((coa) => (
+                                                    <option key={coa.id} value={coa.id}>
+                                                        {coa.nama_akun}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
                                         ))}
                                     </select>
+                                    <span className="text-muted-foreground text-[11px]">
+                                        Pilih dari mana pembayaran berasal: Kas, Bank, atau Utang.
+                                    </span>
                                     {errors.coa_kredit_id && <span className="text-xs text-red-500">{errors.coa_kredit_id}</span>}
                                 </div>
                             </div>
