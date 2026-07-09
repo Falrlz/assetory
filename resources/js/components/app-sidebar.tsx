@@ -24,7 +24,7 @@ const mainNavItems: NavItem[] = [
         icon: BookOpen,
     },
     {
-        title: 'Ledger',
+        title: 'Journals & Ledger',
         url: '#',
         icon: Notebook,
         items: [
@@ -35,6 +35,10 @@ const mainNavItems: NavItem[] = [
             {
                 title: 'Buku Besar Umum',
                 url: '/journals?tab=ledger',
+            },
+            {
+                title: 'Penyusutan Bulanan',
+                url: '/journals?tab=depresiasi',
             },
             {
                 title: 'Neraca Saldo',

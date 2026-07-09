@@ -35,46 +35,92 @@ class JournalController extends Controller
             ->orderBy('kode_akun')
             ->get();
 
-        // 3. Ledger (Buku Besar) query if coa_id is selected
-        $ledgerCoa = null;
-        $ledgerItems = [];
-        $saldoAwal = 0.00;
-        $saldoNormal = 'debit';
+        // 3. Ledger (Buku Besar) query (Odoo style: all accounts in period)
+        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
 
-        if ($request->has('coa_id')) {
-            $coaId = $request->input('coa_id');
-            $ledgerCoa = $user->coas()->find($coaId);
+        // Get only transaction COAs (Level 4, matching dotted pattern 'XX.XXXX.XX.XX')
+        $transactionCoas = $user->coas()
+            ->orderBy('kode_akun')
+            ->get()
+            ->filter(fn ($c) => count(explode('.', $c->kode_akun)) === 4)
+            ->values();
 
-            if ($ledgerCoa) {
-                $saldoNormal = $ledgerCoa->saldo_normal;
+        $ledgerData = [];
+        $grandTotalDebit = 0.00;
+        $grandTotalKredit = 0.00;
+        $grandTotalSaldo = 0.00;
 
-                // Get all journal items for this COA ordered by date
-                $items = JournalItem::where('coa_id', $coaId)
-                    ->whereHas('journal', function ($query) use ($user) {
-                        $query->where('user_id', $user->id);
-                    })
-                    ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
-                    ->select('journal_items.*', 'journals.tanggal', 'journals.nomor_jurnal', 'journals.keterangan')
-                    ->orderBy('journals.tanggal', 'asc')
-                    ->orderBy('journals.id', 'asc')
-                    ->get();
+        foreach ($transactionCoas as $coa) {
+            $coaId = $coa->id;
+            $saldoNormal = $coa->saldo_normal;
 
-                // Compute running balance
-                $balance = 0.00;
-                $ledgerItems = $items->map(function ($item) use (&$balance, $saldoNormal) {
-                    $debit = (float) $item->debit;
-                    $kredit = (float) $item->kredit;
+            // Calculate Saldo Awal (before start_date)
+            $openingSums = DB::table('journal_items')
+                ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                ->where('journals.user_id', $user->id)
+                ->where('journal_items.coa_id', $coaId)
+                ->where('journals.tanggal', '<', $startDate)
+                ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
+                ->first();
 
-                    if ($saldoNormal === 'debit') {
-                        $balance += ($debit - $kredit);
-                    } else {
-                        $balance += ($kredit - $debit);
-                    }
+            $debitSumBefore = (float) $openingSums->total_debit;
+            $kreditSumBefore = (float) $openingSums->total_kredit;
+            if ($saldoNormal === 'debit') {
+                $saldoAwal = $debitSumBefore - $kreditSumBefore;
+            } else {
+                $saldoAwal = $kreditSumBefore - $debitSumBefore;
+            }
 
-                    $item->saldo_berjalan = round($balance, 2);
+            // Get journal items for this COA in the date range
+            $items = JournalItem::where('coa_id', $coaId)
+                ->whereHas('journal', function ($query) use ($user) {
+                    $query->where('user_id', $user->id);
+                })
+                ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                ->whereBetween('journals.tanggal', [$startDate, $endDate])
+                ->select('journal_items.*', 'journals.tanggal', 'journals.nomor_jurnal', 'journals.keterangan')
+                ->orderBy('journals.tanggal', 'asc')
+                ->orderBy('journals.id', 'asc')
+                ->get();
 
-                    return $item;
-                });
+            // Compute running balance starting from Saldo Awal, total debit, total credit
+            $balance = $saldoAwal;
+            $totalDebit = 0.00;
+            $totalKredit = 0.00;
+
+            $mappedItems = $items->map(function ($item) use (&$balance, $saldoNormal, &$totalDebit, &$totalKredit) {
+                $debit = (float) $item->debit;
+                $kredit = (float) $item->kredit;
+                $totalDebit += $debit;
+                $totalKredit += $kredit;
+
+                if ($saldoNormal === 'debit') {
+                    $balance += ($debit - $kredit);
+                } else {
+                    $balance += ($kredit - $debit);
+                }
+
+                $item->saldo_berjalan = round($balance, 2);
+
+                return $item;
+            });
+
+            $saldoAkhir = $balance;
+
+            // Only list accounts with either non-zero opening balance or active transactions (Odoo style)
+            if ($saldoAwal != 0 || $mappedItems->count() > 0) {
+                $ledgerData[] = [
+                    'coa' => $coa,
+                    'saldo_awal' => $saldoAwal,
+                    'saldo_akhir' => $saldoAkhir,
+                    'total_debit' => $totalDebit,
+                    'total_kredit' => $totalKredit,
+                    'items' => $mappedItems,
+                ];
+
+                $grandTotalDebit += $totalDebit;
+                $grandTotalKredit += $totalKredit;
             }
         }
 
@@ -94,8 +140,13 @@ class JournalController extends Controller
         return Inertia::render('journals/index', [
             'journals' => $journals,
             'coas' => $coas,
-            'ledgerCoa' => $ledgerCoa,
-            'ledgerItems' => $ledgerItems,
+            'ledgerData' => $ledgerData,
+            'grandTotalDebit' => $grandTotalDebit,
+            'grandTotalKredit' => $grandTotalKredit,
+            'ledgerFilters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
             'postedMonths' => $postedMonths,
             'assets' => $assets,
         ]);

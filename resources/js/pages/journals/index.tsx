@@ -5,15 +5,10 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { AlertCircle, Calculator, FileText, Landmark, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { AlertCircle, Calculator, ChevronDown, ChevronRight, FileText, Landmark, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Jurnal & Buku Besar',
-        href: '/journals',
-    },
-];
+
 
 interface JournalItemProp {
     id: number;
@@ -26,11 +21,25 @@ interface JournalItemProp {
     saldo_berjalan?: number;
 }
 
+interface LedgerAccount {
+    coa: Coa;
+    saldo_awal: number;
+    saldo_akhir: number;
+    total_debit: number;
+    total_kredit: number;
+    items: JournalItemProp[];
+}
+
 interface IndexProps {
     journals: Journal[];
     coas: Coa[];
-    ledgerCoa: Coa | null;
-    ledgerItems: JournalItemProp[];
+    ledgerData: LedgerAccount[];
+    grandTotalDebit: number;
+    grandTotalKredit: number;
+    ledgerFilters?: {
+        start_date: string;
+        end_date: string;
+    };
     postedMonths: string[];
     assets: Asset[];
 }
@@ -51,7 +60,7 @@ const KATEGORI_LABELS: Record<string, string> = {
 
 
 
-export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMonths, assets }: IndexProps) {
+export default function Index({ journals, coas, ledgerData = [], grandTotalDebit = 0, grandTotalKredit = 0, ledgerFilters, postedMonths, assets }: IndexProps) {
     const page = usePage();
     const [activeTab, setActiveTab] = useState<'umum' | 'ledger' | 'depresiasi'>(() => {
         if (typeof window !== 'undefined') {
@@ -88,7 +97,20 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
     };
 
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedCoaId, setSelectedCoaId] = useState<string>(ledgerCoa?.id.toString() || '');
+    const [ledgerStartDate, setLedgerStartDate] = useState(ledgerFilters?.start_date || new Date(new Date().getFullYear(), 0, 2).toISOString().split('T')[0]);
+    const [ledgerEndDate, setLedgerEndDate] = useState(ledgerFilters?.end_date || new Date().toISOString().split('T')[0]);
+    const [ledgerSearch, setLedgerSearch] = useState('');
+
+    const dynamicBreadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Journals & Ledger',
+            href: '/journals',
+        },
+        {
+            title: activeTab === 'ledger' ? 'Buku Besar Umum' : activeTab === 'depresiasi' ? 'Penyusutan Bulanan' : 'Jurnal Umum',
+            href: activeTab === 'ledger' ? '/journals?tab=ledger' : activeTab === 'depresiasi' ? '/journals?tab=depresiasi' : '/journals',
+        },
+    ];
 
     // Split coas into Parent and Transaction (Child) accounts
     const parentCoas = coas.filter((c) => c.kode_akun.split('.').length === 3);
@@ -225,7 +247,12 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
         if (coaId) {
             router.get(
                 route('journals.index'),
-                { coa_id: coaId },
+                {
+                    tab: 'ledger',
+                    coa_id: coaId,
+                    start_date: ledgerStartDate,
+                    end_date: ledgerEndDate,
+                },
                 {
                     preserveState: true,
                     preserveScroll: true,
@@ -235,7 +262,7 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
         } else {
             router.get(
                 route('journals.index'),
-                {},
+                { tab: 'ledger' },
                 {
                     preserveState: true,
                     preserveScroll: true,
@@ -243,6 +270,43 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                 },
             );
         }
+    };
+
+    const handleLedgerFilterSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.get(
+            route('journals.index'),
+            {
+                tab: 'ledger',
+                start_date: ledgerStartDate,
+                end_date: ledgerEndDate,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => setActiveTab('ledger'),
+            },
+        );
+    };
+
+    const handleLedgerFilterReset = () => {
+        const start = new Date(new Date().getFullYear(), 0, 2).toISOString().split('T')[0]; // Jan 1st
+        const end = new Date().toISOString().split('T')[0];
+        setLedgerStartDate(start);
+        setLedgerEndDate(end);
+        router.get(
+            route('journals.index'),
+            {
+                tab: 'ledger',
+                start_date: start,
+                end_date: end,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => setActiveTab('ledger'),
+            }
+        );
     };
 
     // Calculate dynamic balance for the manual form entry
@@ -348,16 +412,22 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Jurnal & Buku Besar" />
+        <AppLayout breadcrumbs={dynamicBreadcrumbs}>
+            <Head title={activeTab === 'ledger' ? 'Buku Besar Umum' : activeTab === 'depresiasi' ? 'Penyusutan Bulanan' : 'Jurnal Umum'} />
 
             <div className="flex h-full min-w-0 flex-1 flex-col gap-6 p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Jurnal & Buku Besar</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            {activeTab === 'ledger' ? 'Buku Besar Umum' : activeTab === 'depresiasi' ? 'Penyusutan Bulanan' : 'Jurnal Umum'}
+                        </h1>
                         <p className="text-muted-foreground text-sm">
-                            Pencatatan akuntansi double-entry, buku besar pembantu, dan posting otomatis depresiasi aset.
+                            {activeTab === 'ledger'
+                                ? 'Lihat ringkasan mutasi debit dan kredit serta saldo berjalan untuk setiap akun.'
+                                : activeTab === 'depresiasi'
+                                ? 'Kelola dan lakukan posting penyusutan nilai buku aset secara berkala.'
+                                : 'Pencatatan akuntansi double-entry manual maupun otomatis.'}
                         </p>
                     </div>
                     {activeTab === 'umum' && (
@@ -368,34 +438,7 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                     )}
                 </div>
 
-                {/* Tab Header Navigation */}
-                <div className="flex border-b">
-                    <button
-                        onClick={() => handleTabChange('umum')}
-                        className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'umum' ? 'border-primary text-foreground' : 'text-muted-foreground hover:text-foreground border-transparent'
-                            }`}
-                    >
-                        Jurnal Umum
-                    </button>
-                    <button
-                        onClick={() => handleTabChange('ledger')}
-                        className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'ledger'
-                                ? 'border-primary text-foreground'
-                                : 'text-muted-foreground hover:text-foreground border-transparent'
-                            }`}
-                    >
-                        Buku Besar (Ledger)
-                    </button>
-                    <button
-                        onClick={() => handleTabChange('depresiasi')}
-                        className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'depresiasi'
-                                ? 'border-primary text-foreground'
-                                : 'text-muted-foreground hover:text-foreground border-transparent'
-                            }`}
-                    >
-                        Penyusutan Bulanan
-                    </button>
-                </div>
+
 
                 {/* TAB CONTENT: JURNAL UMUM */}
                 {activeTab === 'umum' && (
@@ -635,116 +678,203 @@ export default function Index({ journals, coas, ledgerCoa, ledgerItems, postedMo
                 )}
 
                 {/* TAB CONTENT: BUKU BESAR (LEDGER) */}
-                {activeTab === 'ledger' && (
-                    <div className="space-y-6">
-                        {/* Selector COA */}
-                        <div className="bg-card flex max-w-md flex-col gap-2 rounded-xl border p-4">
-                            <Label htmlFor="ledger_coa">Pilih Akun Buku Besar</Label>
-                            <select
-                                id="ledger_coa"
-                                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
-                                value={selectedCoaId}
-                                onChange={(e) => handleCoaChange(e.target.value)}
-                            >
-                                <option value="">-- Pilih Akun --</option>
-                                {Object.entries(groupCoasByParent(transactionCoas)).map(([parentLabel, items]) => (
-                                    <optgroup key={parentLabel} label={parentLabel}>
-                                        {items.map((coa) => (
-                                            <option key={coa.id} value={coa.id}>
-                                                {coa.nama_akun}
-                                            </option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
-                        </div>
+                {activeTab === 'ledger' && (() => {
+                    const filteredLedger = ledgerData.filter((account) => {
+                        const query = ledgerSearch.toLowerCase();
+                        return (
+                            account.coa.nama_akun.toLowerCase().includes(query) ||
+                            account.coa.kode_akun.includes(query)
+                        );
+                    });
 
-                        {/* Detail Buku Besar */}
-                        {!ledgerCoa ? (
-                            <div className="bg-card flex flex-col items-center justify-center rounded-xl border py-16 text-center">
-                                <Landmark className="text-muted-foreground/50 mb-3 h-10 w-10" />
-                                <h3 className="text-base font-semibold">Tampilkan Buku Besar</h3>
-                                <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-                                    Pilih akun dari dropdown di atas untuk melihat mutasi historis saldo dan riwayat debit/kredit.
-                                </p>
+                    return (
+                        <div className="space-y-6">
+                            {/* Date Filters & Controls */}
+                            <div className="bg-card rounded-xl border p-4 flex flex-wrap items-end justify-between gap-4">
+                                <form onSubmit={handleLedgerFilterSubmit} className="flex flex-wrap items-end gap-4 flex-1">
+                                    <div className="grid gap-1.5 w-40">
+                                        <Label htmlFor="ledger_start_date">Tanggal Mulai</Label>
+                                        <input
+                                            type="date"
+                                            id="ledger_start_date"
+                                            value={ledgerStartDate}
+                                            onChange={(e) => setLedgerStartDate(e.target.value)}
+                                            className="border-input bg-background text-foreground flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                        />
+                                    </div>
+                                    <div className="grid gap-1.5 w-40">
+                                        <Label htmlFor="ledger_end_date">Tanggal Selesai</Label>
+                                        <input
+                                            type="date"
+                                            id="ledger_end_date"
+                                            value={ledgerEndDate}
+                                            onChange={(e) => setLedgerEndDate(e.target.value)}
+                                            className="border-input bg-background text-foreground flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button type="submit" size="sm" className="h-9">
+                                            Terapkan Filter
+                                        </Button>
+                                        <Button type="button" variant="outline" size="sm" onClick={handleLedgerFilterReset} className="h-9">
+                                            Reset
+                                        </Button>
+                                    </div>
+                                </form>
+                                <div className="relative w-72">
+                                    <Search className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
+                                    <Input
+                                        placeholder="Cari Akun Buku Besar..."
+                                        value={ledgerSearch}
+                                        onChange={(e) => setLedgerSearch(e.target.value)}
+                                        className="pl-9 h-9"
+                                    />
+                                </div>
                             </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="bg-muted/20 flex flex-col items-start justify-between gap-4 rounded-xl border p-4 sm:flex-row sm:items-center">
-                                    <div>
-                                        <h3 className="text-foreground text-lg font-bold">
-                                            [{ledgerCoa.kode_akun}] {ledgerCoa.nama_akun}
-                                        </h3>
-                                        <p className="text-muted-foreground text-xs">
-                                            Kategori: <span className="capitalize">{KATEGORI_LABELS[ledgerCoa.kategori]}</span> | Saldo Normal:{' '}
-                                            <span className="capitalize">{ledgerCoa.saldo_normal}</span>
+
+                            {/* Traditional Indonesian 6-Column General Ledger Cards */}
+                            <div className="space-y-8">
+                                {filteredLedger.length === 0 ? (
+                                    <div className="bg-card flex flex-col items-center justify-center rounded-xl border py-16 text-center">
+                                        <Landmark className="text-muted-foreground/50 mb-3 h-10 w-10" />
+                                        <h3 className="text-base font-semibold">Tidak ada akun Buku Besar</h3>
+                                        <p className="text-muted-foreground mt-1 max-w-sm text-sm">
+                                            Tidak ada data yang cocok dengan pencarian Anda atau periode terpilih.
                                         </p>
                                     </div>
-                                    <div className="bg-card rounded-lg border px-4 py-2">
-                                        <span className="text-muted-foreground block text-xs">Saldo Akhir</span>
-                                        <span className="text-foreground font-mono text-lg font-bold">
-                                            {formatIDR(ledgerItems.length > 0 ? ledgerItems[ledgerItems.length - 1].saldo_berjalan || 0 : 0)}
-                                        </span>
-                                    </div>
-                                </div>
+                                ) : (
+                                    filteredLedger.map((account) => {
+                                        return (
+                                            <div key={account.coa.id} className="bg-card rounded-xl border shadow-xs overflow-hidden">
+                                                {/* Header */}
+                                                <div className="bg-muted/30 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-border/80">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-semibold text-lg text-primary">{account.coa.nama_akun}</span>
+                                                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">
+                                                            Buku Besar
+                                                        </span>
+                                                    </div>
+                                                    <span className="font-mono text-sm font-bold text-muted-foreground bg-background px-3 py-1 rounded-md border">
+                                                        Kode Akun: {account.coa.kode_akun}
+                                                    </span>
+                                                </div>
 
-                                <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
-                                    <div className="w-full overflow-x-auto">
-                                        <table className="w-full min-w-[800px] border-collapse text-left text-sm">
-                                            <thead>
-                                                <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
-                                                    <th className="w-32 px-6 py-4">Tanggal</th>
-                                                    <th className="w-40 px-6 py-4">No. Jurnal</th>
-                                                    <th className="px-6 py-4">Keterangan</th>
-                                                    <th className="w-40 px-6 py-4 text-right">Debit</th>
-                                                    <th className="w-40 px-6 py-4 text-right">Kredit</th>
-                                                    <th className="w-44 px-6 py-4 text-right">Saldo Berjalan</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y font-mono">
-                                                {ledgerItems.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan={6} className="text-muted-foreground px-6 py-12 text-center font-sans">
-                                                            Belum ada mutasi transaksi untuk akun ini.
-                                                        </td>
-                                                    </tr>
-                                                ) : (
-                                                    ledgerItems.map((item) => {
-                                                        const isDeb = Number(item.debit) > 0;
-                                                        const isKred = Number(item.kredit) > 0;
-                                                        return (
-                                                            <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                                                                <td className="text-muted-foreground px-6 py-4 font-sans">
-                                                                    {new Date(item.tanggal).toLocaleDateString('id-ID')}
+                                                {/* Table */}
+                                                <div className="w-full overflow-x-auto">
+                                                    <table className="w-full min-w-[850px] border-collapse text-left text-sm">
+                                                        <thead>
+                                                            <tr className="bg-muted/10 text-muted-foreground border-b text-xs font-bold tracking-wider uppercase text-center border-t">
+                                                                <th className="px-6 py-3 border-r border-border/40 text-left" rowSpan={2}>Tanggal</th>
+                                                                <th className="px-6 py-3 border-r border-border/40 text-left" rowSpan={2}>Keterangan</th>
+                                                                <th className="w-36 px-6 py-3 border-r border-border/40 text-right" rowSpan={2}>Debit</th>
+                                                                <th className="w-36 px-6 py-3 border-r border-border/40 text-right" rowSpan={2}>Kredit</th>
+                                                                <th className="w-80 px-6 py-1.5 text-center" colSpan={2}>Saldo</th>
+                                                            </tr>
+                                                            <tr className="bg-muted/10 text-muted-foreground border-b text-xs font-bold tracking-wider uppercase text-right">
+                                                                <th className="w-40 px-6 py-2 border-r border-border/40">Debit</th>
+                                                                <th className="w-40 px-6 py-2">Kredit</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y font-mono">
+                                                            {/* Saldo Awal (Opening Balance) Row */}
+                                                            <tr className="bg-muted/5 italic hover:bg-muted/10 transition-colors">
+                                                                <td className="px-6 py-3 text-muted-foreground font-sans border-r border-border/40">-</td>
+                                                                <td className="px-6 py-3 text-muted-foreground font-sans border-r border-border/40">
+                                                                    Saldo Awal (Opening Balance)
                                                                 </td>
-                                                                <td className="text-foreground px-6 py-4 font-bold">{item.nomor_jurnal}</td>
-                                                                <td
-                                                                    className="text-foreground max-w-xs truncate px-6 py-4 font-sans"
-                                                                    title={item.keterangan}
-                                                                >
-                                                                    {item.keterangan}
+                                                                <td className="px-6 py-3 text-right text-muted-foreground border-r border-border/40">-</td>
+                                                                <td className="px-6 py-3 text-right text-muted-foreground border-r border-border/40">-</td>
+                                                                <td className="px-6 py-3 text-right text-muted-foreground border-r border-border/40">
+                                                                    {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_awal) : '-'}
                                                                 </td>
-                                                                <td className="px-6 py-4 text-right text-green-600 dark:text-green-400">
-                                                                    {isDeb ? formatIDR(item.debit) : '-'}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right text-red-600 dark:text-red-400">
-                                                                    {isKred ? formatIDR(item.kredit) : '-'}
-                                                                </td>
-                                                                <td className="text-foreground px-6 py-4 text-right font-bold">
-                                                                    {formatIDR(item.saldo_berjalan || 0)}
+                                                                <td className="px-6 py-3 text-right text-muted-foreground">
+                                                                    {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_awal) : '-'}
                                                                 </td>
                                                             </tr>
-                                                        );
-                                                    })
-                                                )}
-                                            </tbody>
-                                        </table>
+
+                                                            {/* Journal Items */}
+                                                            {account.items.map((item) => {
+                                                                const isDeb = Number(item.debit) > 0;
+                                                                const isKred = Number(item.kredit) > 0;
+                                                                const runningVal = Number(item.saldo_berjalan) || 0;
+                                                                
+                                                                // Determine if running balance goes in Debit or Kredit column based on normal balance
+                                                                const showInDebColumn = account.coa.saldo_normal === 'debit' ? (runningVal >= 0) : (runningVal < 0);
+                                                                const showInKredColumn = account.coa.saldo_normal === 'kredit' ? (runningVal >= 0) : (runningVal < 0);
+                                                                
+                                                                const finalVal = Math.abs(runningVal);
+
+                                                                return (
+                                                                    <tr key={item.id} className="hover:bg-muted/10 transition-colors">
+                                                                        <td className="px-6 py-3 text-muted-foreground font-sans border-r border-border/40">
+                                                                            {new Date(item.tanggal).toLocaleDateString('id-ID')}
+                                                                        </td>
+                                                                        <td className="px-6 py-3 text-foreground font-sans border-r border-border/40 font-medium">
+                                                                            {item.nomor_jurnal} &bull; <span className="text-muted-foreground font-normal text-xs">{item.keterangan}</span>
+                                                                        </td>
+                                                                        <td className="px-6 py-3 text-right text-foreground border-r border-border/40">
+                                                                            {isDeb ? formatIDR(item.debit) : '-'}
+                                                                        </td>
+                                                                        <td className="px-6 py-3 text-right text-foreground border-r border-border/40">
+                                                                            {isKred ? formatIDR(item.kredit) : '-'}
+                                                                        </td>
+                                                                        <td className="px-6 py-3 text-right text-foreground border-r border-border/40">
+                                                                            {showInDebColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
+                                                                        </td>
+                                                                        <td className="px-6 py-3 text-right text-foreground">
+                                                                            {showInKredColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                        {/* Subtotal Row */}
+                                                        <tfoot>
+                                                            <tr className="bg-muted/30 font-bold border-t text-foreground font-sans">
+                                                                <td className="px-6 py-3 border-r border-border/40" colSpan={2}>
+                                                                    Total
+                                                                </td>
+                                                                <td className="px-6 py-3 text-right border-r border-border/40 font-mono">
+                                                                    {formatIDR(account.total_debit)}
+                                                                </td>
+                                                                <td className="px-6 py-3 text-right border-r border-border/40 font-mono">
+                                                                    {formatIDR(account.total_kredit)}
+                                                                </td>
+                                                                <td className="px-6 py-3 text-right border-r border-border/40 font-mono">
+                                                                    {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_akhir) : '-'}
+                                                                </td>
+                                                                <td className="px-6 py-3 text-right font-mono">
+                                                                    {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_akhir) : '-'}
+                                                                </td>
+                                                            </tr>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            {/* Grand Total Buku Besar */}
+                            {filteredLedger.length > 0 && (
+                                <div className="bg-primary/5 border border-primary/20 p-5 rounded-xl flex flex-wrap justify-between items-center gap-4">
+                                    <span className="font-bold text-foreground text-sm uppercase">Total Keseluruhan Buku Besar Umum</span>
+                                    <div className="flex gap-6 font-mono font-bold text-sm">
+                                        <div className="text-right">
+                                            <span className="text-[10px] text-muted-foreground block font-sans">Total Debit</span>
+                                            <span className="text-foreground text-base">{formatIDR(grandTotalDebit)}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-[10px] text-muted-foreground block font-sans">Total Kredit</span>
+                                            <span className="text-foreground text-base">{formatIDR(grandTotalKredit)}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            )}
+                        </div>
+                    );
+                })()}
 
                 {/* TAB CONTENT: PENYUSUTAN BULANAN */}
                 {activeTab === 'depresiasi' && (
