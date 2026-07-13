@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Calendar, FileText, Printer, RotateCcw } from 'lucide-react';
+import { Printer, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -47,11 +47,15 @@ export default function BalanceSheet({
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(route('reports.balance-sheet'), {
-            end_date: endDate,
-        }, {
-            preserveState: true,
-        });
+        router.get(
+            route('reports.balance-sheet'),
+            {
+                end_date: endDate,
+            },
+            {
+                preserveState: true,
+            },
+        );
     };
 
     const handleReset = () => {
@@ -104,13 +108,15 @@ export default function BalanceSheet({
                 <div className="bg-card rounded-xl border p-4 print:hidden">
                     <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-4">
                         <div className="grid gap-1.5">
-                            <label htmlFor="end_date" className="text-sm font-medium">Per Tanggal</label>
+                            <label htmlFor="end_date" className="text-sm font-medium">
+                                Per Tanggal
+                            </label>
                             <input
                                 type="date"
                                 id="end_date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="border-input bg-background text-foreground flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                             />
                         </div>
                         <div className="flex gap-2">
@@ -126,45 +132,43 @@ export default function BalanceSheet({
                 </div>
 
                 {/* Report Content */}
-                <div className="bg-card rounded-xl border p-6 md:p-8 print:border-none print:shadow-none print:p-0">
+                <div className="bg-card rounded-xl border p-6 md:p-8 print:border-none print:p-0 print:shadow-none">
                     {/* Print Only Header */}
-                    <div className="hidden print:block text-center mb-6">
+                    <div className="mb-6 hidden text-center print:block">
                         <h2 className="text-xl font-bold uppercase">Assetory</h2>
                         <h1 className="text-2xl font-bold">Laporan Posisi Keuangan (Neraca)</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Per tanggal: {formatAsDate(filters.end_date)}
-                        </p>
+                        <p className="text-muted-foreground mt-1 text-sm">Per tanggal: {formatAsDate(filters.end_date)}</p>
                         <hr className="my-4 border-gray-300" />
                     </div>
 
-                    <div className="hidden print:hidden md:block text-center mb-8">
-                        <h2 className="text-md font-semibold text-muted-foreground uppercase">Laporan Posisi Keuangan</h2>
-                        <h1 className="text-2xl font-bold text-foreground mt-0.5">NERACA KEUANGAN</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Per tanggal {formatAsDate(filters.end_date)}
-                        </p>
+                    <div className="mb-8 hidden text-center md:block print:hidden">
+                        <h2 className="text-md text-muted-foreground font-semibold uppercase">Laporan Posisi Keuangan</h2>
+                        <h1 className="text-foreground mt-0.5 text-2xl font-bold">NERACA KEUANGAN</h1>
+                        <p className="text-muted-foreground mt-1 text-sm">Per tanggal {formatAsDate(filters.end_date)}</p>
                     </div>
 
                     {/* Dual Column Layout for Large Screens & Print */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
                         {/* ASSETS COLUMN */}
                         <div className="space-y-6">
                             <div className="border-b pb-2">
-                                <h3 className="text-lg font-bold text-primary uppercase">1. ASET</h3>
+                                <h3 className="text-primary text-lg font-bold uppercase">1. ASET</h3>
                             </div>
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <h4 className="text-sm font-semibold text-muted-foreground">Aset Tetap & Aset Lancar</h4>
+                                    <h4 className="text-muted-foreground text-sm font-semibold">Aset Tetap & Aset Lancar</h4>
                                     <table className="w-full text-sm">
                                         <tbody>
                                             {assets.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={2} className="text-muted-foreground py-2 text-center">Tidak ada saldo aset.</td>
+                                                    <td colSpan={2} className="text-muted-foreground py-2 text-center">
+                                                        Tidak ada saldo aset.
+                                                    </td>
                                                 </tr>
                                             ) : (
                                                 assets.map((item) => (
-                                                    <tr key={item.id} className="border-b border-border/40 last:border-0 hover:bg-muted/10">
-                                                        <td className="py-2.5 font-mono text-xs w-28 text-muted-foreground">{item.kode_akun}</td>
+                                                    <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
+                                                        <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
                                                         <td className="py-2.5 font-medium">{item.nama_akun}</td>
                                                         <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
                                                     </tr>
@@ -174,9 +178,9 @@ export default function BalanceSheet({
                                     </table>
                                 </div>
                             </div>
-                            <div className="bg-muted/30 border-t-2 border-border flex items-center justify-between p-3 rounded-lg">
-                                <span className="font-bold uppercase text-sm">TOTAL ASET</span>
-                                <span className="font-bold font-mono text-base text-primary">{formatRupiah(totalAssets)}</span>
+                            <div className="bg-muted/30 border-border flex items-center justify-between rounded-lg border-t-2 p-3">
+                                <span className="text-sm font-bold uppercase">TOTAL ASET</span>
+                                <span className="text-primary font-mono text-base font-bold">{formatRupiah(totalAssets)}</span>
                             </div>
                         </div>
 
@@ -185,18 +189,20 @@ export default function BalanceSheet({
                             {/* LIABILITIES */}
                             <div className="space-y-4">
                                 <div className="border-b pb-2">
-                                    <h3 className="text-lg font-bold text-primary uppercase">2. KEWAJIBAN (UTANG)</h3>
+                                    <h3 className="text-primary text-lg font-bold uppercase">2. KEWAJIBAN (UTANG)</h3>
                                 </div>
                                 <table className="w-full text-sm">
                                     <tbody>
                                         {liabilities.length === 0 ? (
                                             <tr>
-                                                <td colSpan={2} className="text-muted-foreground py-2 text-center">Tidak ada saldo kewajiban.</td>
+                                                <td colSpan={2} className="text-muted-foreground py-2 text-center">
+                                                    Tidak ada saldo kewajiban.
+                                                </td>
                                             </tr>
                                         ) : (
                                             liabilities.map((item) => (
-                                                <tr key={item.id} className="border-b border-border/40 last:border-0 hover:bg-muted/10">
-                                                    <td className="py-2.5 font-mono text-xs w-28 text-muted-foreground">{item.kode_akun}</td>
+                                                <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
+                                                    <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
                                                     <td className="py-2.5 font-medium">{item.nama_akun}</td>
                                                     <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
                                                 </tr>
@@ -204,46 +210,47 @@ export default function BalanceSheet({
                                         )}
                                     </tbody>
                                 </table>
-                                <div className="bg-muted/20 flex items-center justify-between p-2.5 rounded-lg border">
-                                    <span className="font-semibold text-xs uppercase">Total Kewajiban</span>
-                                    <span className="font-bold font-mono text-sm">{formatRupiah(totalLiabilities)}</span>
+                                <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
+                                    <span className="text-xs font-semibold uppercase">Total Kewajiban</span>
+                                    <span className="font-mono text-sm font-bold">{formatRupiah(totalLiabilities)}</span>
                                 </div>
                             </div>
 
                             {/* EQUITY */}
                             <div className="space-y-4 pt-2">
                                 <div className="border-b pb-2">
-                                    <h3 className="text-lg font-bold text-primary uppercase">3. EKUITAS (MODAL)</h3>
+                                    <h3 className="text-primary text-lg font-bold uppercase">3. EKUITAS (MODAL)</h3>
                                 </div>
                                 <table className="w-full text-sm">
                                     <tbody>
                                         {equity.map((item) => (
-                                            <tr key={item.id} className="border-b border-border/40 last:border-0 hover:bg-muted/10">
-                                                <td className="py-2.5 font-mono text-xs w-28 text-muted-foreground">{item.kode_akun}</td>
+                                            <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
+                                                <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
                                                 <td className="py-2.5 font-medium">{item.nama_akun}</td>
                                                 <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
-                                <div className="bg-muted/20 flex items-center justify-between p-2.5 rounded-lg border">
-                                    <span className="font-semibold text-xs uppercase">Total Ekuitas</span>
-                                    <span className="font-bold font-mono text-sm">{formatRupiah(totalEquity)}</span>
+                                <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
+                                    <span className="text-xs font-semibold uppercase">Total Ekuitas</span>
+                                    <span className="font-mono text-sm font-bold">{formatRupiah(totalEquity)}</span>
                                 </div>
                             </div>
 
                             {/* LIABILITIES + EQUITY TOTAL */}
-                            <div className="bg-muted/30 border-t-2 border-border flex items-center justify-between p-3 rounded-lg">
-                                <span className="font-bold uppercase text-sm">TOTAL KEWAJIBAN & EKUITAS</span>
-                                <span className="font-bold font-mono text-base text-primary">{formatRupiah(totalLiabilitiesAndEquity)}</span>
+                            <div className="bg-muted/30 border-border flex items-center justify-between rounded-lg border-t-2 p-3">
+                                <span className="text-sm font-bold uppercase">TOTAL KEWAJIBAN & EKUITAS</span>
+                                <span className="text-primary font-mono text-base font-bold">{formatRupiah(totalLiabilitiesAndEquity)}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Balance Check */}
                     {Math.abs(totalAssets - totalLiabilitiesAndEquity) > 0.01 && (
-                        <div className="mt-8 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg p-4 text-sm font-medium text-center print:hidden">
-                            Peringatan: Posisi Neraca tidak seimbang! Selisih Aset vs (Kewajiban+Ekuitas) sebesar {formatRupiah(Math.abs(totalAssets - totalLiabilitiesAndEquity))}
+                        <div className="bg-destructive/10 border-destructive/20 text-destructive mt-8 rounded-lg border p-4 text-center text-sm font-medium print:hidden">
+                            Peringatan: Posisi Neraca tidak seimbang! Selisih Aset vs (Kewajiban+Ekuitas) sebesar{' '}
+                            {formatRupiah(Math.abs(totalAssets - totalLiabilitiesAndEquity))}
                         </div>
                     )}
                 </div>

@@ -35,8 +35,6 @@ const PERIODE_BULAN: Record<string, number> = {
     periode_4: 240,
 };
 
-
-
 interface ScheduleRow {
     bulanKe: number;
     periode: string;
@@ -147,9 +145,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
     const displayDebitCoas = transactionCoas.filter((coa) => coa.kategori === 'aset');
 
     // Kredit: Kas/Bank (Aset) + Hutang (Kewajiban) — sumber pembayaran
-    const displayCreditCoas = transactionCoas.filter(
-        (coa) => coa.kategori === 'aset' || coa.kategori === 'kewajiban',
-    );
+    const displayCreditCoas = transactionCoas.filter((coa) => coa.kategori === 'aset' || coa.kategori === 'kewajiban');
 
     const groupCoasByParent = (coasList: Coa[]) => {
         const groups: Record<string, Coa[]> = {};

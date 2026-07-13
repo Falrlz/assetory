@@ -5,10 +5,8 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { AlertCircle, Calculator, ChevronDown, ChevronRight, FileText, Landmark, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react';
+import { AlertCircle, Calculator, FileText, Landmark, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-
-
 
 interface JournalItemProp {
     id: number;
@@ -50,17 +48,16 @@ const TIPE_JURNAL_LABELS: Record<string, string> = {
     penyusutan: 'Penyusutan Aset',
 };
 
-const KATEGORI_LABELS: Record<string, string> = {
-    aset: 'Aset / Harta',
-    kewajiban: 'Kewajiban / Utang',
-    ekuitas: 'Ekuitas / Modal',
-    pendapatan: 'Pendapatan',
-    beban: 'Beban',
-};
-
-
-
-export default function Index({ journals, coas, ledgerData = [], grandTotalDebit = 0, grandTotalKredit = 0, ledgerFilters, postedMonths, assets }: IndexProps) {
+export default function Index({
+    journals,
+    coas,
+    ledgerData = [],
+    grandTotalDebit = 0,
+    grandTotalKredit = 0,
+    ledgerFilters,
+    postedMonths,
+    assets,
+}: IndexProps) {
     const page = usePage();
     const [activeTab, setActiveTab] = useState<'umum' | 'ledger' | 'depresiasi'>(() => {
         if (typeof window !== 'undefined') {
@@ -83,21 +80,10 @@ export default function Index({ journals, coas, ledgerData = [], grandTotalDebit
         }
     }, [page.url]);
 
-    const handleTabChange = (tab: 'umum' | 'ledger' | 'depresiasi') => {
-        setActiveTab(tab);
-        if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href);
-            if (tab === 'umum') {
-                url.searchParams.delete('tab');
-            } else {
-                url.searchParams.set('tab', tab);
-            }
-            window.history.pushState({}, '', url.toString());
-        }
-    };
-
     const [isOpen, setIsOpen] = useState(false);
-    const [ledgerStartDate, setLedgerStartDate] = useState(ledgerFilters?.start_date || new Date(new Date().getFullYear(), 0, 2).toISOString().split('T')[0]);
+    const [ledgerStartDate, setLedgerStartDate] = useState(
+        ledgerFilters?.start_date || new Date(new Date().getFullYear(), 0, 2).toISOString().split('T')[0],
+    );
     const [ledgerEndDate, setLedgerEndDate] = useState(ledgerFilters?.end_date || new Date().toISOString().split('T')[0]);
     const [ledgerSearch, setLedgerSearch] = useState('');
 
@@ -234,43 +220,12 @@ export default function Index({ journals, coas, ledgerData = [], grandTotalDebit
         const prefix = typePrefixes[data.jenis_transaksi] || 'JU';
         const suffix = categorySuffixes[data.kategori_arus_kas] || 'O';
         setData('kode_arus_kas', `${prefix}-${suffix}`);
-    }, [data.jenis_transaksi, data.kategori_arus_kas]);
+    }, [data.jenis_transaksi, data.kategori_arus_kas, setData]);
 
     // Form for monthly depreciation posting
     const depForm = useForm({
         bulan: currentMonthStr,
     });
-
-    // Auto-update query when changing General Ledger COA
-    const handleCoaChange = (coaId: string) => {
-        setSelectedCoaId(coaId);
-        if (coaId) {
-            router.get(
-                route('journals.index'),
-                {
-                    tab: 'ledger',
-                    coa_id: coaId,
-                    start_date: ledgerStartDate,
-                    end_date: ledgerEndDate,
-                },
-                {
-                    preserveState: true,
-                    preserveScroll: true,
-                    onSuccess: () => setActiveTab('ledger'),
-                },
-            );
-        } else {
-            router.get(
-                route('journals.index'),
-                { tab: 'ledger' },
-                {
-                    preserveState: true,
-                    preserveScroll: true,
-                    onSuccess: () => setActiveTab('ledger'),
-                },
-            );
-        }
-    };
 
     const handleLedgerFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -305,7 +260,7 @@ export default function Index({ journals, coas, ledgerData = [], grandTotalDebit
                 preserveState: true,
                 preserveScroll: true,
                 onSuccess: () => setActiveTab('ledger'),
-            }
+            },
         );
     };
 
@@ -426,8 +381,8 @@ export default function Index({ journals, coas, ledgerData = [], grandTotalDebit
                             {activeTab === 'ledger'
                                 ? 'Lihat ringkasan mutasi debit dan kredit serta saldo berjalan untuk setiap akun.'
                                 : activeTab === 'depresiasi'
-                                ? 'Kelola dan lakukan posting penyusutan nilai buku aset secara berkala.'
-                                : 'Pencatatan akuntansi double-entry manual maupun otomatis.'}
+                                  ? 'Kelola dan lakukan posting penyusutan nilai buku aset secara berkala.'
+                                  : 'Pencatatan akuntansi double-entry manual maupun otomatis.'}
                         </p>
                     </div>
                     {activeTab === 'umum' && (
@@ -437,8 +392,6 @@ export default function Index({ journals, coas, ledgerData = [], grandTotalDebit
                         </Button>
                     )}
                 </div>
-
-
 
                 {/* TAB CONTENT: JURNAL UMUM */}
                 {activeTab === 'umum' && (
@@ -616,12 +569,13 @@ export default function Index({ journals, coas, ledgerData = [], grandTotalDebit
                                                                                 {journal.nomor_jurnal}
                                                                             </span>
                                                                             <span
-                                                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${journal.tipe_jurnal === 'penyusutan'
+                                                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${
+                                                                                    journal.tipe_jurnal === 'penyusutan'
                                                                                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
                                                                                         : journal.tipe_jurnal === 'perolehan_aset'
-                                                                                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                                                            : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
-                                                                                    }`}
+                                                                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                                          : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
+                                                                                }`}
                                                                             >
                                                                                 {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
                                                                             </span>
@@ -678,203 +632,222 @@ export default function Index({ journals, coas, ledgerData = [], grandTotalDebit
                 )}
 
                 {/* TAB CONTENT: BUKU BESAR (LEDGER) */}
-                {activeTab === 'ledger' && (() => {
-                    const filteredLedger = ledgerData.filter((account) => {
-                        const query = ledgerSearch.toLowerCase();
+                {activeTab === 'ledger' &&
+                    (() => {
+                        const filteredLedger = ledgerData.filter((account) => {
+                            const query = ledgerSearch.toLowerCase();
+                            return account.coa.nama_akun.toLowerCase().includes(query) || account.coa.kode_akun.includes(query);
+                        });
+
                         return (
-                            account.coa.nama_akun.toLowerCase().includes(query) ||
-                            account.coa.kode_akun.includes(query)
-                        );
-                    });
-
-                    return (
-                        <div className="space-y-6">
-                            {/* Date Filters & Controls */}
-                            <div className="bg-card rounded-xl border p-4 flex flex-wrap items-end justify-between gap-4">
-                                <form onSubmit={handleLedgerFilterSubmit} className="flex flex-wrap items-end gap-4 flex-1">
-                                    <div className="grid gap-1.5 w-40">
-                                        <Label htmlFor="ledger_start_date">Tanggal Mulai</Label>
-                                        <input
-                                            type="date"
-                                            id="ledger_start_date"
-                                            value={ledgerStartDate}
-                                            onChange={(e) => setLedgerStartDate(e.target.value)}
-                                            className="border-input bg-background text-foreground flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
+                            <div className="space-y-6">
+                                {/* Date Filters & Controls */}
+                                <div className="bg-card flex flex-wrap items-end justify-between gap-4 rounded-xl border p-4">
+                                    <form onSubmit={handleLedgerFilterSubmit} className="flex flex-1 flex-wrap items-end gap-4">
+                                        <div className="grid w-40 gap-1.5">
+                                            <Label htmlFor="ledger_start_date">Tanggal Mulai</Label>
+                                            <input
+                                                type="date"
+                                                id="ledger_start_date"
+                                                value={ledgerStartDate}
+                                                onChange={(e) => setLedgerStartDate(e.target.value)}
+                                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                            />
+                                        </div>
+                                        <div className="grid w-40 gap-1.5">
+                                            <Label htmlFor="ledger_end_date">Tanggal Selesai</Label>
+                                            <input
+                                                type="date"
+                                                id="ledger_end_date"
+                                                value={ledgerEndDate}
+                                                onChange={(e) => setLedgerEndDate(e.target.value)}
+                                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                            />
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button type="submit" size="sm" className="h-9">
+                                                Terapkan Filter
+                                            </Button>
+                                            <Button type="button" variant="outline" size="sm" onClick={handleLedgerFilterReset} className="h-9">
+                                                Reset
+                                            </Button>
+                                        </div>
+                                    </form>
+                                    <div className="relative w-72">
+                                        <Search className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
+                                        <Input
+                                            placeholder="Cari Akun Buku Besar..."
+                                            value={ledgerSearch}
+                                            onChange={(e) => setLedgerSearch(e.target.value)}
+                                            className="h-9 pl-9"
                                         />
                                     </div>
-                                    <div className="grid gap-1.5 w-40">
-                                        <Label htmlFor="ledger_end_date">Tanggal Selesai</Label>
-                                        <input
-                                            type="date"
-                                            id="ledger_end_date"
-                                            value={ledgerEndDate}
-                                            onChange={(e) => setLedgerEndDate(e.target.value)}
-                                            className="border-input bg-background text-foreground flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
-                                        />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button type="submit" size="sm" className="h-9">
-                                            Terapkan Filter
-                                        </Button>
-                                        <Button type="button" variant="outline" size="sm" onClick={handleLedgerFilterReset} className="h-9">
-                                            Reset
-                                        </Button>
-                                    </div>
-                                </form>
-                                <div className="relative w-72">
-                                    <Search className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
-                                    <Input
-                                        placeholder="Cari Akun Buku Besar..."
-                                        value={ledgerSearch}
-                                        onChange={(e) => setLedgerSearch(e.target.value)}
-                                        className="pl-9 h-9"
-                                    />
                                 </div>
-                            </div>
 
-                            {/* Traditional Indonesian 6-Column General Ledger Cards */}
-                            <div className="space-y-8">
-                                {filteredLedger.length === 0 ? (
-                                    <div className="bg-card flex flex-col items-center justify-center rounded-xl border py-16 text-center">
-                                        <Landmark className="text-muted-foreground/50 mb-3 h-10 w-10" />
-                                        <h3 className="text-base font-semibold">Tidak ada akun Buku Besar</h3>
-                                        <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-                                            Tidak ada data yang cocok dengan pencarian Anda atau periode terpilih.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    filteredLedger.map((account) => {
-                                        return (
-                                            <div key={account.coa.id} className="bg-card rounded-xl border shadow-xs overflow-hidden">
-                                                {/* Header */}
-                                                <div className="bg-muted/30 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-border/80">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-semibold text-lg text-primary">{account.coa.nama_akun}</span>
-                                                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-400">
-                                                            Buku Besar
+                                {/* Traditional Indonesian 6-Column General Ledger Cards */}
+                                <div className="space-y-8">
+                                    {filteredLedger.length === 0 ? (
+                                        <div className="bg-card flex flex-col items-center justify-center rounded-xl border py-16 text-center">
+                                            <Landmark className="text-muted-foreground/50 mb-3 h-10 w-10" />
+                                            <h3 className="text-base font-semibold">Tidak ada akun Buku Besar</h3>
+                                            <p className="text-muted-foreground mt-1 max-w-sm text-sm">
+                                                Tidak ada data yang cocok dengan pencarian Anda atau periode terpilih.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        filteredLedger.map((account) => {
+                                            return (
+                                                <div key={account.coa.id} className="bg-card overflow-hidden rounded-xl border shadow-xs">
+                                                    {/* Header */}
+                                                    <div className="bg-muted/30 border-border/80 flex flex-wrap items-center justify-between gap-4 border-b px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-primary text-lg font-semibold">{account.coa.nama_akun}</span>
+                                                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                                                Buku Besar
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-muted-foreground bg-background rounded-md border px-3 py-1 font-mono text-sm font-bold">
+                                                            Kode Akun: {account.coa.kode_akun}
                                                         </span>
                                                     </div>
-                                                    <span className="font-mono text-sm font-bold text-muted-foreground bg-background px-3 py-1 rounded-md border">
-                                                        Kode Akun: {account.coa.kode_akun}
-                                                    </span>
+
+                                                    {/* Table */}
+                                                    <div className="w-full overflow-x-auto">
+                                                        <table className="w-full min-w-[850px] border-collapse text-left text-sm">
+                                                            <thead>
+                                                                <tr className="bg-muted/10 text-muted-foreground border-t border-b text-center text-xs font-bold tracking-wider uppercase">
+                                                                    <th className="border-border/40 border-r px-6 py-3 text-left" rowSpan={2}>
+                                                                        Tanggal
+                                                                    </th>
+                                                                    <th className="border-border/40 border-r px-6 py-3 text-left" rowSpan={2}>
+                                                                        Keterangan
+                                                                    </th>
+                                                                    <th className="border-border/40 w-36 border-r px-6 py-3 text-right" rowSpan={2}>
+                                                                        Debit
+                                                                    </th>
+                                                                    <th className="border-border/40 w-36 border-r px-6 py-3 text-right" rowSpan={2}>
+                                                                        Kredit
+                                                                    </th>
+                                                                    <th className="w-80 px-6 py-1.5 text-center" colSpan={2}>
+                                                                        Saldo
+                                                                    </th>
+                                                                </tr>
+                                                                <tr className="bg-muted/10 text-muted-foreground border-b text-right text-xs font-bold tracking-wider uppercase">
+                                                                    <th className="border-border/40 w-40 border-r px-6 py-2">Debit</th>
+                                                                    <th className="w-40 px-6 py-2">Kredit</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y font-mono">
+                                                                {/* Saldo Awal (Opening Balance) Row */}
+                                                                <tr className="bg-muted/5 hover:bg-muted/10 italic transition-colors">
+                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
+                                                                        -
+                                                                    </td>
+                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
+                                                                        Saldo Awal (Opening Balance)
+                                                                    </td>
+                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 text-right">
+                                                                        -
+                                                                    </td>
+                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 text-right">
+                                                                        -
+                                                                    </td>
+                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 text-right">
+                                                                        {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_awal) : '-'}
+                                                                    </td>
+                                                                    <td className="text-muted-foreground px-6 py-3 text-right">
+                                                                        {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_awal) : '-'}
+                                                                    </td>
+                                                                </tr>
+
+                                                                {/* Journal Items */}
+                                                                {account.items.map((item) => {
+                                                                    const isDeb = Number(item.debit) > 0;
+                                                                    const isKred = Number(item.kredit) > 0;
+                                                                    const runningVal = Number(item.saldo_berjalan) || 0;
+
+                                                                    // Determine if running balance goes in Debit or Kredit column based on normal balance
+                                                                    const showInDebColumn =
+                                                                        account.coa.saldo_normal === 'debit' ? runningVal >= 0 : runningVal < 0;
+                                                                    const showInKredColumn =
+                                                                        account.coa.saldo_normal === 'kredit' ? runningVal >= 0 : runningVal < 0;
+
+                                                                    const finalVal = Math.abs(runningVal);
+
+                                                                    return (
+                                                                        <tr key={item.id} className="hover:bg-muted/10 transition-colors">
+                                                                            <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
+                                                                                {new Date(item.tanggal).toLocaleDateString('id-ID')}
+                                                                            </td>
+                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 font-sans font-medium">
+                                                                                {item.nomor_jurnal} &bull;{' '}
+                                                                                <span className="text-muted-foreground text-xs font-normal">
+                                                                                    {item.keterangan}
+                                                                                </span>
+                                                                            </td>
+                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 text-right">
+                                                                                {isDeb ? formatIDR(item.debit) : '-'}
+                                                                            </td>
+                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 text-right">
+                                                                                {isKred ? formatIDR(item.kredit) : '-'}
+                                                                            </td>
+                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 text-right">
+                                                                                {showInDebColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
+                                                                            </td>
+                                                                            <td className="text-foreground px-6 py-3 text-right">
+                                                                                {showInKredColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                            {/* Subtotal Row */}
+                                                            <tfoot>
+                                                                <tr className="bg-muted/30 text-foreground border-t font-sans font-bold">
+                                                                    <td className="border-border/40 border-r px-6 py-3" colSpan={2}>
+                                                                        Total
+                                                                    </td>
+                                                                    <td className="border-border/40 border-r px-6 py-3 text-right font-mono">
+                                                                        {formatIDR(account.total_debit)}
+                                                                    </td>
+                                                                    <td className="border-border/40 border-r px-6 py-3 text-right font-mono">
+                                                                        {formatIDR(account.total_kredit)}
+                                                                    </td>
+                                                                    <td className="border-border/40 border-r px-6 py-3 text-right font-mono">
+                                                                        {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_akhir) : '-'}
+                                                                    </td>
+                                                                    <td className="px-6 py-3 text-right font-mono">
+                                                                        {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_akhir) : '-'}
+                                                                    </td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
                                                 </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
 
-                                                {/* Table */}
-                                                <div className="w-full overflow-x-auto">
-                                                    <table className="w-full min-w-[850px] border-collapse text-left text-sm">
-                                                        <thead>
-                                                            <tr className="bg-muted/10 text-muted-foreground border-b text-xs font-bold tracking-wider uppercase text-center border-t">
-                                                                <th className="px-6 py-3 border-r border-border/40 text-left" rowSpan={2}>Tanggal</th>
-                                                                <th className="px-6 py-3 border-r border-border/40 text-left" rowSpan={2}>Keterangan</th>
-                                                                <th className="w-36 px-6 py-3 border-r border-border/40 text-right" rowSpan={2}>Debit</th>
-                                                                <th className="w-36 px-6 py-3 border-r border-border/40 text-right" rowSpan={2}>Kredit</th>
-                                                                <th className="w-80 px-6 py-1.5 text-center" colSpan={2}>Saldo</th>
-                                                            </tr>
-                                                            <tr className="bg-muted/10 text-muted-foreground border-b text-xs font-bold tracking-wider uppercase text-right">
-                                                                <th className="w-40 px-6 py-2 border-r border-border/40">Debit</th>
-                                                                <th className="w-40 px-6 py-2">Kredit</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y font-mono">
-                                                            {/* Saldo Awal (Opening Balance) Row */}
-                                                            <tr className="bg-muted/5 italic hover:bg-muted/10 transition-colors">
-                                                                <td className="px-6 py-3 text-muted-foreground font-sans border-r border-border/40">-</td>
-                                                                <td className="px-6 py-3 text-muted-foreground font-sans border-r border-border/40">
-                                                                    Saldo Awal (Opening Balance)
-                                                                </td>
-                                                                <td className="px-6 py-3 text-right text-muted-foreground border-r border-border/40">-</td>
-                                                                <td className="px-6 py-3 text-right text-muted-foreground border-r border-border/40">-</td>
-                                                                <td className="px-6 py-3 text-right text-muted-foreground border-r border-border/40">
-                                                                    {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_awal) : '-'}
-                                                                </td>
-                                                                <td className="px-6 py-3 text-right text-muted-foreground">
-                                                                    {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_awal) : '-'}
-                                                                </td>
-                                                            </tr>
-
-                                                            {/* Journal Items */}
-                                                            {account.items.map((item) => {
-                                                                const isDeb = Number(item.debit) > 0;
-                                                                const isKred = Number(item.kredit) > 0;
-                                                                const runningVal = Number(item.saldo_berjalan) || 0;
-                                                                
-                                                                // Determine if running balance goes in Debit or Kredit column based on normal balance
-                                                                const showInDebColumn = account.coa.saldo_normal === 'debit' ? (runningVal >= 0) : (runningVal < 0);
-                                                                const showInKredColumn = account.coa.saldo_normal === 'kredit' ? (runningVal >= 0) : (runningVal < 0);
-                                                                
-                                                                const finalVal = Math.abs(runningVal);
-
-                                                                return (
-                                                                    <tr key={item.id} className="hover:bg-muted/10 transition-colors">
-                                                                        <td className="px-6 py-3 text-muted-foreground font-sans border-r border-border/40">
-                                                                            {new Date(item.tanggal).toLocaleDateString('id-ID')}
-                                                                        </td>
-                                                                        <td className="px-6 py-3 text-foreground font-sans border-r border-border/40 font-medium">
-                                                                            {item.nomor_jurnal} &bull; <span className="text-muted-foreground font-normal text-xs">{item.keterangan}</span>
-                                                                        </td>
-                                                                        <td className="px-6 py-3 text-right text-foreground border-r border-border/40">
-                                                                            {isDeb ? formatIDR(item.debit) : '-'}
-                                                                        </td>
-                                                                        <td className="px-6 py-3 text-right text-foreground border-r border-border/40">
-                                                                            {isKred ? formatIDR(item.kredit) : '-'}
-                                                                        </td>
-                                                                        <td className="px-6 py-3 text-right text-foreground border-r border-border/40">
-                                                                            {showInDebColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
-                                                                        </td>
-                                                                        <td className="px-6 py-3 text-right text-foreground">
-                                                                            {showInKredColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
-                                                                        </td>
-                                                                    </tr>
-                                                                );
-                                                            })}
-                                                        </tbody>
-                                                        {/* Subtotal Row */}
-                                                        <tfoot>
-                                                            <tr className="bg-muted/30 font-bold border-t text-foreground font-sans">
-                                                                <td className="px-6 py-3 border-r border-border/40" colSpan={2}>
-                                                                    Total
-                                                                </td>
-                                                                <td className="px-6 py-3 text-right border-r border-border/40 font-mono">
-                                                                    {formatIDR(account.total_debit)}
-                                                                </td>
-                                                                <td className="px-6 py-3 text-right border-r border-border/40 font-mono">
-                                                                    {formatIDR(account.total_kredit)}
-                                                                </td>
-                                                                <td className="px-6 py-3 text-right border-r border-border/40 font-mono">
-                                                                    {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_akhir) : '-'}
-                                                                </td>
-                                                                <td className="px-6 py-3 text-right font-mono">
-                                                                    {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_akhir) : '-'}
-                                                                </td>
-                                                            </tr>
-                                                        </tfoot>
-                                                    </table>
-                                                </div>
+                                {/* Grand Total Buku Besar */}
+                                {filteredLedger.length > 0 && (
+                                    <div className="bg-primary/5 border-primary/20 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-5">
+                                        <span className="text-foreground text-sm font-bold uppercase">Total Keseluruhan Buku Besar Umum</span>
+                                        <div className="flex gap-6 font-mono text-sm font-bold">
+                                            <div className="text-right">
+                                                <span className="text-muted-foreground block font-sans text-[10px]">Total Debit</span>
+                                                <span className="text-foreground text-base">{formatIDR(grandTotalDebit)}</span>
                                             </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-
-                            {/* Grand Total Buku Besar */}
-                            {filteredLedger.length > 0 && (
-                                <div className="bg-primary/5 border border-primary/20 p-5 rounded-xl flex flex-wrap justify-between items-center gap-4">
-                                    <span className="font-bold text-foreground text-sm uppercase">Total Keseluruhan Buku Besar Umum</span>
-                                    <div className="flex gap-6 font-mono font-bold text-sm">
-                                        <div className="text-right">
-                                            <span className="text-[10px] text-muted-foreground block font-sans">Total Debit</span>
-                                            <span className="text-foreground text-base">{formatIDR(grandTotalDebit)}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="text-[10px] text-muted-foreground block font-sans">Total Kredit</span>
-                                            <span className="text-foreground text-base">{formatIDR(grandTotalKredit)}</span>
+                                            <div className="text-right">
+                                                <span className="text-muted-foreground block font-sans text-[10px]">Total Kredit</span>
+                                                <span className="text-foreground text-base">{formatIDR(grandTotalKredit)}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })()}
+                                )}
+                            </div>
+                        );
+                    })()}
 
                 {/* TAB CONTENT: PENYUSUTAN BULANAN */}
                 {activeTab === 'depresiasi' && (

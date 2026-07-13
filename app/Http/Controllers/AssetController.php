@@ -6,6 +6,7 @@ use App\Models\Asset;
 use App\Models\Journal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -51,13 +52,13 @@ class AssetController extends Controller
             'periode' => ['required', 'string', 'in:periode_1,periode_2,periode_3,periode_4'],
             'coa_debit_id' => [
                 'required',
-                \Illuminate\Validation\Rule::exists('coas', 'id')->where(function ($query) use ($userId) {
+                Rule::exists('coas', 'id')->where(function ($query) use ($userId) {
                     $query->where('user_id', $userId);
                 }),
             ],
             'coa_kredit_id' => [
                 'required',
-                \Illuminate\Validation\Rule::exists('coas', 'id')->where(function ($query) use ($userId) {
+                Rule::exists('coas', 'id')->where(function ($query) use ($userId) {
                     $query->where('user_id', $userId);
                 }),
             ],

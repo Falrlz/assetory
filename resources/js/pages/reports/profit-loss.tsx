@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Calendar, FileText, Printer, RotateCcw, TrendingDown, TrendingUp } from 'lucide-react';
+import { Printer, RotateCcw, TrendingDown, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -32,25 +32,22 @@ interface ProfitLossProps {
     };
 }
 
-export default function ProfitLoss({
-    revenues,
-    expenses,
-    totalRevenues,
-    totalExpenses,
-    netProfit,
-    filters,
-}: ProfitLossProps) {
+export default function ProfitLoss({ revenues, expenses, totalRevenues, totalExpenses, netProfit, filters }: ProfitLossProps) {
     const [startDate, setStartDate] = useState(filters.start_date);
     const [endDate, setEndDate] = useState(filters.end_date);
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(route('reports.profit-loss'), {
-            start_date: startDate,
-            end_date: endDate,
-        }, {
-            preserveState: true,
-        });
+        router.get(
+            route('reports.profit-loss'),
+            {
+                start_date: startDate,
+                end_date: endDate,
+            },
+            {
+                preserveState: true,
+            },
+        );
     };
 
     const handleReset = () => {
@@ -105,23 +102,27 @@ export default function ProfitLoss({
                 <div className="bg-card rounded-xl border p-4 print:hidden">
                     <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-4">
                         <div className="grid gap-1.5">
-                            <label htmlFor="start_date" className="text-sm font-medium">Tanggal Mulai</label>
+                            <label htmlFor="start_date" className="text-sm font-medium">
+                                Tanggal Mulai
+                            </label>
                             <input
                                 type="date"
                                 id="start_date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="border-input bg-background text-foreground flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                             />
                         </div>
                         <div className="grid gap-1.5">
-                            <label htmlFor="end_date" className="text-sm font-medium">Tanggal Selesai</label>
+                            <label htmlFor="end_date" className="text-sm font-medium">
+                                Tanggal Selesai
+                            </label>
                             <input
                                 type="date"
                                 id="end_date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="border-input bg-background text-foreground flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                             />
                         </div>
                         <div className="flex gap-2">
@@ -137,41 +138,39 @@ export default function ProfitLoss({
                 </div>
 
                 {/* Report Content */}
-                <div className="bg-card rounded-xl border p-6 md:p-8 max-w-4xl mx-auto w-full print:border-none print:shadow-none print:p-0 print:max-w-none">
+                <div className="bg-card mx-auto w-full max-w-4xl rounded-xl border p-6 md:p-8 print:max-w-none print:border-none print:p-0 print:shadow-none">
                     {/* Print Only Header */}
-                    <div className="hidden print:block text-center mb-6">
+                    <div className="mb-6 hidden text-center print:block">
                         <h2 className="text-xl font-bold uppercase">Assetory</h2>
                         <h1 className="text-2xl font-bold">Laporan Laba Rugi (Profit & Loss)</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Periode: {formatDateRange(filters.start_date, filters.end_date)}
-                        </p>
+                        <p className="text-muted-foreground mt-1 text-sm">Periode: {formatDateRange(filters.start_date, filters.end_date)}</p>
                         <hr className="my-4 border-gray-300" />
                     </div>
 
-                    <div className="hidden print:hidden md:block text-center mb-8">
-                        <h2 className="text-md font-semibold text-muted-foreground uppercase">Laporan Kinerja Keuangan</h2>
-                        <h1 className="text-2xl font-bold text-foreground mt-0.5">LAPORAN LABA RUGI</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Periode {formatDateRange(filters.start_date, filters.end_date)}
-                        </p>
+                    <div className="mb-8 hidden text-center md:block print:hidden">
+                        <h2 className="text-md text-muted-foreground font-semibold uppercase">Laporan Kinerja Keuangan</h2>
+                        <h1 className="text-foreground mt-0.5 text-2xl font-bold">LAPORAN LABA RUGI</h1>
+                        <p className="text-muted-foreground mt-1 text-sm">Periode {formatDateRange(filters.start_date, filters.end_date)}</p>
                     </div>
 
                     <div className="space-y-8">
                         {/* REVENUES SECTION */}
                         <div className="space-y-3">
                             <div className="border-b pb-1">
-                                <h3 className="text-sm font-bold text-primary tracking-wider uppercase">PENDAPATAN</h3>
+                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">PENDAPATAN</h3>
                             </div>
                             <table className="w-full text-sm">
                                 <tbody>
                                     {revenues.length === 0 ? (
                                         <tr>
-                                            <td colSpan={2} className="text-muted-foreground py-2 text-center">Tidak ada pendapatan tercatat.</td>
+                                            <td colSpan={2} className="text-muted-foreground py-2 text-center">
+                                                Tidak ada pendapatan tercatat.
+                                            </td>
                                         </tr>
                                     ) : (
                                         revenues.map((item) => (
-                                            <tr key={item.id} className="border-b border-border/40 last:border-0 hover:bg-muted/10">
-                                                <td className="py-2.5 font-mono text-xs w-28 text-muted-foreground">{item.kode_akun}</td>
+                                            <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
+                                                <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
                                                 <td className="py-2.5 font-medium">{item.nama_akun}</td>
                                                 <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
                                             </tr>
@@ -179,27 +178,29 @@ export default function ProfitLoss({
                                     )}
                                 </tbody>
                             </table>
-                            <div className="flex items-center justify-between p-2.5 rounded-lg border bg-muted/20">
-                                <span className="font-semibold text-sm">TOTAL PENDAPATAN</span>
-                                <span className="font-bold font-mono text-sm">{formatRupiah(totalRevenues)}</span>
+                            <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
+                                <span className="text-sm font-semibold">TOTAL PENDAPATAN</span>
+                                <span className="font-mono text-sm font-bold">{formatRupiah(totalRevenues)}</span>
                             </div>
                         </div>
 
                         {/* EXPENSES SECTION */}
                         <div className="space-y-3">
                             <div className="border-b pb-1">
-                                <h3 className="text-sm font-bold text-primary tracking-wider uppercase">BEBAN OPERASIONAL & PENYUSUTAN</h3>
+                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">BEBAN OPERASIONAL & PENYUSUTAN</h3>
                             </div>
                             <table className="w-full text-sm">
                                 <tbody>
                                     {expenses.length === 0 ? (
                                         <tr>
-                                            <td colSpan={2} className="text-muted-foreground py-2 text-center">Tidak ada beban tercatat.</td>
+                                            <td colSpan={2} className="text-muted-foreground py-2 text-center">
+                                                Tidak ada beban tercatat.
+                                            </td>
                                         </tr>
                                     ) : (
                                         expenses.map((item) => (
-                                            <tr key={item.id} className="border-b border-border/40 last:border-0 hover:bg-muted/10">
-                                                <td className="py-2.5 font-mono text-xs w-28 text-muted-foreground">{item.kode_akun}</td>
+                                            <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
+                                                <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
                                                 <td className="py-2.5 font-medium">{item.nama_akun}</td>
                                                 <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
                                             </tr>
@@ -207,31 +208,27 @@ export default function ProfitLoss({
                                     )}
                                 </tbody>
                             </table>
-                            <div className="flex items-center justify-between p-2.5 rounded-lg border bg-muted/20">
-                                <span className="font-semibold text-sm">TOTAL BEBAN</span>
-                                <span className="font-bold font-mono text-sm">{formatRupiah(totalExpenses)}</span>
+                            <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
+                                <span className="text-sm font-semibold">TOTAL BEBAN</span>
+                                <span className="font-mono text-sm font-bold">{formatRupiah(totalExpenses)}</span>
                             </div>
                         </div>
 
                         {/* NET PROFIT/LOSS FOOTER */}
-                        <div className={`flex items-center justify-between p-4 rounded-xl border-2 ${
-                            netProfit >= 0
-                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400 dark:bg-emerald-950/20'
-                                : 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400 dark:bg-red-950/20'
-                        }`}>
+                        <div
+                            className={`flex items-center justify-between rounded-xl border-2 p-4 ${
+                                netProfit >= 0
+                                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
+                                    : 'border-red-500/20 bg-red-500/10 text-red-700 dark:bg-red-950/20 dark:text-red-400'
+                            }`}
+                        >
                             <div className="flex items-center gap-2">
-                                {netProfit >= 0 ? (
-                                    <TrendingUp className="h-5 w-5" />
-                                ) : (
-                                    <TrendingDown className="h-5 w-5" />
-                                )}
-                                <span className="font-bold text-sm md:text-base uppercase">
+                                {netProfit >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+                                <span className="text-sm font-bold uppercase md:text-base">
                                     {netProfit >= 0 ? 'LABA BERSIH (NET INCOME)' : 'RUGI BERSIH (NET LOSS)'}
                                 </span>
                             </div>
-                            <span className="font-bold font-mono text-lg md:text-xl">
-                                {formatRupiah(netProfit)}
-                            </span>
+                            <span className="font-mono text-lg font-bold md:text-xl">{formatRupiah(netProfit)}</span>
                         </div>
                     </div>
                 </div>
