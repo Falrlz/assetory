@@ -256,11 +256,17 @@ test('ledger queries return rolling balances correctly', function () {
     ]);
     $j2->items()->create(['coa_id' => $coa->id, 'debit' => 0.00, 'kredit' => 3000000.00]);
 
-    // Fetch index with coa_id query
-    $response = get(route('journals.index', ['coa_id' => $coa->id]))
-        ->assertOk();
+    // Fetch index with query params
+    $response = get(route('journals.index', [
+        'start_date' => '2026-07-01',
+        'end_date' => '2026-07-31',
+    ]))->assertOk();
 
-    $ledgerItems = $response->viewData('page')['props']['ledgerItems'];
+    $ledgerData = $response->viewData('page')['props']['ledgerData'];
+    $accountData = collect($ledgerData)->first(fn ($acc) => $acc['coa']['id'] === $coa->id);
+
+    expect($accountData)->not->toBeNull();
+    $ledgerItems = $accountData['items'];
 
     // Transaction 1: balance should be 10,000,000
     expect($ledgerItems[0]['saldo_berjalan'])->toEqual(10000000.00);
