@@ -37,7 +37,7 @@ const mainNavItems: NavItem[] = [
                 url: '/journals?tab=ledger',
             },
             {
-                title: 'Penyusutan Bulanan',
+                title: 'Penyusutan Aset',
                 url: '/journals?tab=depresiasi',
             },
             {
