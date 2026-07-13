@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\BeginningBalanceController;
 use App\Http\Controllers\CoaController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\ReportController;
@@ -18,6 +19,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('assets', [AssetController::class, 'index'])->name('assets.index');
     Route::post('assets', [AssetController::class, 'store'])->name('assets.store');
+
+    Route::get('beginning-balances', [BeginningBalanceController::class, 'index'])->name('beginning-balances.index');
+    Route::post('beginning-balances', [BeginningBalanceController::class, 'store'])->name('beginning-balances.store');
 
     Route::resource('coas', CoaController::class)->except(['create', 'edit', 'show']);
 
