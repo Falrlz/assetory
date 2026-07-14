@@ -21,6 +21,8 @@ class Journal extends Model
         'jenis_transaksi',
         'kategori_arus_kas',
         'kode_arus_kas',
+        'reversed_by_id',
+        'reverses_journal_id',
     ];
 
     /**
@@ -57,6 +59,22 @@ class Journal extends Model
     public function asset(): BelongsTo
     {
         return $this->belongsTo(Asset::class, 'ref_id');
+    }
+
+    /**
+     * Get the journal that reversed this journal.
+     */
+    public function reversedBy(): BelongsTo
+    {
+        return $this->belongsTo(Journal::class, 'reversed_by_id');
+    }
+
+    /**
+     * Get the journal that this journal reverses.
+     */
+    public function reversesJournal(): BelongsTo
+    {
+        return $this->belongsTo(Journal::class, 'reverses_journal_id');
     }
 
     /**

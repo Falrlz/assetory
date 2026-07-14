@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Journal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -71,6 +72,22 @@ class BeginningBalanceController extends Controller
             'balances.*.debit' => 'required|numeric|min:0',
             'balances.*.kredit' => 'required|numeric|min:0',
         ]);
+
+        $lockDate = $user->lock_date;
+        if ($lockDate) {
+            if (Carbon::parse($validated['tanggal'])->lte($lockDate)) {
+                throw ValidationException::withMessages([
+                    'tanggal' => 'Tanggal saldo awal tidak boleh kurang dari atau sama dengan tanggal penguncian periode ('.$lockDate->format('Y-m-d').').',
+                ]);
+            }
+
+            $existing = $user->journals()->where('jenis_transaksi', 'saldo_awal')->first();
+            if ($existing && Carbon::parse($existing->tanggal)->lte($lockDate)) {
+                throw ValidationException::withMessages([
+                    'balances' => 'Saldo awal pada periode terkunci tidak dapat diubah.',
+                ]);
+            }
+        }
 
         $totalDebit = 0;
         $totalKredit = 0;
