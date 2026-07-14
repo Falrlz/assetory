@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Asset;
+use App\Models\Coa;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
@@ -25,7 +26,7 @@ test('authenticated users can create a new asset', function () {
     $user = User::factory()->create();
 
     // Create COAs for the user
-    $coaDebit = \App\Models\Coa::create([
+    $coaDebit = Coa::create([
         'user_id' => $user->id,
         'kode_akun' => '01.3000.01.04',
         'nama_akun' => 'Peralatan Kantor',
@@ -33,7 +34,7 @@ test('authenticated users can create a new asset', function () {
         'saldo_normal' => 'debit',
     ]);
 
-    $coaKredit = \App\Models\Coa::create([
+    $coaKredit = Coa::create([
         'user_id' => $user->id,
         'kode_akun' => '01.1000.01.01',
         'nama_akun' => 'Kas & Bank',

@@ -273,3 +273,65 @@ test('ledger queries return rolling balances correctly', function () {
     // Transaction 2: balance should be 7,000,000
     expect($ledgerItems[1]['saldo_berjalan'])->toEqual(7000000.00);
 });
+
+test('authenticated users cannot create journal if any item contains both debit and credit', function () {
+    actingAs($this->user);
+    $this->seed(CoaSeeder::class);
+
+    $coaDebit = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.1000.01.01')->first();
+    $coaKredit = Coa::where('user_id', $this->user->id)->where('kode_akun', '03.1000.01.01')->first();
+
+    $payload = [
+        'tanggal' => '2026-07-06',
+        'jenis_transaksi' => 'jurnal_umum',
+        'kategori_arus_kas' => 'operasional',
+        'kode_arus_kas' => 'JU-O',
+        'keterangan' => 'Jurnal Dengan Satu Baris Berisi Debit dan Kredit Sekaligus',
+        'items' => [
+            [
+                'coa_id' => $coaDebit->id,
+                'debit' => 1000000.00,
+                'kredit' => 500000.00, // Invalid! Both debit and credit filled
+            ],
+            [
+                'coa_id' => $coaKredit->id,
+                'debit' => 0.00,
+                'kredit' => 500000.00,
+            ],
+        ],
+    ];
+
+    post(route('journals.store'), $payload)
+        ->assertSessionHasErrors(['items.0.debit', 'items.0.kredit']);
+});
+
+test('authenticated users cannot create journal if any item has both debit and credit as zero', function () {
+    actingAs($this->user);
+    $this->seed(CoaSeeder::class);
+
+    $coaDebit = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.1000.01.01')->first();
+    $coaKredit = Coa::where('user_id', $this->user->id)->where('kode_akun', '03.1000.01.01')->first();
+
+    $payload = [
+        'tanggal' => '2026-07-06',
+        'jenis_transaksi' => 'jurnal_umum',
+        'kategori_arus_kas' => 'operasional',
+        'kode_arus_kas' => 'JU-O',
+        'keterangan' => 'Jurnal Dengan Satu Baris Bernilai Nol Semua',
+        'items' => [
+            [
+                'coa_id' => $coaDebit->id,
+                'debit' => 0.00, // Invalid! Both are zero
+                'kredit' => 0.00,
+            ],
+            [
+                'coa_id' => $coaKredit->id,
+                'debit' => 0.00,
+                'kredit' => 0.00,
+            ],
+        ],
+    ];
+
+    post(route('journals.store'), $payload)
+        ->assertSessionHasErrors(['items.0.debit', 'items.0.kredit']);
+});

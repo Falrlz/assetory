@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Calendar, FileText, Printer, RotateCcw } from 'lucide-react';
+import { Printer, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -54,12 +54,16 @@ export default function CashFlow({
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(route('reports.cash-flow'), {
-            start_date: startDate,
-            end_date: endDate,
-        }, {
-            preserveState: true,
-        });
+        router.get(
+            route('reports.cash-flow'),
+            {
+                start_date: startDate,
+                end_date: endDate,
+            },
+            {
+                preserveState: true,
+            },
+        );
     };
 
     const handleReset = () => {
@@ -91,11 +95,7 @@ export default function CashFlow({
 
     const renderCashItems = (items: CashItem[]) => {
         if (items.length === 0) {
-            return (
-                <div className="text-xs text-muted-foreground italic py-1 pl-4">
-                    Tidak ada aktivitas kas.
-                </div>
-            );
+            return <div className="text-muted-foreground py-1 pl-4 text-xs italic">Tidak ada aktivitas kas.</div>;
         }
 
         return (
@@ -105,15 +105,18 @@ export default function CashFlow({
                     const cout = parseFloat(item.cash_out as string) || 0;
                     const diff = cin - cout;
                     return (
-                        <div key={idx} className="flex justify-between text-sm py-1 border-b border-border/20 last:border-0 hover:bg-muted/10">
+                        <div key={idx} className="border-border/20 hover:bg-muted/10 flex justify-between border-b py-1 text-sm last:border-0">
                             <div>
-                                <span className="font-medium text-foreground">{item.keterangan}</span>
-                                <span className="text-[10px] text-muted-foreground block font-mono">
+                                <span className="text-foreground font-medium">{item.keterangan}</span>
+                                <span className="text-muted-foreground block font-mono text-[10px]">
                                     {item.nomor_jurnal} &bull; {new Date(item.tanggal).toLocaleDateString('id-ID')}
                                 </span>
                             </div>
-                            <span className={`font-mono text-xs font-semibold ${diff >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                                {diff >= 0 ? '+' : ''}{formatRupiah(diff)}
+                            <span
+                                className={`font-mono text-xs font-semibold ${diff >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}
+                            >
+                                {diff >= 0 ? '+' : ''}
+                                {formatRupiah(diff)}
                             </span>
                         </div>
                     );
@@ -147,23 +150,27 @@ export default function CashFlow({
                 <div className="bg-card rounded-xl border p-4 print:hidden">
                     <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-4">
                         <div className="grid gap-1.5">
-                            <label htmlFor="start_date" className="text-sm font-medium">Tanggal Mulai</label>
+                            <label htmlFor="start_date" className="text-sm font-medium">
+                                Tanggal Mulai
+                            </label>
                             <input
                                 type="date"
                                 id="start_date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="border-input bg-background text-foreground flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                             />
                         </div>
                         <div className="grid gap-1.5">
-                            <label htmlFor="end_date" className="text-sm font-medium">Tanggal Selesai</label>
+                            <label htmlFor="end_date" className="text-sm font-medium">
+                                Tanggal Selesai
+                            </label>
                             <input
                                 type="date"
                                 id="end_date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="border-input bg-background text-foreground flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:outline-hidden focus:ring-2 focus:ring-ring"
+                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                             />
                         </div>
                         <div className="flex gap-2">
@@ -179,33 +186,29 @@ export default function CashFlow({
                 </div>
 
                 {/* Report Content */}
-                <div className="bg-card rounded-xl border p-6 md:p-8 max-w-4xl mx-auto w-full print:border-none print:shadow-none print:p-0 print:max-w-none">
+                <div className="bg-card mx-auto w-full max-w-4xl rounded-xl border p-6 md:p-8 print:max-w-none print:border-none print:p-0 print:shadow-none">
                     {/* Print Only Header */}
-                    <div className="hidden print:block text-center mb-6">
+                    <div className="mb-6 hidden text-center print:block">
                         <h2 className="text-xl font-bold uppercase">Assetory</h2>
                         <h1 className="text-2xl font-bold">Laporan Arus Kas (Cash Flow)</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Periode: {formatDateRange(filters.start_date, filters.end_date)}
-                        </p>
+                        <p className="text-muted-foreground mt-1 text-sm">Periode: {formatDateRange(filters.start_date, filters.end_date)}</p>
                         <hr className="my-4 border-gray-300" />
                     </div>
 
-                    <div className="hidden print:hidden md:block text-center mb-8">
-                        <h2 className="text-md font-semibold text-muted-foreground uppercase">Laporan Mutasi Kas</h2>
-                        <h1 className="text-2xl font-bold text-foreground mt-0.5">LAPORAN ARUS KAS</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Periode {formatDateRange(filters.start_date, filters.end_date)}
-                        </p>
+                    <div className="mb-8 hidden text-center md:block print:hidden">
+                        <h2 className="text-md text-muted-foreground font-semibold uppercase">Laporan Mutasi Kas</h2>
+                        <h1 className="text-foreground mt-0.5 text-2xl font-bold">LAPORAN ARUS KAS</h1>
+                        <p className="text-muted-foreground mt-1 text-sm">Periode {formatDateRange(filters.start_date, filters.end_date)}</p>
                     </div>
 
                     <div className="space-y-6">
                         {/* 1. OPERATING ACTIVITIES */}
                         <div className="space-y-2.5">
                             <div className="border-b pb-1">
-                                <h3 className="text-sm font-bold text-primary tracking-wider uppercase">1. ARUS KAS DARI AKTIVITAS OPERASIONAL</h3>
+                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">1. ARUS KAS DARI AKTIVITAS OPERASIONAL</h3>
                             </div>
                             {renderCashItems(operatingItems)}
-                            <div className="flex justify-between text-sm font-semibold p-2 bg-muted/20 border rounded-lg">
+                            <div className="bg-muted/20 flex justify-between rounded-lg border p-2 text-sm font-semibold">
                                 <span>Kas Bersih Dari Aktivitas Operasional</span>
                                 <span className="font-mono">{formatRupiah(totalOperating)}</span>
                             </div>
@@ -214,10 +217,10 @@ export default function CashFlow({
                         {/* 2. INVESTING ACTIVITIES */}
                         <div className="space-y-2.5">
                             <div className="border-b pb-1">
-                                <h3 className="text-sm font-bold text-primary tracking-wider uppercase">2. ARUS KAS DARI AKTIVITAS INVESTASI</h3>
+                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">2. ARUS KAS DARI AKTIVITAS INVESTASI</h3>
                             </div>
                             {renderCashItems(investingItems)}
-                            <div className="flex justify-between text-sm font-semibold p-2 bg-muted/20 border rounded-lg">
+                            <div className="bg-muted/20 flex justify-between rounded-lg border p-2 text-sm font-semibold">
                                 <span>Kas Bersih Dari Aktivitas Investasi</span>
                                 <span className="font-mono">{formatRupiah(totalInvesting)}</span>
                             </div>
@@ -226,27 +229,27 @@ export default function CashFlow({
                         {/* 3. FINANCING ACTIVITIES */}
                         <div className="space-y-2.5">
                             <div className="border-b pb-1">
-                                <h3 className="text-sm font-bold text-primary tracking-wider uppercase">3. ARUS KAS DARI AKTIVITAS PENDANAAN</h3>
+                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">3. ARUS KAS DARI AKTIVITAS PENDANAAN</h3>
                             </div>
                             {renderCashItems(financingItems)}
-                            <div className="flex justify-between text-sm font-semibold p-2 bg-muted/20 border rounded-lg">
+                            <div className="bg-muted/20 flex justify-between rounded-lg border p-2 text-sm font-semibold">
                                 <span>Kas Bersih Dari Aktivitas Pendanaan</span>
                                 <span className="font-mono">{formatRupiah(totalFinancing)}</span>
                             </div>
                         </div>
 
                         {/* SUMMARY OF CASH CHANGE */}
-                        <div className="pt-6 space-y-3.5">
-                            <div className="border-t-2 border-border/80 pt-4 space-y-2.5">
+                        <div className="space-y-3.5 pt-6">
+                            <div className="border-border/80 space-y-2.5 border-t-2 pt-4">
                                 <div className="flex justify-between text-sm font-medium">
                                     <span>Kenaikan (Penurunan) Bersih Kas</span>
                                     <span className="font-mono">{formatRupiah(netChange)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm font-medium text-muted-foreground">
+                                <div className="text-muted-foreground flex justify-between text-sm font-medium">
                                     <span>Saldo Kas Awal Periode</span>
                                     <span className="font-mono">{formatRupiah(beginningCash)}</span>
                                 </div>
-                                <div className="flex justify-between text-base font-bold bg-primary/10 text-primary p-3 rounded-lg border border-primary/20">
+                                <div className="bg-primary/10 text-primary border-primary/20 flex justify-between rounded-lg border p-3 text-base font-bold">
                                     <span>SALDO KAS AKHIR PERIODE</span>
                                     <span className="font-mono">{formatRupiah(endingCash)}</span>
                                 </div>

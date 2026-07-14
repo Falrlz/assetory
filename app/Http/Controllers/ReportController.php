@@ -20,13 +20,37 @@ class ReportController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
 
-        // Get COAs with total debit and credit in the date range
+        // Get transactional COAs (Level 4, i.e. 4 segments separated by dots)
         $coas = $user->coas()
             ->orderBy('kode_akun')
             ->get()
+            ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4)
+            ->values()
             ->map(function ($coa) use ($user, $startDate, $endDate) {
-                // Query total debit and credit
-                $sums = DB::table('journal_items')
+                // 1. Saldo Awal (before start_date)
+                $openingSums = DB::table('journal_items')
+                    ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                    ->where('journals.user_id', $user->id)
+                    ->where('journal_items.coa_id', $coa->id)
+                    ->where('journals.tanggal', '<', $startDate)
+                    ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
+                    ->first();
+
+                $debitBefore = (float) $openingSums->total_debit;
+                $kreditBefore = (float) $openingSums->total_kredit;
+
+                if ($coa->saldo_normal === 'debit') {
+                    $netBefore = $debitBefore - $kreditBefore;
+                    $coa->saldo_awal_debit = $netBefore >= 0 ? $netBefore : 0;
+                    $coa->saldo_awal_kredit = $netBefore < 0 ? abs($netBefore) : 0;
+                } else {
+                    $netBefore = $kreditBefore - $debitBefore;
+                    $coa->saldo_awal_debit = $netBefore < 0 ? abs($netBefore) : 0;
+                    $coa->saldo_awal_kredit = $netBefore >= 0 ? $netBefore : 0;
+                }
+
+                // 2. Mutasi (between start_date and end_date)
+                $mutationSums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
                     ->where('journal_items.coa_id', $coa->id)
@@ -34,36 +58,50 @@ class ReportController extends Controller
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
 
-                $coa->total_debit = (float) $sums->total_debit;
-                $coa->total_kredit = (float) $sums->total_kredit;
+                $coa->mutasi_debit = (float) $mutationSums->total_debit;
+                $coa->mutasi_kredit = (float) $mutationSums->total_kredit;
 
-                // Net balance calculation based on normal balance
-                $net = 0;
+                // 3. Saldo Akhir (up to end_date)
+                $endingSums = DB::table('journal_items')
+                    ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                    ->where('journals.user_id', $user->id)
+                    ->where('journal_items.coa_id', $coa->id)
+                    ->where('journals.tanggal', '<=', $endDate)
+                    ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
+                    ->first();
+
+                $debitEnding = (float) $endingSums->total_debit;
+                $kreditEnding = (float) $endingSums->total_kredit;
+
                 if ($coa->saldo_normal === 'debit') {
-                    $net = $coa->total_debit - $coa->total_kredit;
+                    $netEnding = $debitEnding - $kreditEnding;
+                    $coa->saldo_akhir_debit = $netEnding >= 0 ? $netEnding : 0;
+                    $coa->saldo_akhir_kredit = $netEnding < 0 ? abs($netEnding) : 0;
                 } else {
-                    $net = $coa->total_kredit - $coa->total_debit;
+                    $netEnding = $kreditEnding - $debitEnding;
+                    $coa->saldo_akhir_debit = $netEnding < 0 ? abs($netEnding) : 0;
+                    $coa->saldo_akhir_kredit = $netEnding >= 0 ? $netEnding : 0;
                 }
 
-                $coa->saldo_debit = $coa->saldo_normal === 'debit' ? max(0, $net) : (netNegativeAsDebit($net) ? abs($net) : 0);
-                $coa->saldo_kredit = $coa->saldo_normal === 'kredit' ? max(0, $net) : (netNegativeAsKredit($net) ? abs($net) : 0);
-
                 return $coa;
-            })
-            // Only show transaction accounts (Level 4)
-            ->filter(function ($coa) {
-                return count(explode('.', $coa->kode_akun)) === 4;
-            })
-            ->values();
+            });
 
         // Calculate totals
-        $totalDebit = $coas->sum('saldo_debit');
-        $totalKredit = $coas->sum('saldo_kredit');
+        $totalAwalDebit = $coas->sum('saldo_awal_debit');
+        $totalAwalKredit = $coas->sum('saldo_awal_kredit');
+        $totalMutasiDebit = $coas->sum('mutasi_debit');
+        $totalMutasiKredit = $coas->sum('mutasi_kredit');
+        $totalAkhirDebit = $coas->sum('saldo_akhir_debit');
+        $totalAkhirKredit = $coas->sum('saldo_akhir_kredit');
 
         return Inertia::render('reports/trial-balance', [
             'coas' => $coas,
-            'totalDebit' => $totalDebit,
-            'totalKredit' => $totalKredit,
+            'totalAwalDebit' => $totalAwalDebit,
+            'totalAwalKredit' => $totalAwalKredit,
+            'totalMutasiDebit' => $totalMutasiDebit,
+            'totalMutasiKredit' => $totalMutasiKredit,
+            'totalAkhirDebit' => $totalAkhirDebit,
+            'totalAkhirKredit' => $totalAkhirKredit,
             'filters' => [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
