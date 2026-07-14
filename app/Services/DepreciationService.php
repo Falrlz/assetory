@@ -21,6 +21,13 @@ class DepreciationService
     {
         $targetDate = Carbon::parse($bulan.'-01')->endOfMonth();
 
+        $lockDate = $user->lock_date;
+        if ($lockDate && $targetDate->lte($lockDate)) {
+            throw ValidationException::withMessages([
+                'bulan' => 'Periode depresiasi '.$bulan.' berada pada periode terkunci.',
+            ]);
+        }
+
         // Check if already posted
         $alreadyPosted = $user->journals()
             ->where('tipe_jurnal', 'penyusutan')

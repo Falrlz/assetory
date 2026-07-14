@@ -28,6 +28,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('journals', [JournalController::class, 'index'])->name('journals.index');
     Route::post('journals', [JournalController::class, 'store'])->name('journals.store');
     Route::delete('journals/{id}', [JournalController::class, 'destroy'])->name('journals.destroy');
+    Route::post('journals/{id}/reverse', [JournalController::class, 'reverse'])->name('journals.reverse');
     Route::post('journals/depreciation', [JournalController::class, 'postDepreciation'])->name('journals.depreciation');
 
     // Financial Reports

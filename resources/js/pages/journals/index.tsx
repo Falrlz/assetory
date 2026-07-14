@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { AlertCircle, Calculator, FileText, Landmark, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react';
+import { AlertCircle, Calculator, FileText, Landmark, Plus, Search, ShieldCheck, Trash2, Undo, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 interface JournalItemProp {
@@ -40,6 +40,7 @@ interface IndexProps {
     };
     postedMonths: string[];
     assets: Asset[];
+    lockDate?: string;
 }
 
 const TIPE_JURNAL_LABELS: Record<string, string> = {
@@ -57,6 +58,7 @@ export default function Index({
     ledgerFilters,
     postedMonths,
     assets,
+    lockDate,
 }: IndexProps) {
     const page = usePage();
     const [activeTab, setActiveTab] = useState<'umum' | 'ledger' | 'depresiasi'>(() => {
@@ -306,6 +308,12 @@ export default function Index({
     const handleDeleteJournal = (id: number) => {
         if (confirm('Apakah Anda yakin ingin menghapus jurnal ini? Tindakan ini akan menghapus detail debit dan kredit secara permanen.')) {
             router.delete(route('journals.destroy', id));
+        }
+    };
+
+    const handleReverseJournal = (id: number) => {
+        if (confirm('Apakah Anda yakin ingin membalikkan jurnal ini? Tindakan ini akan membuat jurnal pembalik baru untuk menihilkan efek transaksi asli.')) {
+            router.post(route('journals.reverse', id));
         }
     };
 
@@ -568,17 +576,35 @@ export default function Index({
                                                                             <span className="text-foreground mb-1 block font-mono font-bold">
                                                                                 {journal.nomor_jurnal}
                                                                             </span>
-                                                                            <span
-                                                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${
-                                                                                    journal.tipe_jurnal === 'penyusutan'
-                                                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                                        : journal.tipe_jurnal === 'perolehan_aset'
-                                                                                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                                                          : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
-                                                                                }`}
-                                                                            >
-                                                                                {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
-                                                                            </span>
+                                                                            <div className="flex flex-col gap-1 items-start">
+                                                                                <span
+                                                                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${
+                                                                                        journal.tipe_jurnal === 'penyusutan'
+                                                                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                                            : journal.tipe_jurnal === 'perolehan_aset'
+                                                                                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                                              : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
+                                                                                    }`}
+                                                                                >
+                                                                                    {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
+                                                                                </span>
+                                                                                {journal.reversed_by_id && (
+                                                                                    <span
+                                                                                        className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-semibold text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                                                                        title={`Jurnal pembalik: ${journal.reversed_by?.nomor_jurnal}`}
+                                                                                    >
+                                                                                        [Sudah Dibalik]
+                                                                                    </span>
+                                                                                )}
+                                                                                {journal.reverses_journal_id && (
+                                                                                    <span
+                                                                                        className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[9px] font-semibold text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                                                                                        title={`Membalik jurnal: ${journal.reverses_journal?.nomor_jurnal}`}
+                                                                                    >
+                                                                                        [Jurnal Pembalik]
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
                                                                         </td>
                                                                         <td
                                                                             className="text-muted-foreground max-w-[200px] px-6 py-4 align-top text-xs break-words"
@@ -607,15 +633,43 @@ export default function Index({
                                                                 </td>
                                                                 {index === 0 ? (
                                                                     <td className="px-6 py-4 text-center align-top" rowSpan={journal.items.length}>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
-                                                                            onClick={() => handleDeleteJournal(journal.id)}
-                                                                            title="Hapus Jurnal"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </Button>
+                                                                        {(() => {
+                                                                            const isLocked = lockDate && new Date(journal.tanggal) <= new Date(lockDate);
+                                                                            const isReversed = !!journal.reversed_by_id;
+                                                                            const isReversal = !!journal.reverses_journal_id;
+
+                                                                            if (isReversed || isReversal) {
+                                                                                return (
+                                                                                    <span className="text-xs text-neutral-400 font-medium">Locked</span>
+                                                                                );
+                                                                            }
+
+                                                                            if (isLocked) {
+                                                                                return (
+                                                                                    <Button
+                                                                                        variant="ghost"
+                                                                                        size="icon"
+                                                                                        className="h-8 w-8 text-purple-500 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-purple-950/20"
+                                                                                        onClick={() => handleReverseJournal(journal.id)}
+                                                                                        title="Balikkan Jurnal (Reverse)"
+                                                                                    >
+                                                                                        <Undo className="h-4 w-4" />
+                                                                                    </Button>
+                                                                                );
+                                                                            }
+
+                                                                            return (
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="icon"
+                                                                                    className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
+                                                                                    onClick={() => handleDeleteJournal(journal.id)}
+                                                                                    title="Hapus Jurnal"
+                                                                                >
+                                                                                    <Trash2 className="h-4 w-4" />
+                                                                                </Button>
+                                                                            );
+                                                                        })()}
                                                                     </td>
                                                                 ) : null}
                                                             </tr>

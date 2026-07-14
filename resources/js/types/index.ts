@@ -92,6 +92,10 @@ export interface Journal {
     jenis_transaksi?: string;
     kategori_arus_kas?: string;
     kode_arus_kas?: string;
+    reversed_by_id?: number;
+    reverses_journal_id?: number;
+    reversed_by?: Journal;
+    reverses_journal?: Journal;
     items?: JournalItem[];
     created_at: string;
     updated_at: string;

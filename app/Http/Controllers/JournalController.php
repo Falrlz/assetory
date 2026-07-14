@@ -26,9 +26,9 @@ class JournalController extends Controller
     {
         $user = $request->user();
 
-        // 1. Jurnal Umum List (with items, coa & asset)
+        // 1. Jurnal Umum List (with items, coa & asset, reversedBy & reversesJournal)
         $journals = $user->journals()
-            ->with(['items.coa', 'asset'])
+            ->with(['items.coa', 'asset', 'reversedBy', 'reversesJournal'])
             ->orderBy('tanggal', 'desc')
             ->orderBy('id', 'desc')
             ->get();
@@ -156,6 +156,7 @@ class JournalController extends Controller
             ],
             'postedMonths' => $postedMonths,
             'assets' => $assets,
+            'lockDate' => $user->lock_date?->format('Y-m-d'),
         ]);
     }
 
@@ -177,6 +178,13 @@ class JournalController extends Controller
             'items.*.debit' => 'required|numeric|min:0',
             'items.*.kredit' => 'required|numeric|min:0',
         ]);
+
+        $lockDate = $user->lock_date;
+        if ($lockDate && Carbon::parse($validated['tanggal'])->lte($lockDate)) {
+            throw ValidationException::withMessages([
+                'tanggal' => 'Tanggal jurnal tidak boleh kurang dari atau sama dengan tanggal penguncian periode ('.$lockDate->format('Y-m-d').').',
+            ]);
+        }
 
         // Authorization and balance checks
         $totalDebit = 0.00;
@@ -262,8 +270,80 @@ class JournalController extends Controller
      */
     public function destroy(int $id): RedirectResponse
     {
-        $journal = auth()->user()->journals()->findOrFail($id);
+        $user = auth()->user();
+        $journal = $user->journals()->findOrFail($id);
+
+        $lockDate = $user->lock_date;
+        if ($lockDate && Carbon::parse($journal->tanggal)->lte($lockDate)) {
+            throw ValidationException::withMessages([
+                'journal' => 'Jurnal pada periode yang dikunci tidak dapat dihapus.',
+            ]);
+        }
+
+        if ($journal->reversed_by_id || $journal->reverses_journal_id) {
+            throw ValidationException::withMessages([
+                'journal' => 'Jurnal pembalik atau jurnal yang sudah dibalik tidak dapat dihapus demi keamanan audit.',
+            ]);
+        }
+
         $journal->delete();
+
+        return redirect()->back();
+    }
+
+    /**
+     * Reverse the specified journal.
+     */
+    public function reverse(int $id): RedirectResponse
+    {
+        $user = auth()->user();
+        $journal = $user->journals()->with('items')->findOrFail($id);
+
+        if ($journal->reversed_by_id) {
+            throw ValidationException::withMessages([
+                'journal' => 'Jurnal ini sudah pernah dibalik sebelumnya.',
+            ]);
+        }
+
+        if ($journal->reverses_journal_id) {
+            throw ValidationException::withMessages([
+                'journal' => 'Jurnal pembalik tidak dapat dibalik kembali.',
+            ]);
+        }
+
+        $lockDate = $user->lock_date;
+
+        $today = Carbon::now();
+        $reverseDate = ($lockDate && $today->lte($lockDate))
+            ? Carbon::parse($lockDate)->addDay()->toDateString()
+            : $today->toDateString();
+
+        DB::transaction(function () use ($user, $journal, $reverseDate) {
+            $nomorJurnal = Journal::generateNumber($user, 'JV-R');
+
+            $reversingJournal = $user->journals()->create([
+                'tanggal' => $reverseDate,
+                'nomor_jurnal' => $nomorJurnal,
+                'keterangan' => '[Pembalik] - '.$journal->keterangan,
+                'tipe_jurnal' => 'umum',
+                'jenis_transaksi' => 'jurnal_koreksi',
+                'kategori_arus_kas' => $journal->kategori_arus_kas,
+                'kode_arus_kas' => $journal->kode_arus_kas,
+                'reverses_journal_id' => $journal->id,
+            ]);
+
+            foreach ($journal->items as $item) {
+                $reversingJournal->items()->create([
+                    'coa_id' => $item->coa_id,
+                    'debit' => $item->kredit,
+                    'kredit' => $item->debit,
+                ]);
+            }
+
+            $journal->update([
+                'reversed_by_id' => $reversingJournal->id,
+            ]);
+        });
 
         return redirect()->back();
     }
