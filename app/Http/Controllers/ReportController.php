@@ -27,12 +27,15 @@ class ReportController extends Controller
             ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4)
             ->values()
             ->map(function ($coa) use ($user, $startDate, $endDate) {
-                // 1. Saldo Awal (before start_date)
+                // 1. Saldo Awal (before start_date or is setup beginning balance)
                 $openingSums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
                     ->where('journal_items.coa_id', $coa->id)
-                    ->where('journals.tanggal', '<', $startDate)
+                    ->where(function ($query) use ($startDate) {
+                        $query->where('journals.tanggal', '<', $startDate)
+                            ->orWhere('journals.jenis_transaksi', 'saldo_awal');
+                    })
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
 
@@ -49,12 +52,16 @@ class ReportController extends Controller
                     $coa->saldo_awal_kredit = $netBefore >= 0 ? $netBefore : 0;
                 }
 
-                // 2. Mutasi (between start_date and end_date)
+                // 2. Mutasi (between start_date and end_date, excluding setup beginning balance)
                 $mutationSums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
                     ->where('journal_items.coa_id', $coa->id)
                     ->whereBetween('journals.tanggal', [$startDate, $endDate])
+                    ->where(function ($query) {
+                        $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                            ->orWhereNull('journals.jenis_transaksi');
+                    })
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
 
@@ -201,6 +208,10 @@ class ReportController extends Controller
                     ->where('journals.user_id', $user->id)
                     ->where('journal_items.coa_id', $coa->id)
                     ->whereBetween('journals.tanggal', [$startDate, $endDate])
+                    ->where(function ($query) {
+                        $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                            ->orWhereNull('journals.jenis_transaksi');
+                    })
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
 
@@ -247,12 +258,16 @@ class ReportController extends Controller
         $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
 
-        // Retrieve cash flow items matching cash accounts
+        // Retrieve cash flow items matching cash accounts (excluding setup beginning balance)
         $cashItems = DB::table('journal_items')
             ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
             ->join('coas', 'journal_items.coa_id', '=', 'coas.id')
             ->where('journals.user_id', $user->id)
             ->whereBetween('journals.tanggal', [$startDate, $endDate])
+            ->where(function ($query) {
+                $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                    ->orWhereNull('journals.jenis_transaksi');
+            })
             ->where(function ($query) {
                 // Match cash and bank accounts (kategori aset, and either starts with 01.1 / 1-1, or has Kas/Bank in name)
                 $query->where('coas.kategori', 'aset')
@@ -285,12 +300,15 @@ class ReportController extends Controller
         // Net change in cash
         $netChange = $totalOperating + $totalInvesting + $totalFinancing;
 
-        // Calculate beginning cash (transactions before start_date)
+        // Calculate beginning cash (transactions before start_date or setup beginning balance)
         $beginningCash = DB::table('journal_items')
             ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
             ->join('coas', 'journal_items.coa_id', '=', 'coas.id')
             ->where('journals.user_id', $user->id)
-            ->where('journals.tanggal', '<', $startDate)
+            ->where(function ($query) use ($startDate) {
+                $query->where('journals.tanggal', '<', $startDate)
+                    ->orWhere('journals.jenis_transaksi', 'saldo_awal');
+            })
             ->where(function ($query) {
                 $query->where('coas.kategori', 'aset')
                     ->where(function ($q) {

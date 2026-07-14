@@ -89,3 +89,44 @@ test('authenticated users can see correct trial balance with opening, mutation, 
     expect((float) $beban['saldo_akhir_debit'])->toBe(500000.00);
     expect((float) $beban['saldo_akhir_kredit'])->toBe(0.00);
 });
+
+test('trial balance opening journal is treated as opening balance even if report range starts on the opening journal date', function () {
+    actingAs($this->user);
+    $this->seed(CoaSeeder::class);
+
+    $coaKas = Coa::where('user_id', $this->user->id)->where('kode_akun', '01.1000.01.01')->first(); // Kas Toko (debit normal)
+    $coaModal = Coa::where('user_id', $this->user->id)->where('kode_akun', '03.1000.01.01')->first(); // Modal Disetor (kredit normal)
+
+    // Create opening balance journal on 2026-01-01
+    $journal1 = Journal::create([
+        'user_id' => $this->user->id,
+        'tanggal' => '2026-01-01',
+        'nomor_jurnal' => 'OP-0001',
+        'keterangan' => 'Saldo Awal Modal',
+        'tipe_jurnal' => 'umum',
+        'jenis_transaksi' => 'saldo_awal',
+    ]);
+    $journal1->items()->create(['coa_id' => $coaKas->id, 'debit' => 10000000.00, 'kredit' => 0.00]);
+    $journal1->items()->create(['coa_id' => $coaModal->id, 'debit' => 0.00, 'kredit' => 10000000.00]);
+
+    // Get report from 2026-01-01 (same date as opening balance journal)
+    $response = get(route('reports.trial-balance', [
+        'start_date' => '2026-01-01',
+        'end_date' => '2026-01-31',
+    ]))->assertOk();
+
+    $props = $response->inertiaPage()['props'];
+    $coas = $props['coas'];
+
+    // Verify it is counted as Saldo Awal, NOT as Mutasi
+    expect((float) $props['totalAwalDebit'])->toBe(10000000.00);
+    expect((float) $props['totalAwalKredit'])->toBe(10000000.00);
+    expect((float) $props['totalMutasiDebit'])->toBe(0.00);
+    expect((float) $props['totalMutasiKredit'])->toBe(0.00);
+
+    $kas = collect($coas)->firstWhere('id', $coaKas->id);
+    expect((float) $kas['saldo_awal_debit'])->toBe(10000000.00);
+    expect((float) $kas['mutasi_debit'])->toBe(0.00);
+    expect((float) $kas['mutasi_kredit'])->toBe(0.00);
+    expect((float) $kas['saldo_akhir_debit'])->toBe(10000000.00);
+});
