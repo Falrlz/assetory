@@ -18,7 +18,10 @@ class AssetController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $assets = $user->assets()->latest()->get();
+        $assets = $user->assets()
+            ->orderBy('tanggal_perolehan', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
 
         $assetJournals = $user->journals()
             ->whereIn('tipe_jurnal', ['perolehan_aset', 'penyusutan'])
