@@ -142,7 +142,10 @@ class JournalController extends Controller
             ->values()
             ->all();
 
-        $assets = $user->assets()->latest()->get();
+        $assets = $user->assets()
+            ->orderBy('tanggal_perolehan', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
 
         return Inertia::render('journals/index', [
             'journals' => $journals,

@@ -6,7 +6,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Calculator, Calendar, ClipboardList, Coins, FileText, Plus, Search, TrendingDown, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -60,12 +60,51 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
         nama: '',
         jenis: 'inventaris',
         harga_perolehan: '',
-        nilai_residu: '',
-        tanggal_perolehan: '',
+        nilai_residu: '1',
+        tanggal_perolehan: new Date().toISOString().split('T')[0],
         periode: 'periode_1',
         coa_debit_id: '',
         coa_kredit_id: '',
     });
+
+    // Auto-select Debit & Kredit based on jenis
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const debitCoa = transactionCoas.find((coa) => {
+            if (coa.kode_akun.startsWith('01.3000.01')) {
+                if (data.jenis === 'inventaris' && (coa.kode_akun === '01.3000.01.04' || coa.nama_akun.toLowerCase().includes('peralatan') || coa.nama_akun.toLowerCase().includes('inventaris'))) {
+                    return true;
+                }
+                if (data.jenis === 'kendaraan' && (coa.kode_akun === '01.3000.01.03' || coa.nama_akun.toLowerCase().includes('kendaraan'))) {
+                    return true;
+                }
+                if (data.jenis === 'gedung' && (coa.kode_akun === '01.3000.01.02' || coa.nama_akun.toLowerCase().includes('gedung') || coa.nama_akun.toLowerCase().includes('bangunan'))) {
+                    return true;
+                }
+            }
+            return false;
+        });
+
+        setData((d) => {
+            const nextData = { ...d };
+            if (debitCoa) {
+                nextData.coa_debit_id = debitCoa.id.toString();
+            }
+            // Only set default Kredit if not already selected
+            if (!nextData.coa_kredit_id) {
+                const defaultKreditCode = '01.1000.01.02';
+                let kreditCoa = transactionCoas.find(c => c.kode_akun === defaultKreditCode);
+                if (!kreditCoa) {
+                    kreditCoa = transactionCoas.find(c => c.kode_akun.startsWith('01.1000.'));
+                }
+                if (kreditCoa) {
+                    nextData.coa_kredit_id = kreditCoa.id.toString();
+                }
+            }
+            return nextData;
+        });
+    }, [data.jenis, isOpen]);
 
     const formatRupiah = (value: number | string) => {
         const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -141,11 +180,26 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
     const parentCoas = coas.filter((c) => c.kode_akun.split('.').length < 4);
     const transactionCoas = coas.filter((c) => c.kode_akun.split('.').length === 4);
 
-    // Debit: Semua akun Aset (yang akan BERTAMBAH saat dibeli)
-    const displayDebitCoas = transactionCoas.filter((coa) => coa.kategori === 'aset');
+    // Filter Debit COAs based on selected Asset Type
+    const displayDebitCoas = transactionCoas.filter((coa) => {
+        if (coa.kode_akun.startsWith('01.3000.01')) {
+            if (data.jenis === 'inventaris' && (coa.kode_akun === '01.3000.01.04' || coa.nama_akun.toLowerCase().includes('peralatan') || coa.nama_akun.toLowerCase().includes('inventaris'))) {
+                return true;
+            }
+            if (data.jenis === 'kendaraan' && (coa.kode_akun === '01.3000.01.03' || coa.nama_akun.toLowerCase().includes('kendaraan'))) {
+                return true;
+            }
+            if (data.jenis === 'gedung' && (coa.kode_akun === '01.3000.01.02' || coa.nama_akun.toLowerCase().includes('gedung') || coa.nama_akun.toLowerCase().includes('bangunan'))) {
+                return true;
+            }
+        }
+        return false;
+    });
 
-    // Kredit: Kas/Bank (Aset) + Hutang (Kewajiban) — sumber pembayaran
-    const displayCreditCoas = transactionCoas.filter((coa) => coa.kategori === 'aset' || coa.kategori === 'kewajiban');
+    // Filter Kredit COAs: Only Kas & Setara Kas (01.1000.*) and Utang Lancar (02.1000.*)
+    const displayCreditCoas = transactionCoas.filter((coa) => {
+        return coa.kode_akun.startsWith('01.1000.') || coa.kode_akun.startsWith('02.1000.');
+    });
 
     const groupCoasByParent = (coasList: Coa[]) => {
         const groups: Record<string, Coa[]> = {};
@@ -657,12 +711,15 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                     <Input
                                         id="nilai_residu"
                                         type="number"
-                                        placeholder="1000000"
                                         value={data.nilai_residu}
-                                        onChange={(e) => setData('nilai_residu', e.target.value)}
-                                        min="0"
+                                        readOnly
+                                        disabled
+                                        className="bg-muted text-muted-foreground select-none cursor-not-allowed"
                                         required
                                     />
+                                    <span className="text-muted-foreground text-[11px]">
+                                        Nilai residu ditetapkan tetap Rp 1 untuk keperluan audit.
+                                    </span>
                                     {errors.nilai_residu && <span className="text-xs text-red-500">{errors.nilai_residu}</span>}
                                 </div>
                             </div>
