@@ -175,16 +175,34 @@ class JournalController extends Controller
         $totalDebit = 0.00;
         $totalKredit = 0.00;
 
-        foreach ($validated['items'] as $item) {
+        foreach ($validated['items'] as $index => $item) {
             // Verify COA belongs to user
             $coa = $user->coas()->find($item['coa_id']);
             if (! $coa) {
                 throw ValidationException::withMessages([
-                    'items' => 'Akun COA tidak valid atau tidak dimiliki oleh pengguna.',
+                    "items.{$index}.coa_id" => 'Akun COA tidak valid atau tidak dimiliki oleh pengguna.',
                 ]);
             }
-            $totalDebit += (float) $item['debit'];
-            $totalKredit += (float) $item['kredit'];
+
+            $debit = (float) $item['debit'];
+            $kredit = (float) $item['kredit'];
+
+            if ($debit > 0 && $kredit > 0) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.debit" => 'Satu baris jurnal tidak boleh berisi Debit dan Kredit sekaligus.',
+                    "items.{$index}.kredit" => 'Satu baris jurnal tidak boleh berisi Debit dan Kredit sekaligus.',
+                ]);
+            }
+
+            if ($debit <= 0 && $kredit <= 0) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.debit" => 'Harus mengisi salah satu dari Debit atau Kredit.',
+                    "items.{$index}.kredit" => 'Harus mengisi salah satu dari Debit atau Kredit.',
+                ]);
+            }
+
+            $totalDebit += $debit;
+            $totalKredit += $kredit;
         }
 
         if (round($totalDebit, 2) !== round($totalKredit, 2)) {

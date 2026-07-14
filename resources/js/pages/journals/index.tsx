@@ -1029,67 +1029,85 @@ export default function Index({
                                     <div className="rounded-lg border bg-red-50 p-2 text-xs font-semibold text-red-500">{errors.items}</div>
                                 )}
 
-                                <div className="space-y-2.5">
+                                <div className="space-y-3">
                                     {data.items.map((item, index) => (
-                                        <div key={index} className="flex items-center gap-2">
-                                            {/* COA SELECT */}
-                                            <div className="flex-1">
-                                                <select
-                                                    value={item.coa_id}
-                                                    onChange={(e) => handleItemChange(index, 'coa_id', e.target.value)}
-                                                    className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1.5 text-sm focus:ring-2 focus:outline-hidden"
-                                                    required
+                                        <div key={index} className="flex flex-col gap-1 border-b border-muted/50 pb-2.5 last:border-0 last:pb-0">
+                                            <div className="flex items-center gap-2">
+                                                {/* COA SELECT */}
+                                                <div className="flex-1">
+                                                    <select
+                                                        value={item.coa_id}
+                                                        onChange={(e) => handleItemChange(index, 'coa_id', e.target.value)}
+                                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1.5 text-sm focus:ring-2 focus:outline-hidden"
+                                                        required
+                                                    >
+                                                        <option value="">-- Pilih Akun --</option>
+                                                        {Object.entries(groupCoasByParent(transactionCoas)).map(([parentLabel, items]) => (
+                                                            <optgroup key={parentLabel} label={parentLabel}>
+                                                                {items.map((coa) => (
+                                                                    <option key={coa.id} value={coa.id}>
+                                                                        {coa.nama_akun}
+                                                                    </option>
+                                                                ))}
+                                                            </optgroup>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* DEBIT INPUT */}
+                                                <div className="w-1/4">
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="Debit (Rp)"
+                                                        className="h-9 font-mono"
+                                                        value={item.debit || ''}
+                                                        onChange={(e) => handleItemChange(index, 'debit', e.target.value)}
+                                                        disabled={Number(item.kredit) > 0}
+                                                    />
+                                                </div>
+
+                                                {/* KREDIT INPUT */}
+                                                <div className="w-1/4">
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        placeholder="Kredit (Rp)"
+                                                        className="h-9 font-mono"
+                                                        value={item.kredit || ''}
+                                                        onChange={(e) => handleItemChange(index, 'kredit', e.target.value)}
+                                                        disabled={Number(item.debit) > 0}
+                                                    />
+                                                </div>
+
+                                                {/* REMOVE BUTTON */}
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-muted-foreground h-9 w-9 hover:text-red-500 disabled:opacity-20"
+                                                    disabled={data.items.length <= 2}
+                                                    onClick={() => handleRemoveItemRow(index)}
                                                 >
-                                                    <option value="">-- Pilih Akun --</option>
-                                                    {Object.entries(groupCoasByParent(transactionCoas)).map(([parentLabel, items]) => (
-                                                        <optgroup key={parentLabel} label={parentLabel}>
-                                                            {items.map((coa) => (
-                                                                <option key={coa.id} value={coa.id}>
-                                                                    {coa.nama_akun}
-                                                                </option>
-                                                            ))}
-                                                        </optgroup>
-                                                    ))}
-                                                </select>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
                                             </div>
 
-                                            {/* DEBIT INPUT */}
-                                            <div className="w-1/4">
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="Debit (Rp)"
-                                                    className="h-9 font-mono"
-                                                    value={item.debit || ''}
-                                                    onChange={(e) => handleItemChange(index, 'debit', e.target.value)}
-                                                    disabled={Number(item.kredit) > 0}
-                                                />
-                                            </div>
-
-                                            {/* KREDIT INPUT */}
-                                            <div className="w-1/4">
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="Kredit (Rp)"
-                                                    className="h-9 font-mono"
-                                                    value={item.kredit || ''}
-                                                    onChange={(e) => handleItemChange(index, 'kredit', e.target.value)}
-                                                    disabled={Number(item.debit) > 0}
-                                                />
-                                            </div>
-
-                                            {/* REMOVE BUTTON */}
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-muted-foreground h-9 w-9 hover:text-red-500 disabled:opacity-20"
-                                                disabled={data.items.length <= 2}
-                                                onClick={() => handleRemoveItemRow(index)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            {/* ROW FIELD ERRORS */}
+                                            {(errors[`items.${index}.coa_id`] || errors[`items.${index}.debit`] || errors[`items.${index}.kredit`]) && (
+                                                <div className="flex gap-2 px-1 text-[11px] font-medium text-red-500">
+                                                    <div className="flex-1 truncate">
+                                                        {errors[`items.${index}.coa_id`]}
+                                                    </div>
+                                                    <div className="w-1/4 truncate">
+                                                        {errors[`items.${index}.debit`]}
+                                                    </div>
+                                                    <div className="w-1/4 truncate">
+                                                        {errors[`items.${index}.kredit`]}
+                                                    </div>
+                                                    <div className="w-9"></div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -1119,6 +1137,12 @@ export default function Index({
                                     )}
                                 </div>
                             </div>
+
+                            {!isBalanced && (
+                                <p className="text-[11px] text-amber-600 mt-1.5 px-1 font-medium leading-normal">
+                                    * Tombol Simpan Jurnal dinonaktifkan karena total Debit dan total Kredit belum seimbang atau masih bernilai Rp 0.
+                                </p>
+                            )}
                         </div>
 
                         <DialogFooter>
