@@ -55,12 +55,15 @@ class JournalController extends Controller
             $coaId = $coa->id;
             $saldoNormal = $coa->saldo_normal;
 
-            // Calculate Saldo Awal (before start_date)
+            // Calculate Saldo Awal (before start_date or setup beginning balance)
             $openingSums = DB::table('journal_items')
                 ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                 ->where('journals.user_id', $user->id)
                 ->where('journal_items.coa_id', $coaId)
-                ->where('journals.tanggal', '<', $startDate)
+                ->where(function ($query) use ($startDate) {
+                    $query->where('journals.tanggal', '<', $startDate)
+                        ->orWhere('journals.jenis_transaksi', 'saldo_awal');
+                })
                 ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                 ->first();
 
@@ -72,10 +75,11 @@ class JournalController extends Controller
                 $saldoAwal = $kreditSumBefore - $debitSumBefore;
             }
 
-            // Get journal items for this COA in the date range
+            // Get journal items for this COA in the date range (excluding setup beginning balance)
             $items = JournalItem::where('coa_id', $coaId)
                 ->whereHas('journal', function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
+                    $query->where('user_id', $user->id)
+                        ->where(fn ($q) => $q->where('jenis_transaksi', '!=', 'saldo_awal')->orWhereNull('jenis_transaksi'));
                 })
                 ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                 ->whereBetween('journals.tanggal', [$startDate, $endDate])
