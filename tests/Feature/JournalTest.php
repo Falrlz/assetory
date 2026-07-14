@@ -335,3 +335,58 @@ test('authenticated users cannot create journal if any item has both debit and c
     post(route('journals.store'), $payload)
         ->assertSessionHasErrors(['items.0.debit', 'items.0.kredit']);
 });
+
+test('artisan command asset:depreciate generates depreciation journals correctly for all users', function () {
+    $this->seed(CoaSeeder::class);
+
+    // Create another user to verify command works massal
+    $otherUser = User::factory()->create();
+    // Seed COA for other user
+    $this->actingAs($otherUser);
+    $this->seed(CoaSeeder::class);
+
+    // Create an asset for primary user
+    $asset1 = Asset::factory()->create([
+        'user_id' => $this->user->id,
+        'nama' => 'Aset User 1',
+        'jenis' => 'inventaris',
+        'harga_perolehan' => 10000000.00,
+        'nilai_residu' => 2000000.00,
+        'tanggal_perolehan' => '2026-06-15',
+        'periode' => 'periode_1',
+    ]);
+
+    // Create an asset for other user
+    $asset2 = Asset::factory()->create([
+        'user_id' => $otherUser->id,
+        'nama' => 'Aset User 2',
+        'jenis' => 'kendaraan',
+        'harga_perolehan' => 200000000.00,
+        'nilai_residu' => 20000000.00,
+        'tanggal_perolehan' => '2026-05-10',
+        'periode' => 'periode_2',
+    ]);
+
+    // Run command via Artisan Facade
+    $this->artisan('asset:depreciate --month=2026-07')
+        ->expectsOutput('Memulai pemrosesan depresiasi aset untuk periode: 2026-07')
+        ->expectsOutput("Sukses: Jurnal penyusutan berhasil dibuat untuk {$this->user->name} ({$this->user->email})")
+        ->expectsOutput("Sukses: Jurnal penyusutan berhasil dibuat untuk {$otherUser->name} ({$otherUser->email})")
+        ->assertExitCode(0);
+
+    // Verify DB entries for User 1
+    $this->assertDatabaseHas('journals', [
+        'user_id' => $this->user->id,
+        'tipe_jurnal' => 'penyusutan',
+        'ref_id' => $asset1->id,
+        'tanggal' => '2026-07-31 00:00:00',
+    ]);
+
+    // Verify DB entries for User 2
+    $this->assertDatabaseHas('journals', [
+        'user_id' => $otherUser->id,
+        'tipe_jurnal' => 'penyusutan',
+        'ref_id' => $asset2->id,
+        'tanggal' => '2026-07-31 00:00:00',
+    ]);
+});
