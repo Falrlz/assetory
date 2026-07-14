@@ -7,6 +7,7 @@ use App\Models\Coa;
 use App\Models\Journal;
 use App\Models\JournalItem;
 use App\Models\User;
+use App\Services\DepreciationService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 
@@ -25,6 +26,7 @@ class SimulationSeeder extends Seeder
         Schema::enableForeignKeyConstraints();
 
         $users = User::all();
+        $depreciationService = app(DepreciationService::class);
 
         foreach ($users as $user) {
             // Find necessary COAs
@@ -41,17 +43,36 @@ class SimulationSeeder extends Seeder
             $coaBebanGaji = Coa::where('user_id', $user->id)->where('kode_akun', '05.1000.01.01')->first(); // Beban Gaji
             $coaBebanListrik = Coa::where('user_id', $user->id)->where('kode_akun', '05.2000.01.01')->first(); // Beban Listrik
 
-            // Validation check to prevent seeding if database isn't fully seeded with COAs
             if (! $coaKas || ! $coaRuko || ! $coaPeralatan || ! $coaModal || ! $coaPerlengkapan || ! $coaBebanLain || ! $coaDiterimaDimuka || ! $coaUtangUsaha || ! $coaPiutangUsaha || ! $coaPendapatanJasa || ! $coaBebanGaji || ! $coaBebanListrik) {
                 continue;
             }
 
-            // --- 1 Mei: Setoran Modal Awal ---
+            // ==========================================
+            // SALDO AWAL (SETUP CUT-OFF)
+            // ==========================================
+
+            // 30 April: Saldo Awal Setup
+            $j0 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-04-30',
+                'nomor_jurnal' => 'OP-20260430-0001',
+                'keterangan' => 'Saldo Awal Setup Usaha',
+                'tipe_jurnal' => 'umum',
+                'jenis_transaksi' => 'saldo_awal',
+            ]);
+            $j0->items()->create(['coa_id' => $coaKas->id, 'debit' => 100000000.00, 'kredit' => 0.00]);
+            $j0->items()->create(['coa_id' => $coaModal->id, 'debit' => 0.00, 'kredit' => 100000000.00]);
+
+            // ==========================================
+            // BULAN 1: MEI 2026
+            // ==========================================
+
+            // 1 Mei: Setoran Modal Tambahan (Gedung Ruko & Peralatan)
             $j1 = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2026-05-01',
                 'nomor_jurnal' => 'JV-202605-0001',
-                'keterangan' => 'Setoran modal awal usaha Pak Budi',
+                'keterangan' => 'Setoran modal tambahan usaha Pak Budi',
                 'tipe_jurnal' => 'umum',
             ]);
             $j1->items()->create(['coa_id' => $coaKas->id, 'debit' => 50000000.00, 'kredit' => 0.00]);
@@ -59,7 +80,7 @@ class SimulationSeeder extends Seeder
             $j1->items()->create(['coa_id' => $coaPeralatan->id, 'debit' => 50000000.00, 'kredit' => 0.00]);
             $j1->items()->create(['coa_id' => $coaModal->id, 'debit' => 0.00, 'kredit' => 500000000.00]);
 
-            // Create Assets for Ruko & Peralatan
+            // Buat Aset Tetap
             Asset::create([
                 'user_id' => $user->id,
                 'coa_debit_id' => $coaRuko->id,
@@ -84,7 +105,7 @@ class SimulationSeeder extends Seeder
                 'periode' => 'periode_2', // 8 tahun
             ]);
 
-            // --- 5 Mei: Membeli Perlengkapan Kantor ---
+            // 5 Mei: Membeli Perlengkapan Kantor
             $j2 = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2026-05-05',
@@ -95,7 +116,7 @@ class SimulationSeeder extends Seeder
             $j2->items()->create(['coa_id' => $coaPerlengkapan->id, 'debit' => 5000000.00, 'kredit' => 0.00]);
             $j2->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 5000000.00]);
 
-            // --- 7 Mei: Membayar Iklan Media Sosial ---
+            // 7 Mei: Membayar Iklan Media Sosial
             $j3 = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2026-05-07',
@@ -106,7 +127,7 @@ class SimulationSeeder extends Seeder
             $j3->items()->create(['coa_id' => $coaBebanLain->id, 'debit' => 2000000.00, 'kredit' => 0.00]);
             $j3->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 2000000.00]);
 
-            // --- 10 Mei: Menerima Pendapatan Diterima Dimuka ---
+            // 10 Mei: Menerima Pendapatan Diterima Dimuka
             $j4 = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2026-05-10',
@@ -117,7 +138,7 @@ class SimulationSeeder extends Seeder
             $j4->items()->create(['coa_id' => $coaKas->id, 'debit' => 75000000.00, 'kredit' => 0.00]);
             $j4->items()->create(['coa_id' => $coaDiterimaDimuka->id, 'debit' => 0.00, 'kredit' => 75000000.00]);
 
-            // --- 12 Mei: Membeli Laptop Kantor secara Kredit ---
+            // 12 Mei: Membeli Laptop Kantor secara Kredit
             $j5 = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2026-05-12',
@@ -140,7 +161,7 @@ class SimulationSeeder extends Seeder
                 'periode' => 'periode_1', // 4 tahun
             ]);
 
-            // --- 15 Mei: Menyelesaikan Jasa Perhitungan Pajak Badan & Mengirim Tagihan ---
+            // 15 Mei: Tagihan Jasa Perhitungan Pajak
             $j6 = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2026-05-15',
@@ -151,7 +172,7 @@ class SimulationSeeder extends Seeder
             $j6->items()->create(['coa_id' => $coaPiutangUsaha->id, 'debit' => 50000000.00, 'kredit' => 0.00]);
             $j6->items()->create(['coa_id' => $coaPendapatanJasa->id, 'debit' => 0.00, 'kredit' => 50000000.00]);
 
-            // --- 20 Mei: Penerimaan Pembayaran 50% atas Piutang ---
+            // 20 Mei: Penerimaan Pembayaran 50% atas Piutang
             $j7 = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2026-05-20',
@@ -162,9 +183,7 @@ class SimulationSeeder extends Seeder
             $j7->items()->create(['coa_id' => $coaKas->id, 'debit' => 25000000.00, 'kredit' => 0.00]);
             $j7->items()->create(['coa_id' => $coaPiutangUsaha->id, 'debit' => 0.00, 'kredit' => 25000000.00]);
 
-            // --- Note: 20 Mei menandatangani kontrak non-accounting event / no entry required ---
-
-            // --- 25 Mei: Membayar Gaji Konsultan ---
+            // 25 Mei: Membayar Gaji Konsultan
             $j8 = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2026-05-25',
@@ -175,7 +194,7 @@ class SimulationSeeder extends Seeder
             $j8->items()->create(['coa_id' => $coaBebanGaji->id, 'debit' => 17000000.00, 'kredit' => 0.00]);
             $j8->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 17000000.00]);
 
-            // --- 28 Mei: Membayar Tagihan Listrik Ruko ---
+            // 28 Mei: Membayar Listrik
             $j9 = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2026-05-28',
@@ -185,6 +204,134 @@ class SimulationSeeder extends Seeder
             ]);
             $j9->items()->create(['coa_id' => $coaBebanListrik->id, 'debit' => 1000000.00, 'kredit' => 0.00]);
             $j9->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 1000000.00]);
+
+            // 31 Mei: Posting Depresiasi Mei 2026
+            $depreciationService->postDepreciationForUser($user, '2026-05');
+
+            // ==========================================
+            // BULAN 2: JUNI 2026
+            // ==========================================
+
+            // 3 Juni: Membayar sisa utang laptop (5 juta)
+            $j10 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-06-03',
+                'nomor_jurnal' => 'JV-202606-0001',
+                'keterangan' => 'Pembayaran sebagian utang laptop kantor',
+                'tipe_jurnal' => 'umum',
+            ]);
+            $j10->items()->create(['coa_id' => $coaUtangUsaha->id, 'debit' => 5000000.00, 'kredit' => 0.00]);
+            $j10->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 5000000.00]);
+
+            // 10 Juni: Menerima pelunasan piutang (25 juta)
+            $j11 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-06-10',
+                'nomor_jurnal' => 'JV-202606-0002',
+                'keterangan' => 'Penerimaan pelunasan piutang tagihan jasa pajak',
+                'tipe_jurnal' => 'umum',
+            ]);
+            $j11->items()->create(['coa_id' => $coaKas->id, 'debit' => 25000000.00, 'kredit' => 0.00]);
+            $j11->items()->create(['coa_id' => $coaPiutangUsaha->id, 'debit' => 0.00, 'kredit' => 25000000.00]);
+
+            // 18 Juni: Menerima pendapatan jasa secara tunai (40 juta)
+            $j12 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-06-18',
+                'nomor_jurnal' => 'JV-202606-0003',
+                'keterangan' => 'Penerimaan pendapatan jasa konsultasi manajemen tunai',
+                'tipe_jurnal' => 'umum',
+            ]);
+            $j12->items()->create(['coa_id' => $coaKas->id, 'debit' => 40000000.00, 'kredit' => 0.00]);
+            $j12->items()->create(['coa_id' => $coaPendapatanJasa->id, 'debit' => 0.00, 'kredit' => 40000000.00]);
+
+            // 25 Juni: Membayar Gaji Konsultan
+            $j13 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-06-25',
+                'nomor_jurnal' => 'JV-202606-0004',
+                'keterangan' => 'Pembayaran gaji konsultan periode Juni',
+                'tipe_jurnal' => 'umum',
+            ]);
+            $j13->items()->create(['coa_id' => $coaBebanGaji->id, 'debit' => 17000000.00, 'kredit' => 0.00]);
+            $j13->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 17000000.00]);
+
+            // 28 Juni: Membayar Listrik
+            $j14 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-06-28',
+                'nomor_jurnal' => 'JV-202606-0005',
+                'keterangan' => 'Pembayaran tagihan listrik ruko Juni',
+                'tipe_jurnal' => 'umum',
+            ]);
+            $j14->items()->create(['coa_id' => $coaBebanListrik->id, 'debit' => 1200000.00, 'kredit' => 0.00]);
+            $j14->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 1200000.00]);
+
+            // 30 Juni: Posting Depresiasi Juni 2026
+            $depreciationService->postDepreciationForUser($user, '2026-06');
+
+            // ==========================================
+            // BULAN 3: JULI 2026
+            // ==========================================
+
+            // 5 Juli: Membeli Printer Kantor (6 juta cash)
+            $j15 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-07-05',
+                'nomor_jurnal' => 'JV-202607-0001',
+                'keterangan' => 'Pembelian printer kantor tunai',
+                'tipe_jurnal' => 'umum',
+            ]);
+            $j15->items()->create(['coa_id' => $coaPeralatan->id, 'debit' => 6000000.00, 'kredit' => 0.00]);
+            $j15->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 6000000.00]);
+
+            Asset::create([
+                'user_id' => $user->id,
+                'coa_debit_id' => $coaPeralatan->id,
+                'coa_kredit_id' => $coaKas->id,
+                'nama' => 'Printer Kantor',
+                'jenis' => 'inventaris',
+                'harga_perolehan' => 6000000.00,
+                'nilai_residu' => 0.00,
+                'tanggal_perolehan' => '2026-07-05',
+                'periode' => 'periode_1', // 4 tahun
+            ]);
+
+            // 12 Juli: Pendapatan Jasa Tunai (60 juta)
+            $j16 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-07-12',
+                'nomor_jurnal' => 'JV-202607-0002',
+                'keterangan' => 'Penerimaan pendapatan jasa audit tahunan tunai',
+                'tipe_jurnal' => 'umum',
+            ]);
+            $j16->items()->create(['coa_id' => $coaKas->id, 'debit' => 60000000.00, 'kredit' => 0.00]);
+            $j16->items()->create(['coa_id' => $coaPendapatanJasa->id, 'debit' => 0.00, 'kredit' => 60000000.00]);
+
+            // 25 Juli: Membayar Gaji Konsultan
+            $j17 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-07-25',
+                'nomor_jurnal' => 'JV-202607-0003',
+                'keterangan' => 'Pembayaran gaji konsultan periode Juli',
+                'tipe_jurnal' => 'umum',
+            ]);
+            $j17->items()->create(['coa_id' => $coaBebanGaji->id, 'debit' => 17000000.00, 'kredit' => 0.00]);
+            $j17->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 17000000.00]);
+
+            // 28 Juli: Membayar Listrik
+            $j18 = Journal::create([
+                'user_id' => $user->id,
+                'tanggal' => '2026-07-28',
+                'nomor_jurnal' => 'JV-202607-0004',
+                'keterangan' => 'Pembayaran tagihan listrik ruko Juli',
+                'tipe_jurnal' => 'umum',
+            ]);
+            $j18->items()->create(['coa_id' => $coaBebanListrik->id, 'debit' => 1100000.00, 'kredit' => 0.00]);
+            $j18->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 1100000.00]);
+
+            // 31 Juli: Posting Depresiasi Juli 2026
+            $depreciationService->postDepreciationForUser($user, '2026-07');
         }
     }
 }
