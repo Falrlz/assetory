@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('asset:depreciate')->lastDayOfMonth();
+Schedule::command('app:lock-year')->yearly();
