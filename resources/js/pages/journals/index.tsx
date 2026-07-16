@@ -1,3 +1,4 @@
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -88,6 +89,8 @@ export default function Index({
     );
     const [ledgerEndDate, setLedgerEndDate] = useState(ledgerFilters?.end_date || new Date().toISOString().split('T')[0]);
     const [ledgerSearch, setLedgerSearch] = useState('');
+    const [selectedLedgerCoa, setSelectedLedgerCoa] = useState('all');
+    const [ledgerError, setLedgerError] = useState<string | null>(null);
 
     const dynamicBreadcrumbs: BreadcrumbItem[] = [
         {
@@ -128,8 +131,9 @@ export default function Index({
 
     // Default select current month (YYYY-MM)
     const today = new Date();
-    const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
+    const [depYear, setDepYear] = useState<string>(() => today.getFullYear().toString());
+    const [depMonth, setDepMonth] = useState<string>(() => String(today.getMonth() + 1).padStart(2, '0'));
+    const selectedMonth = `${depYear}-${depMonth}`;
 
     // Search and filter states for Jurnal Umum
     const [searchQuery, setSearchQuery] = useState('');
@@ -226,11 +230,21 @@ export default function Index({
 
     // Form for monthly depreciation posting
     const depForm = useForm({
-        bulan: currentMonthStr,
+        bulan: selectedMonth,
     });
 
     const handleLedgerFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        const startYear = new Date(ledgerStartDate).getFullYear();
+        const endYear = new Date(ledgerEndDate).getFullYear();
+        
+        if (startYear !== endYear) {
+            setLedgerError('Rentang tanggal tidak boleh melewati dua tahun yang berbeda.');
+            return;
+        }
+        
+        setLedgerError(null);
         router.get(
             route('journals.index'),
             {
@@ -247,10 +261,13 @@ export default function Index({
     };
 
     const handleLedgerFilterReset = () => {
-        const start = new Date(new Date().getFullYear(), 0, 2).toISOString().split('T')[0]; // Jan 1st
-        const end = new Date().toISOString().split('T')[0];
+        setLedgerError(null);
+        const currentYear = new Date().getFullYear();
+        const start = `${currentYear}-01-01`;
+        const end = new Date().toLocaleDateString('en-CA');
         setLedgerStartDate(start);
         setLedgerEndDate(end);
+        setSelectedLedgerCoa('all');
         router.get(
             route('journals.index'),
             {
@@ -690,53 +707,91 @@ export default function Index({
                     (() => {
                         const filteredLedger = ledgerData.filter((account) => {
                             const query = ledgerSearch.toLowerCase();
-                            return account.coa.nama_akun.toLowerCase().includes(query) || account.coa.kode_akun.includes(query);
+                            const matchSearch = account.coa.nama_akun.toLowerCase().includes(query) || account.coa.kode_akun.includes(query);
+                            const matchCoa = selectedLedgerCoa === 'all' || account.coa.id.toString() === selectedLedgerCoa;
+                            return matchSearch && matchCoa;
                         });
 
                         return (
                             <div className="space-y-6">
-                                {/* Date Filters & Controls */}
-                                <div className="bg-card flex flex-wrap items-end justify-between gap-4 rounded-xl border p-4">
-                                    <form onSubmit={handleLedgerFilterSubmit} className="flex flex-1 flex-wrap items-end gap-4">
-                                        <div className="grid w-40 gap-1.5">
-                                            <Label htmlFor="ledger_start_date">Tanggal Mulai</Label>
-                                            <input
-                                                type="date"
-                                                id="ledger_start_date"
-                                                value={ledgerStartDate}
-                                                onChange={(e) => setLedgerStartDate(e.target.value)}
-                                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                                            />
-                                        </div>
-                                        <div className="grid w-40 gap-1.5">
-                                            <Label htmlFor="ledger_end_date">Tanggal Selesai</Label>
-                                            <input
-                                                type="date"
-                                                id="ledger_end_date"
-                                                value={ledgerEndDate}
-                                                onChange={(e) => setLedgerEndDate(e.target.value)}
-                                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                                            />
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button type="submit" size="sm" className="h-9">
-                                                Terapkan Filter
-                                            </Button>
-                                            <Button type="button" variant="outline" size="sm" onClick={handleLedgerFilterReset} className="h-9">
-                                                Reset
-                                            </Button>
-                                        </div>
-                                    </form>
-                                    <div className="relative w-72">
-                                        <Search className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
-                                        <Input
-                                            placeholder="Cari Akun Buku Besar..."
-                                            value={ledgerSearch}
-                                            onChange={(e) => setLedgerSearch(e.target.value)}
-                                            className="h-9 pl-9"
+                                {/* Error Banner */}
+                                {(ledgerError || (errors && errors.start_date)) && (
+                                    <Alert variant="destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertTitle>Kesalahan</AlertTitle>
+                                        <AlertDescription>{ledgerError || (errors.start_date as string)}</AlertDescription>
+                                    </Alert>
+                                )}
+
+                                {/* Date & Account Filters */}
+                                <form onSubmit={handleLedgerFilterSubmit} className="bg-card grid grid-cols-1 items-end gap-4 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-5">
+                                    {/* Tanggal Mulai */}
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="ledger_start_date">Tanggal Mulai</Label>
+                                        <input
+                                            type="date"
+                                            id="ledger_start_date"
+                                            value={ledgerStartDate}
+                                            onChange={(e) => setLedgerStartDate(e.target.value)}
+                                            className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                                         />
                                     </div>
-                                </div>
+
+                                    {/* Tanggal Selesai */}
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="ledger_end_date">Tanggal Selesai</Label>
+                                        <input
+                                            type="date"
+                                            id="ledger_end_date"
+                                            value={ledgerEndDate}
+                                            onChange={(e) => setLedgerEndDate(e.target.value)}
+                                            className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                        />
+                                    </div>
+
+                                    {/* Pilih Akun */}
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="ledger_coa_filter">Pilih Akun Buku Besar</Label>
+                                        <select
+                                            id="ledger_coa_filter"
+                                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                            value={selectedLedgerCoa}
+                                            onChange={(e) => setSelectedLedgerCoa(e.target.value)}
+                                        >
+                                            <option value="all">Semua Akun</option>
+                                            {ledgerData.map((acc) => (
+                                                <option key={acc.coa.id} value={acc.coa.id}>
+                                                    [{acc.coa.kode_akun}] {acc.coa.nama_akun}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Cari Akun */}
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="ledger_search">Cari Nama / Kode</Label>
+                                        <div className="relative">
+                                            <Search className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
+                                            <Input
+                                                id="ledger_search"
+                                                placeholder="Ketik nama/kode..."
+                                                value={ledgerSearch}
+                                                onChange={(e) => setLedgerSearch(e.target.value)}
+                                                className="h-9 pl-9"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Tombol Terapkan & Reset */}
+                                    <div className="flex gap-2">
+                                        <Button type="submit" className="h-9 flex-1">
+                                            Terapkan
+                                        </Button>
+                                        <Button type="button" variant="outline" onClick={handleLedgerFilterReset} className="h-9 px-3" title="Reset Filter">
+                                            Reset
+                                        </Button>
+                                    </div>
+                                </form>
 
                                 {/* Traditional Indonesian 6-Column General Ledger Cards */}
                                 <div className="space-y-8">
@@ -753,15 +808,9 @@ export default function Index({
                                             return (
                                                 <div key={account.coa.id} className="bg-card overflow-hidden rounded-xl border shadow-xs">
                                                     {/* Header */}
-                                                    <div className="bg-muted/30 border-border/80 flex flex-wrap items-center justify-between gap-4 border-b px-6 py-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-primary text-lg font-semibold">{account.coa.nama_akun}</span>
-                                                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                                                                Buku Besar
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-muted-foreground bg-background rounded-md border px-3 py-1 font-mono text-sm font-bold">
-                                                            Kode Akun: {account.coa.kode_akun}
+                                                    <div className="bg-muted/30 border-border/80 flex items-center justify-between border-b px-6 py-4">
+                                                        <span className="text-foreground text-base font-mono font-bold">
+                                                            {account.coa.kode_akun} - {account.coa.nama_akun}
                                                         </span>
                                                     </div>
 
@@ -908,9 +957,44 @@ export default function Index({
                     <div className="space-y-6">
                         {/* Selector Month */}
                         <div className="bg-card grid max-w-2xl items-end gap-4 rounded-xl border p-5 md:grid-cols-3">
-                            <div className="grid gap-2">
-                                <Label htmlFor="dep_month">Pilih Bulan Penyusutan</Label>
-                                <Input id="dep_month" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
+                            <div className="grid gap-2 grid-cols-2">
+                                <div className="grid gap-1">
+                                    <Label htmlFor="dep_month_select">Bulan</Label>
+                                    <select
+                                        id="dep_month_select"
+                                        value={depMonth}
+                                        onChange={(e) => setDepMonth(e.target.value)}
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                    >
+                                        <option value="01">Januari</option>
+                                        <option value="02">Februari</option>
+                                        <option value="03">Maret</option>
+                                        <option value="04">April</option>
+                                        <option value="05">Mei</option>
+                                        <option value="06">Juni</option>
+                                        <option value="07">Juli</option>
+                                        <option value="08">Agustus</option>
+                                        <option value="09">September</option>
+                                        <option value="10">Oktober</option>
+                                        <option value="11">November</option>
+                                        <option value="12">Desember</option>
+                                    </select>
+                                </div>
+                                <div className="grid gap-1">
+                                    <Label htmlFor="dep_year_select">Tahun</Label>
+                                    <select
+                                        id="dep_year_select"
+                                        value={depYear}
+                                        onChange={(e) => setDepYear(e.target.value)}
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                    >
+                                        {Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString()).map((yr) => (
+                                            <option key={yr} value={yr}>
+                                                {yr}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                             <div className="flex items-center">
                                 {isMonthAlreadyPosted ? (

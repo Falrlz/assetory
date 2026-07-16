@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,8 +18,19 @@ class ReportController extends Controller
     {
         $user = $request->user();
 
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
         $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+
+        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
+            throw ValidationException::withMessages([
+                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+            ]);
+        }
 
         // Get transactional COAs (Level 4, i.e. 4 segments separated by dots)
         $coas = $user->coas()
@@ -195,8 +207,19 @@ class ReportController extends Controller
     {
         $user = $request->user();
 
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+
+        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
+            throw ValidationException::withMessages([
+                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+            ]);
+        }
 
         // Get accounts
         $allCoas = $user->coas()
@@ -255,8 +278,19 @@ class ReportController extends Controller
     {
         $user = $request->user();
 
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
         $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+
+        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
+            throw ValidationException::withMessages([
+                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+            ]);
+        }
 
         // Retrieve cash flow items matching cash accounts (excluding setup beginning balance)
         $cashItems = DB::table('journal_items')

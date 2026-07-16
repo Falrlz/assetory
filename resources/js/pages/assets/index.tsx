@@ -633,7 +633,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
 
             {/* Create Asset Dialog */}
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[600px]">
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
                             <DialogTitle>Tambah Aset Baru</DialogTitle>
@@ -654,13 +654,13 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                 {errors.nama && <span className="text-xs text-red-500">{errors.nama}</span>}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 {/* Jenis */}
                                 <div className="grid gap-2">
                                     <Label htmlFor="jenis">Jenis Aset</Label>
                                     <select
                                         id="jenis"
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
+                                        className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={data.jenis}
                                         onChange={(e) => setData('jenis', e.target.value)}
                                     >
@@ -676,7 +676,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                     <Label htmlFor="periode">Kelompok Masa Manfaat</Label>
                                     <select
                                         id="periode"
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
+                                        className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={data.periode}
                                         onChange={(e) => setData('periode', e.target.value)}
                                     >
@@ -689,14 +689,27 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                {/* Tanggal Perolehan */}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="tanggal_perolehan">Tanggal Perolehan</Label>
+                                    <Input
+                                        id="tanggal_perolehan"
+                                        type="date"
+                                        value={data.tanggal_perolehan}
+                                        onChange={(e) => setData('tanggal_perolehan', e.target.value)}
+                                        required
+                                    />
+                                    {errors.tanggal_perolehan && <span className="text-xs text-red-500">{errors.tanggal_perolehan}</span>}
+                                </div>
+
                                 {/* Harga Perolehan */}
                                 <div className="grid gap-2">
                                     <Label htmlFor="harga_perolehan">Harga Perolehan (Rp)</Label>
                                     <Input
                                         id="harga_perolehan"
                                         type="number"
-                                        placeholder="10000000"
+                                        placeholder="Contoh: 10000000"
                                         value={data.harga_perolehan}
                                         onChange={(e) => setData('harga_perolehan', e.target.value)}
                                         min="0"
@@ -704,94 +717,80 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                     />
                                     {errors.harga_perolehan && <span className="text-xs text-red-500">{errors.harga_perolehan}</span>}
                                 </div>
-
-                                {/* Nilai Residu */}
-                                <div className="grid gap-2">
-                                    <Label htmlFor="nilai_residu">Nilai Residu (Rp)</Label>
-                                    <Input
-                                        id="nilai_residu"
-                                        type="number"
-                                        value={data.nilai_residu}
-                                        readOnly
-                                        disabled
-                                        className="bg-muted text-muted-foreground select-none cursor-not-allowed"
-                                        required
-                                    />
-                                    <span className="text-muted-foreground text-[11px]">
-                                        Nilai residu ditetapkan tetap Rp 1 untuk keperluan audit.
-                                    </span>
-                                    {errors.nilai_residu && <span className="text-xs text-red-500">{errors.nilai_residu}</span>}
-                                </div>
                             </div>
 
-                            {/* Akun Debit & Kredit Selection */}
-                            <div className="grid grid-cols-2 gap-4">
-                                {/* Akun Aset Tetap (Debit) */}
-                                <div className="grid gap-2">
-                                    <Label htmlFor="coa_debit_id">Akun Debit — Aset yang Dibeli</Label>
-                                    <select
-                                        id="coa_debit_id"
-                                        className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
-                                        value={data.coa_debit_id}
-                                        onChange={(e) => setData('coa_debit_id', e.target.value)}
-                                        required
-                                    >
-                                        <option value="">-- Pilih Akun Aset --</option>
-                                        {Object.entries(groupCoasByParent(displayDebitCoas)).map(([parentLabel, items]) => (
-                                            <optgroup key={parentLabel} label={parentLabel}>
-                                                {items.map((coa) => (
-                                                    <option key={coa.id} value={coa.id}>
-                                                        [{coa.kode_akun}] {coa.nama_akun}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                        ))}
-                                    </select>
-                                    <span className="text-muted-foreground text-[11px]">
-                                        Pilih akun aset yang dibeli (Inventaris, Kendaraan, Gedung, dll.)
-                                    </span>
-                                    {errors.coa_debit_id && <span className="text-xs text-red-500">{errors.coa_debit_id}</span>}
-                                </div>
+                            <div className="border-t my-2 pt-4">
+                                <span className="text-sm font-semibold text-foreground block mb-3">Pengaturan Akuntansi & Jurnal</span>
+                                
+                                <div className="space-y-4">
+                                    {/* Akun Aset Tetap (Debit) */}
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="coa_debit_id">Akun Debit — Aset yang Dibeli</Label>
+                                        <select
+                                            id="coa_debit_id"
+                                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
+                                            value={data.coa_debit_id}
+                                            onChange={(e) => setData('coa_debit_id', e.target.value)}
+                                            required
+                                        >
+                                            <option value="">-- Pilih Akun Aset --</option>
+                                            {Object.entries(groupCoasByParent(displayDebitCoas)).map(([parentLabel, items]) => (
+                                                <optgroup key={parentLabel} label={parentLabel}>
+                                                    {items.map((coa) => (
+                                                        <option key={coa.id} value={coa.id}>
+                                                            [{coa.kode_akun}] {coa.nama_akun}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            ))}
+                                        </select>
+                                        {errors.coa_debit_id && <span className="text-xs text-red-500">{errors.coa_debit_id}</span>}
+                                    </div>
 
-                                {/* Akun Pembayaran (Kredit) */}
-                                <div className="grid gap-2">
-                                    <Label htmlFor="coa_kredit_id">Akun Kredit — Sumber Pembayaran</Label>
-                                    <select
-                                        id="coa_kredit_id"
-                                        className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
-                                        value={data.coa_kredit_id}
-                                        onChange={(e) => setData('coa_kredit_id', e.target.value)}
-                                        required
-                                    >
-                                        <option value="">-- Pilih Sumber Pembayaran --</option>
-                                        {Object.entries(groupCoasByParent(displayCreditCoas)).map(([parentLabel, items]) => (
-                                            <optgroup key={parentLabel} label={parentLabel}>
-                                                {items.map((coa) => (
-                                                    <option key={coa.id} value={coa.id}>
-                                                        {coa.nama_akun}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                        ))}
-                                    </select>
-                                    <span className="text-muted-foreground text-[11px]">
-                                        Pilih dari mana pembayaran berasal: Kas, Bank, atau Utang.
-                                    </span>
-                                    {errors.coa_kredit_id && <span className="text-xs text-red-500">{errors.coa_kredit_id}</span>}
-                                </div>
-                            </div>
+                                    {/* Akun Pembayaran (Kredit) */}
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="coa_kredit_id">Akun Kredit — Sumber Pembayaran</Label>
+                                        <select
+                                            id="coa_kredit_id"
+                                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
+                                            value={data.coa_kredit_id}
+                                            onChange={(e) => setData('coa_kredit_id', e.target.value)}
+                                            required
+                                        >
+                                            <option value="">-- Pilih Sumber Pembayaran --</option>
+                                            {Object.entries(groupCoasByParent(displayCreditCoas)).map(([parentLabel, items]) => (
+                                                <optgroup key={parentLabel} label={parentLabel}>
+                                                    {items.map((coa) => (
+                                                        <option key={coa.id} value={coa.id}>
+                                                            [{coa.kode_akun}] {coa.nama_akun}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            ))}
+                                        </select>
+                                        {errors.coa_kredit_id && <span className="text-xs text-red-500">{errors.coa_kredit_id}</span>}
+                                    </div>
 
-                            {/* Tanggal Perolehan */}
-                            <div className="grid gap-2">
-                                <Label htmlFor="tanggal_perolehan">Tanggal Perolehan</Label>
-                                <Input
-                                    id="tanggal_perolehan"
-                                    type="date"
-                                    value={data.tanggal_perolehan}
-                                    onChange={(e) => setData('tanggal_perolehan', e.target.value)}
-                                    required
-                                />
-                                {errors.tanggal_perolehan && <span className="text-xs text-red-500">{errors.tanggal_perolehan}</span>}
+                                    {/* Nilai Residu */}
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="nilai_residu">Nilai Residu (Rp)</Label>
+                                        <div className="flex items-center gap-3">
+                                            <Input
+                                                id="nilai_residu"
+                                                type="number"
+                                                value={data.nilai_residu}
+                                                readOnly
+                                                disabled
+                                                className="bg-muted text-muted-foreground select-none cursor-not-allowed w-32"
+                                                required
+                                            />
+                                            <span className="text-muted-foreground text-xs">
+                                                Nilai residu ditetapkan tetap Rp 1 untuk keperluan audit.
+                                            </span>
+                                        </div>
+                                        {errors.nilai_residu && <span className="text-xs text-red-500">{errors.nilai_residu}</span>}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

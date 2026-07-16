@@ -38,7 +38,7 @@ const mainNavItems: NavItem[] = [
                 url: '/journals',
             },
             {
-                title: 'Buku Besar Umum',
+                title: 'Buku Besar',
                 url: '/journals?tab=ledger',
             },
             {

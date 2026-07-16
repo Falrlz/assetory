@@ -39,8 +39,19 @@ class JournalController extends Controller
             ->get();
 
         // 3. Ledger (Buku Besar) query (Odoo style: all accounts in period)
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
         $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+
+        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
+            throw ValidationException::withMessages([
+                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+            ]);
+        }
 
         // Get only transaction COAs (Level 4, matching dotted pattern 'XX.XXXX.XX.XX')
         $transactionCoas = $user->coas()

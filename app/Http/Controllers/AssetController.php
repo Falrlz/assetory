@@ -6,7 +6,9 @@ use App\Models\Asset;
 use App\Models\Journal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -66,6 +68,13 @@ class AssetController extends Controller
                 }),
             ],
         ]);
+
+        $lockDate = $request->user()->lock_date;
+        if ($lockDate && Carbon::parse($validated['tanggal_perolehan'])->lte($lockDate)) {
+            throw ValidationException::withMessages([
+                'tanggal_perolehan' => 'Tanggal perolehan aset tidak boleh kurang dari atau sama dengan tanggal penguncian periode ('.$lockDate->format('Y-m-d').').',
+            ]);
+        }
 
         $asset = $request->user()->assets()->create($validated);
 
