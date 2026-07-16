@@ -1,3 +1,4 @@
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -89,6 +90,7 @@ export default function Index({
     const [ledgerEndDate, setLedgerEndDate] = useState(ledgerFilters?.end_date || new Date().toISOString().split('T')[0]);
     const [ledgerSearch, setLedgerSearch] = useState('');
     const [selectedLedgerCoa, setSelectedLedgerCoa] = useState('all');
+    const [ledgerError, setLedgerError] = useState<string | null>(null);
 
     const dynamicBreadcrumbs: BreadcrumbItem[] = [
         {
@@ -232,6 +234,16 @@ export default function Index({
 
     const handleLedgerFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        const startYear = new Date(ledgerStartDate).getFullYear();
+        const endYear = new Date(ledgerEndDate).getFullYear();
+        
+        if (startYear !== endYear) {
+            setLedgerError('Rentang tanggal tidak boleh melewati dua tahun yang berbeda.');
+            return;
+        }
+        
+        setLedgerError(null);
         router.get(
             route('journals.index'),
             {
@@ -248,8 +260,10 @@ export default function Index({
     };
 
     const handleLedgerFilterReset = () => {
-        const start = new Date(new Date().getFullYear(), 0, 2).toISOString().split('T')[0]; // Jan 1st
-        const end = new Date().toISOString().split('T')[0];
+        setLedgerError(null);
+        const currentYear = new Date().getFullYear();
+        const start = `${currentYear}-01-01`;
+        const end = new Date().toLocaleDateString('en-CA');
         setLedgerStartDate(start);
         setLedgerEndDate(end);
         setSelectedLedgerCoa('all');
@@ -699,6 +713,15 @@ export default function Index({
 
                         return (
                             <div className="space-y-6">
+                                {/* Error Banner */}
+                                {(ledgerError || (errors && errors.start_date)) && (
+                                    <Alert variant="destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertTitle>Kesalahan</AlertTitle>
+                                        <AlertDescription>{ledgerError || (errors.start_date as string)}</AlertDescription>
+                                    </Alert>
+                                )}
+
                                 {/* Date & Account Filters */}
                                 <form onSubmit={handleLedgerFilterSubmit} className="bg-card grid grid-cols-1 items-end gap-4 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-5">
                                     {/* Tanggal Mulai */}

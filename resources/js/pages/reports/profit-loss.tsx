@@ -1,8 +1,9 @@
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
-import { Printer, RotateCcw, TrendingDown, TrendingUp } from 'lucide-react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { AlertCircle, Printer, RotateCcw, TrendingDown, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -33,11 +34,23 @@ interface ProfitLossProps {
 }
 
 export default function ProfitLoss({ revenues, expenses, totalRevenues, totalExpenses, netProfit, filters }: ProfitLossProps) {
+    const { errors } = usePage().props;
     const [startDate, setStartDate] = useState(filters.start_date);
     const [endDate, setEndDate] = useState(filters.end_date);
+    const [localError, setLocalError] = useState<string | null>(null);
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        const startYear = new Date(startDate).getFullYear();
+        const endYear = new Date(endDate).getFullYear();
+        
+        if (startYear !== endYear) {
+            setLocalError('Rentang tanggal tidak boleh melewati dua tahun yang berbeda.');
+            return;
+        }
+        
+        setLocalError(null);
         router.get(
             route('reports.profit-loss'),
             {
@@ -51,8 +64,10 @@ export default function ProfitLoss({ revenues, expenses, totalRevenues, totalExp
     };
 
     const handleReset = () => {
-        const start = new Date(new Date().getFullYear(), 0, 2).toISOString().split('T')[0]; // Jan 1st
-        const end = new Date(new Date().getFullYear(), 11, 32).toISOString().split('T')[0]; // Dec 31st
+        setLocalError(null);
+        const currentYear = new Date().getFullYear();
+        const start = `${currentYear}-01-01`;
+        const end = `${currentYear}-12-31`;
         setStartDate(start);
         setEndDate(end);
         router.get(route('reports.profit-loss'), {
@@ -97,6 +112,15 @@ export default function ProfitLoss({ revenues, expenses, totalRevenues, totalExp
                         </Button>
                     </div>
                 </div>
+
+                {/* Error Banner */}
+                {(localError || (errors && errors.start_date)) && (
+                    <Alert variant="destructive" className="print:hidden">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Kesalahan</AlertTitle>
+                        <AlertDescription>{localError || (errors.start_date as string)}</AlertDescription>
+                    </Alert>
+                )}
 
                 {/* Filter Card */}
                 <div className="bg-card rounded-xl border p-4 print:hidden">

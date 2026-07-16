@@ -104,3 +104,45 @@ test('depreciation calculation logic is correct (straight-line)', function () {
     expect($asset->akumulasi_penyusutan)->toBe(2000000.04);
     expect($asset->nilai_buku)->toBe(7999999.96);
 });
+
+test('cannot create asset with acquisition date on or before lock date', function () {
+    $user = User::factory()->create(['lock_date' => '2026-06-30']);
+
+    // Create COAs for the user
+    $coaDebit = Coa::create([
+        'user_id' => $user->id,
+        'kode_akun' => '01.3000.01.04',
+        'nama_akun' => 'Peralatan Kantor',
+        'kategori' => 'aset',
+        'saldo_normal' => 'debit',
+    ]);
+
+    $coaKredit = Coa::create([
+        'user_id' => $user->id,
+        'kode_akun' => '01.1000.01.01',
+        'nama_akun' => 'Kas & Bank',
+        'kategori' => 'aset',
+        'saldo_normal' => 'debit',
+    ]);
+
+    $data = [
+        'nama' => 'Laptop MacBook Air',
+        'jenis' => 'inventaris',
+        'harga_perolehan' => 15000000,
+        'nilai_residu' => 3000000,
+        'tanggal_perolehan' => '2026-06-15', // Locked (before lock_date)
+        'periode' => 'periode_1',
+        'coa_debit_id' => $coaDebit->id,
+        'coa_kredit_id' => $coaKredit->id,
+    ];
+
+    $this->actingAs($user)
+        ->post('/assets', $data)
+        ->assertSessionHasErrors(['tanggal_perolehan']);
+
+    // Assert that asset was not created
+    $this->assertDatabaseMissing('assets', [
+        'user_id' => $user->id,
+        'nama' => 'Laptop MacBook Air',
+    ]);
+});
