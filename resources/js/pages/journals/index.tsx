@@ -131,8 +131,9 @@ export default function Index({
 
     // Default select current month (YYYY-MM)
     const today = new Date();
-    const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
+    const [depYear, setDepYear] = useState<string>(() => today.getFullYear().toString());
+    const [depMonth, setDepMonth] = useState<string>(() => String(today.getMonth() + 1).padStart(2, '0'));
+    const selectedMonth = `${depYear}-${depMonth}`;
 
     // Search and filter states for Jurnal Umum
     const [searchQuery, setSearchQuery] = useState('');
@@ -229,7 +230,7 @@ export default function Index({
 
     // Form for monthly depreciation posting
     const depForm = useForm({
-        bulan: currentMonthStr,
+        bulan: selectedMonth,
     });
 
     const handleLedgerFilterSubmit = (e: React.FormEvent) => {
@@ -956,9 +957,44 @@ export default function Index({
                     <div className="space-y-6">
                         {/* Selector Month */}
                         <div className="bg-card grid max-w-2xl items-end gap-4 rounded-xl border p-5 md:grid-cols-3">
-                            <div className="grid gap-2">
-                                <Label htmlFor="dep_month">Pilih Bulan Penyusutan</Label>
-                                <Input id="dep_month" type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
+                            <div className="grid gap-2 grid-cols-2">
+                                <div className="grid gap-1">
+                                    <Label htmlFor="dep_month_select">Bulan</Label>
+                                    <select
+                                        id="dep_month_select"
+                                        value={depMonth}
+                                        onChange={(e) => setDepMonth(e.target.value)}
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                    >
+                                        <option value="01">Januari</option>
+                                        <option value="02">Februari</option>
+                                        <option value="03">Maret</option>
+                                        <option value="04">April</option>
+                                        <option value="05">Mei</option>
+                                        <option value="06">Juni</option>
+                                        <option value="07">Juli</option>
+                                        <option value="08">Agustus</option>
+                                        <option value="09">September</option>
+                                        <option value="10">Oktober</option>
+                                        <option value="11">November</option>
+                                        <option value="12">Desember</option>
+                                    </select>
+                                </div>
+                                <div className="grid gap-1">
+                                    <Label htmlFor="dep_year_select">Tahun</Label>
+                                    <select
+                                        id="dep_year_select"
+                                        value={depYear}
+                                        onChange={(e) => setDepYear(e.target.value)}
+                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                    >
+                                        {Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString()).map((yr) => (
+                                            <option key={yr} value={yr}>
+                                                {yr}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                             <div className="flex items-center">
                                 {isMonthAlreadyPosted ? (
