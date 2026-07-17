@@ -73,7 +73,7 @@ class ReportController extends Controller
                     ->where('journal_items.coa_id', $coa->id)
                     ->whereBetween('journals.tanggal', [$startDate, $endDate])
                     ->where(function ($query) {
-                        $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                        $query->whereNotIn('journals.jenis_transaksi', ['saldo_awal', 'jurnal_penutup'])
                             ->orWhereNull('journals.jenis_transaksi');
                     })
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
@@ -234,7 +234,7 @@ class ReportController extends Controller
                     ->where('journal_items.coa_id', $coa->id)
                     ->whereBetween('journals.tanggal', [$startDate, $endDate])
                     ->where(function ($query) {
-                        $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                        $query->whereNotIn('journals.jenis_transaksi', ['saldo_awal', 'jurnal_penutup'])
                             ->orWhereNull('journals.jenis_transaksi');
                     })
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
@@ -422,7 +422,7 @@ class ReportController extends Controller
                     ->where('journal_items.coa_id', $coa->id)
                     ->whereBetween('journals.tanggal', [$startDate, $endDate])
                     ->where(function ($query) {
-                        $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                        $query->whereNotIn('journals.jenis_transaksi', ['saldo_awal', 'jurnal_penutup'])
                             ->orWhereNull('journals.jenis_transaksi');
                     })
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
@@ -470,7 +470,7 @@ class ReportController extends Controller
                     ->where('journal_items.coa_id', $coa->id)
                     ->whereBetween('journals.tanggal', [$startDate, $endDate])
                     ->where(function ($query) {
-                        $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                        $query->whereNotIn('journals.jenis_transaksi', ['saldo_awal', 'jurnal_penutup'])
                             ->orWhereNull('journals.jenis_transaksi');
                     })
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
