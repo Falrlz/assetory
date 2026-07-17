@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Asset;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -372,6 +374,247 @@ class ReportController extends Controller
                 'end_date' => $endDate,
             ],
         ]);
+    }
+
+    /**
+     * Display the Statement of Changes in Equity (Laporan Perubahan Ekuitas).
+     */
+    public function equityChange(Request $request): Response
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+
+        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
+            throw ValidationException::withMessages([
+                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+            ]);
+        }
+
+        // Get equity accounts (Level 4, i.e. 4 segments separated by dots)
+        $equityCoas = $user->coas()
+            ->where('kategori', 'ekuitas')
+            ->orderBy('kode_akun')
+            ->get()
+            ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4)
+            ->values();
+
+        $equityData = [];
+        $totalAwal = 0;
+        $totalTambahan = 0;
+        $totalLabaNet = 0;
+        $totalAkhir = 0;
+
+        // 1. Calculate Net Profit for current period
+        $allCoasForPL = $user->coas()
+            ->orderBy('kode_akun')
+            ->get()
+            ->map(function ($coa) use ($user, $startDate, $endDate) {
+                $sums = DB::table('journal_items')
+                    ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                    ->where('journals.user_id', $user->id)
+                    ->where('journal_items.coa_id', $coa->id)
+                    ->whereBetween('journals.tanggal', [$startDate, $endDate])
+                    ->where(function ($query) {
+                        $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                            ->orWhereNull('journals.jenis_transaksi');
+                    })
+                    ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
+                    ->first();
+
+                $coa->total_debit = (float) $sums->total_debit;
+                $coa->total_kredit = (float) $sums->total_kredit;
+
+                if ($coa->saldo_normal === 'debit') {
+                    $coa->saldo = $coa->total_debit - $coa->total_kredit;
+                } else {
+                    $coa->saldo = $coa->total_kredit - $coa->total_debit;
+                }
+
+                return $coa;
+            });
+
+        $totalRevenues = $allCoasForPL->filter(fn ($coa) => $coa->kategori === 'pendapatan' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
+        $totalExpenses = $allCoasForPL->filter(fn ($coa) => $coa->kategori === 'beban' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
+        $netProfit = $totalRevenues - $totalExpenses;
+
+        // Process each equity account
+        foreach ($equityCoas as $coa) {
+            // A. Opening balance (before start_date OR is setup beginning balance)
+            $openingSums = DB::table('journal_items')
+                ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                ->where('journals.user_id', $user->id)
+                ->where('journal_items.coa_id', $coa->id)
+                ->where(function ($query) use ($startDate) {
+                    $query->where('journals.tanggal', '<', $startDate)
+                        ->orWhere('journals.jenis_transaksi', 'saldo_awal');
+                })
+                ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
+                ->first();
+
+            $balAwal = (float) $openingSums->total_kredit - (float) $openingSums->total_debit;
+
+            // B. Additions (Modal Tambahan / changes during period, excluding setup beginning balance)
+            // Exclude Saldo Laba (03.2000.02.01) and Laba Rugi Tahun Berjalan (03.2000.03.01) from manual additions
+            $balTambahan = 0.00;
+            if ($coa->kode_akun !== '03.2000.02.01' && $coa->kode_akun !== '03.2000.03.01') {
+                $periodSums = DB::table('journal_items')
+                    ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                    ->where('journals.user_id', $user->id)
+                    ->where('journal_items.coa_id', $coa->id)
+                    ->whereBetween('journals.tanggal', [$startDate, $endDate])
+                    ->where(function ($query) {
+                        $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                            ->orWhereNull('journals.jenis_transaksi');
+                    })
+                    ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
+                    ->first();
+                $balTambahan = (float) $periodSums->total_kredit - (float) $periodSums->total_debit;
+            }
+
+            // C. Net Profit Addition (Specifically for Laba Rugi Tahun Berjalan account)
+            $labaNet = 0.00;
+            if ($coa->kode_akun === '03.2000.03.01') {
+                $labaNet = $netProfit;
+            }
+
+            $balAkhir = $balAwal + $balTambahan + $labaNet;
+
+            if ($balAwal != 0 || $balTambahan != 0 || $labaNet != 0 || $balAkhir != 0) {
+                $equityData[] = [
+                    'kode_akun' => $coa->kode_akun,
+                    'nama_akun' => $coa->nama_akun,
+                    'saldo_awal' => $balAwal,
+                    'tambahan' => $balTambahan,
+                    'laba_net' => $labaNet,
+                    'saldo_akhir' => $balAkhir,
+                ];
+
+                $totalAwal += $balAwal;
+                $totalTambahan += $balTambahan;
+                $totalLabaNet += $labaNet;
+                $totalAkhir += $balAkhir;
+            }
+        }
+
+        return Inertia::render('reports/equity-change', [
+            'equityItems' => $equityData,
+            'totalAwal' => $totalAwal,
+            'totalTambahan' => $totalTambahan,
+            'totalLabaNet' => $totalLabaNet,
+            'totalAkhir' => $totalAkhir,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
+        ]);
+    }
+
+    /**
+     * Display the Notes to Financial Statements (Catatan Atas Laporan Keuangan - CALK).
+     */
+    public function calk(Request $request): Response
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+
+        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
+            throw ValidationException::withMessages([
+                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+            ]);
+        }
+
+        // 1. Get detailed Assets Schedule
+        $assets = $user->assets()
+            ->where('tanggal_perolehan', '<=', $endDate)
+            ->get()
+            ->map(function ($asset) use ($endDate) {
+                $masaPenggunaanBulan = 0;
+                $perolehan = Carbon::parse($asset->tanggal_perolehan)->startOfMonth();
+                $target = Carbon::parse($endDate)->endOfMonth();
+
+                if ($target->isAfter($perolehan) || $target->isSameDay($perolehan->endOfMonth())) {
+                    $masaPenggunaanBulan = $perolehan->diffInMonths($target->startOfMonth()) + 1;
+                }
+
+                $maxMonths = (Asset::PERIODE_TAHUN[$asset->periode] ?? 4) * 12;
+                $masaPenggunaanBulan = min($masaPenggunaanBulan, $maxMonths);
+
+                $akmPenyusutan = $asset->penyusutan_bulanan * $masaPenggunaanBulan;
+                $nilaiBuku = max($asset->harga_perolehan - $akmPenyusutan, $asset->nilai_residu);
+
+                $asset->akumulasi_penyusutan = $akmPenyusutan;
+                $asset->nilai_buku = $nilaiBuku;
+                $asset->sisa_bulan = max($maxMonths - $masaPenggunaanBulan, 0);
+
+                return $asset;
+            });
+
+        // 2. Get Cash and Bank details (Breakdown of Kas & Setara Kas)
+        $cashCoas = $user->coas()
+            ->where('kategori', 'aset')
+            ->orderBy('kode_akun')
+            ->get()
+            ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4)
+            ->filter(function ($coa) {
+                return str_starts_with($coa->kode_akun, '01.1') ||
+                       str_starts_with($coa->kode_akun, '1-1') ||
+                       stripos($coa->nama_akun, 'Kas') !== false ||
+                       stripos($coa->nama_akun, 'Bank') !== false;
+            })
+            ->map(function ($coa) use ($user, $endDate) {
+                $sums = DB::table('journal_items')
+                    ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                    ->where('journals.user_id', $user->id)
+                    ->where('journal_items.coa_id', $coa->id)
+                    ->where('journals.tanggal', '<=', $endDate)
+                    ->selectRaw('COALESCE(SUM(journal_items.debit - journal_items.kredit), 0) as balance')
+                    ->first();
+                $coa->saldo = (float) $sums->balance;
+
+                return $coa;
+            })
+            ->filter(fn ($coa) => $coa->saldo != 0)
+            ->values();
+
+        return Inertia::render('reports/calk', [
+            'assets' => $assets,
+            'cashItems' => $cashCoas,
+            'calkNotes' => $user->calk_notes,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
+        ]);
+    }
+
+    /**
+     * Update the CALK narrative notes.
+     */
+    public function updateCalk(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'calk_notes' => 'nullable|string|max:50000',
+        ]);
+
+        $request->user()->update([
+            'calk_notes' => $validated['calk_notes'],
+        ]);
+
+        return redirect()->back();
     }
 }
 

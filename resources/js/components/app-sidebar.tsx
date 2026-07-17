@@ -65,8 +65,16 @@ const mainNavItems: NavItem[] = [
                 url: '/reports/profit-loss',
             },
             {
-                title: 'Laporan Arus Kas',
+                title: 'Arus Kas',
                 url: '/reports/cash-flow',
+            },
+            {
+                title: 'Perubahan Ekuitas',
+                url: '/reports/equity-change',
+            },
+            {
+                title: 'CALK',
+                url: '/reports/calk',
             },
         ],
     },
