@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
@@ -119,11 +120,11 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '-';
-        return new Intl.DateTimeFormat('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-        }).format(new Date(dateString));
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
     };
 
     // Dynamically retrieve unique years present in user's assets
@@ -693,12 +694,11 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                 {/* Tanggal Perolehan */}
                                 <div className="grid gap-2">
                                     <Label htmlFor="tanggal_perolehan">Tanggal Perolehan</Label>
-                                    <Input
+                                    <DatePicker
                                         id="tanggal_perolehan"
-                                        type="date"
                                         value={data.tanggal_perolehan}
-                                        onChange={(e) => setData('tanggal_perolehan', e.target.value)}
-                                        required
+                                        onChange={(val) => setData('tanggal_perolehan', val)}
+                                        className="w-full"
                                     />
                                     {errors.tanggal_perolehan && <span className="text-xs text-red-500">{errors.tanggal_perolehan}</span>}
                                 </div>

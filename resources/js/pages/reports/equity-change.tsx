@@ -1,5 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -75,7 +76,7 @@ export default function EquityChange({
         setLocalError(null);
         const currentYear = new Date().getFullYear();
         const start = `${currentYear}-01-01`;
-        const end = `${currentYear}-12-31`;
+        const end = new Date().toISOString().split('T')[0];
         setStartDate(start);
         setEndDate(end);
         router.get(route('reports.equity-change'), {
@@ -93,10 +94,18 @@ export default function EquityChange({
         }).format(value);
     };
 
+    const formatDateSlash = (dateString: string) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
     const formatDateRange = (start: string, end: string) => {
-        const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
-        const s = new Date(start).toLocaleDateString('id-ID', options);
-        const e = new Date(end).toLocaleDateString('id-ID', options);
+        const s = formatDateSlash(start);
+        const e = formatDateSlash(end);
         return `${s} - ${e}`;
     };
 
@@ -128,26 +137,22 @@ export default function EquityChange({
                             <label htmlFor="start_date" className="text-xs font-semibold text-neutral-500 uppercase">
                                 Tanggal Mulai
                             </label>
-                            <input
-                                type="date"
+                            <DatePicker
                                 id="start_date"
                                 value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                required
+                                onChange={setStartDate}
+                                className="w-full"
                             />
                         </div>
                         <div className="grid flex-1 gap-1.5">
                             <label htmlFor="end_date" className="text-xs font-semibold text-neutral-500 uppercase">
                                 Tanggal Selesai
                             </label>
-                            <input
-                                type="date"
+                            <DatePicker
                                 id="end_date"
                                 value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                required
+                                onChange={setEndDate}
+                                className="w-full"
                             />
                         </div>
                         <div className="flex gap-2">

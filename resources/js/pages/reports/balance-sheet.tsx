@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
@@ -76,11 +77,12 @@ export default function BalanceSheet({
     };
 
     const formatAsDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-        });
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
     };
 
     return (
@@ -111,12 +113,10 @@ export default function BalanceSheet({
                             <label htmlFor="end_date" className="text-sm font-medium">
                                 Per Tanggal
                             </label>
-                            <input
-                                type="date"
+                            <DatePicker
                                 id="end_date"
                                 value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                onChange={setEndDate}
                             />
                         </div>
                         <div className="flex gap-2">

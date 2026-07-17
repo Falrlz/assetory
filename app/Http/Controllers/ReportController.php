@@ -214,8 +214,8 @@ class ReportController extends Controller
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
 
         if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
             throw ValidationException::withMessages([
@@ -286,7 +286,7 @@ class ReportController extends Controller
         ]);
 
         $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
 
         if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
             throw ValidationException::withMessages([
@@ -389,7 +389,7 @@ class ReportController extends Controller
         ]);
 
         $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
 
         if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
             throw ValidationException::withMessages([
@@ -529,7 +529,7 @@ class ReportController extends Controller
         ]);
 
         $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
 
         if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
             throw ValidationException::withMessages([
