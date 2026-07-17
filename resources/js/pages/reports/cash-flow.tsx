@@ -1,5 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -83,7 +84,7 @@ export default function CashFlow({
         setLocalError(null);
         const currentYear = new Date().getFullYear();
         const start = `${currentYear}-01-01`;
-        const end = `${currentYear}-12-31`;
+        const end = new Date().toISOString().split('T')[0];
         setStartDate(start);
         setEndDate(end);
         router.get(route('reports.cash-flow'), {
@@ -101,42 +102,133 @@ export default function CashFlow({
         }).format(value);
     };
 
+    const formatDateSlash = (dateString: string) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
     const formatDateRange = (start: string, end: string) => {
-        const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
-        const s = new Date(start).toLocaleDateString('id-ID', options);
-        const e = new Date(end).toLocaleDateString('id-ID', options);
+        const s = formatDateSlash(start);
+        const e = formatDateSlash(end);
         return `${s} - ${e}`;
     };
 
-    const renderCashItems = (items: CashItem[]) => {
-        if (items.length === 0) {
-            return <div className="text-muted-foreground py-1 pl-4 text-xs italic">Tidak ada aktivitas kas.</div>;
+    const formatParenthesis = (value: number) => {
+        if (value < 0) {
+            return `(${formatRupiah(Math.abs(value))})`;
         }
+        return formatRupiah(value);
+    };
+
+    const renderActivitySection = (title: string, items: CashItem[], totalActivity: number) => {
+        const receipts = items.filter((item) => (parseFloat(item.cash_in as string) || 0) > 0);
+        const disbursements = items.filter((item) => (parseFloat(item.cash_out as string) || 0) > 0);
+
+        const totalReceipts = receipts.reduce((sum, item) => sum + (parseFloat(item.cash_in as string) || 0), 0);
+        const totalDisbursements = disbursements.reduce((sum, item) => sum + (parseFloat(item.cash_out as string) || 0), 0);
+
+        const sectionName = title.toLowerCase().replace('arus kas dari ', '');
 
         return (
-            <div className="space-y-1.5 pl-4">
-                {items.map((item, idx) => {
-                    const cin = parseFloat(item.cash_in as string) || 0;
-                    const cout = parseFloat(item.cash_out as string) || 0;
-                    const diff = cin - cout;
-                    return (
-                        <div key={idx} className="border-border/20 hover:bg-muted/10 flex justify-between border-b py-1 text-sm last:border-0">
-                            <div>
+            <>
+                {/* Section Header */}
+                <tr className="bg-neutral-100 dark:bg-neutral-900/60 font-bold border-b text-foreground">
+                    <td className="px-4 py-2.5 text-left text-sm uppercase tracking-wide" colSpan={3}>
+                        {title}
+                    </td>
+                </tr>
+
+                {/* Receipts Subheader */}
+                <tr className="font-semibold text-foreground border-b bg-neutral-50/40 dark:bg-neutral-900/10 italic">
+                    <td className="px-4 py-2 pl-6 text-left" colSpan={3}>
+                        Penerimaan kas
+                    </td>
+                </tr>
+                {receipts.length === 0 ? (
+                    <tr className="border-b text-neutral-400">
+                        <td className="px-4 py-2 pl-10 text-left italic text-xs" colSpan={3}>
+                            Tidak ada penerimaan kas
+                        </td>
+                    </tr>
+                ) : (
+                    receipts.map((item, idx) => (
+                        <tr key={`rec-${idx}`} className="border-b hover:bg-neutral-50/50 dark:hover:bg-neutral-900/10">
+                            <td className="px-4 py-2 pl-10 text-left text-sm">
                                 <span className="text-foreground font-medium">{item.keterangan}</span>
-                                <span className="text-muted-foreground block font-mono text-[10px]">
-                                    {item.nomor_jurnal} &bull; {new Date(item.tanggal).toLocaleDateString('id-ID')}
+                                <span className="text-muted-foreground block font-mono text-[9px] print:hidden">
+                                    {item.nomor_jurnal} &bull; {formatDateSlash(item.tanggal)}
                                 </span>
-                            </div>
-                            <span
-                                className={`font-mono text-xs font-semibold ${diff >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}
-                            >
-                                {diff >= 0 ? '+' : ''}
-                                {formatRupiah(diff)}
-                            </span>
-                        </div>
-                    );
-                })}
-            </div>
+                            </td>
+                            <td className="px-4 py-2 text-right font-mono text-sm text-foreground">
+                                {formatRupiah(parseFloat(item.cash_in as string))}
+                            </td>
+                            <td className="px-4 py-2 text-right font-mono text-neutral-400 text-sm">
+                                -
+                            </td>
+                        </tr>
+                    ))
+                )}
+                <tr className="font-semibold border-b bg-neutral-50/10">
+                    <td className="px-4 py-2.5 pl-8 text-left text-sm">Total penerimaan kas</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-neutral-400 text-sm">-</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-sm text-foreground">
+                        {formatRupiah(totalReceipts)}
+                    </td>
+                </tr>
+
+                {/* Disbursements Subheader */}
+                <tr className="font-semibold text-foreground border-b bg-neutral-50/40 dark:bg-neutral-900/10 italic">
+                    <td className="px-4 py-2 pl-6 text-left" colSpan={3}>
+                        Pengeluaran kas
+                    </td>
+                </tr>
+                {disbursements.length === 0 ? (
+                    <tr className="border-b text-neutral-400">
+                        <td className="px-4 py-2 pl-10 text-left italic text-xs" colSpan={3}>
+                            Tidak ada pengeluaran kas
+                        </td>
+                    </tr>
+                ) : (
+                    disbursements.map((item, idx) => (
+                        <tr key={`dis-${idx}`} className="border-b hover:bg-neutral-50/50 dark:hover:bg-neutral-900/10">
+                            <td className="px-4 py-2 pl-10 text-left text-sm">
+                                <span className="text-foreground font-medium">{item.keterangan}</span>
+                                <span className="text-muted-foreground block font-mono text-[9px] print:hidden">
+                                    {item.nomor_jurnal} &bull; {formatDateSlash(item.tanggal)}
+                                </span>
+                            </td>
+                            <td className="px-4 py-2 text-right font-mono text-sm text-foreground">
+                                {formatRupiah(parseFloat(item.cash_out as string))}
+                            </td>
+                            <td className="px-4 py-2 text-right font-mono text-neutral-400 text-sm">
+                                -
+                            </td>
+                        </tr>
+                    ))
+                )}
+                <tr className="font-semibold border-b bg-neutral-50/10">
+                    <td className="px-4 py-2.5 pl-8 text-left text-sm">Total pengeluaran kas</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-neutral-400 text-sm">-</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-sm text-red-600 dark:text-red-400">
+                        {totalDisbursements > 0 ? `(${formatRupiah(totalDisbursements)})` : formatRupiah(0)}
+                    </td>
+                </tr>
+
+                {/* Section Summary */}
+                <tr className="font-bold border-b bg-neutral-50/50 dark:bg-neutral-900/20 text-foreground">
+                    <td className="px-4 py-2.5 pl-6 text-left text-sm">
+                        Arus kas bersih dari {sectionName}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-mono text-neutral-400 text-sm">-</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-sm font-semibold">
+                        {formatParenthesis(totalActivity)}
+                    </td>
+                </tr>
+            </>
         );
     };
 
@@ -177,24 +269,20 @@ export default function CashFlow({
                             <label htmlFor="start_date" className="text-sm font-medium">
                                 Tanggal Mulai
                             </label>
-                            <input
-                                type="date"
+                            <DatePicker
                                 id="start_date"
                                 value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                onChange={setStartDate}
                             />
                         </div>
                         <div className="grid gap-1.5">
                             <label htmlFor="end_date" className="text-sm font-medium">
                                 Tanggal Selesai
                             </label>
-                            <input
-                                type="date"
+                            <DatePicker
                                 id="end_date"
                                 value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                onChange={setEndDate}
                             />
                         </div>
                         <div className="flex gap-2">
@@ -210,74 +298,63 @@ export default function CashFlow({
                 </div>
 
                 {/* Report Content */}
-                <div className="bg-card mx-auto w-full max-w-4xl rounded-xl border p-6 md:p-8 print:max-w-none print:border-none print:p-0 print:shadow-none">
-                    {/* Print Only Header */}
-                    <div className="mb-6 hidden text-center print:block">
-                        <h2 className="text-xl font-bold uppercase">Assetory</h2>
-                        <h1 className="text-2xl font-bold">Laporan Arus Kas (Cash Flow)</h1>
-                        <p className="text-muted-foreground mt-1 text-sm">Periode: {formatDateRange(filters.start_date, filters.end_date)}</p>
-                        <hr className="my-4 border-gray-300" />
+                <div className="bg-card mx-auto w-full max-w-4xl rounded-2xl border p-8 shadow-sm print:max-w-none print:border-none print:p-0 print:shadow-none">
+                    {/* Document Header */}
+                    <div className="text-center mb-8">
+                        <h2 className="text-2xl font-bold text-foreground">Assetory Company</h2>
+                        <h3 className="text-lg font-semibold text-neutral-600 dark:text-neutral-400">Laporan Arus Kas</h3>
+                        <p className="text-sm text-neutral-500 mt-1">Periode: {formatDateRange(filters.start_date, filters.end_date)}</p>
                     </div>
 
-                    <div className="mb-8 hidden text-center md:block print:hidden">
-                        <h2 className="text-md text-muted-foreground font-semibold uppercase">Laporan Mutasi Kas</h2>
-                        <h1 className="text-foreground mt-0.5 text-2xl font-bold">LAPORAN ARUS KAS</h1>
-                        <p className="text-muted-foreground mt-1 text-sm">Periode {formatDateRange(filters.start_date, filters.end_date)}</p>
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-left">
+                            <thead>
+                                <tr className="border-b-2 bg-neutral-50 dark:bg-neutral-900/40">
+                                    <th className="px-4 py-3 font-semibold text-sm text-neutral-600 dark:text-neutral-400">Uraian</th>
+                                    <th className="px-4 py-3 text-right font-semibold text-sm text-neutral-600 dark:text-neutral-400 w-48">Nilai Transaksi</th>
+                                    <th className="px-4 py-3 text-right font-semibold text-sm text-neutral-600 dark:text-neutral-400 w-48">Total Sub/Aktivitas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {renderActivitySection('Arus kas dari aktivitas operasi', operatingItems, totalOperating)}
+                                {renderActivitySection('Arus kas dari aktivitas investasi', investingItems, totalInvesting)}
+                                {renderActivitySection('Arus kas dari aktivitas pendanaan', financingItems, totalFinancing)}
+                                
+                                {/* Final Cash Balance summary matching image layout */}
+                                <tr className="bg-neutral-50/50 dark:bg-neutral-900/30 border-t-2 font-semibold">
+                                    <td className="px-4 py-3 text-sm text-foreground">Kenaikan (Penurunan) Bersih Kas</td>
+                                    <td className="px-4 py-3 text-right font-mono text-neutral-400">-</td>
+                                    <td className="px-4 py-3 text-right font-mono text-sm text-foreground">
+                                        {formatParenthesis(netChange)}
+                                    </td>
+                                </tr>
+                                <tr className="border-b font-semibold">
+                                    <td className="px-4 py-3 text-sm text-foreground">Saldo Kas Awal Periode</td>
+                                    <td className="px-4 py-3 text-right font-mono text-neutral-400">-</td>
+                                    <td className="px-4 py-3 text-right font-mono text-sm text-foreground">
+                                        {formatRupiah(beginningCash)}
+                                    </td>
+                                </tr>
+                                <tr className="bg-neutral-100/50 dark:bg-neutral-900/40 border-b-2 font-bold text-foreground">
+                                    <td className="px-4 py-3 text-sm uppercase">Saldo Kas Akhir Periode</td>
+                                    <td className="px-4 py-3 text-right font-mono text-neutral-400">-</td>
+                                    <td className="px-4 py-3 text-right font-mono text-base text-emerald-600 dark:text-emerald-400">
+                                        {formatRupiah(endingCash)}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
-                    <div className="space-y-6">
-                        {/* 1. OPERATING ACTIVITIES */}
-                        <div className="space-y-2.5">
-                            <div className="border-b pb-1">
-                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">1. ARUS KAS DARI AKTIVITAS OPERASIONAL</h3>
-                            </div>
-                            {renderCashItems(operatingItems)}
-                            <div className="bg-muted/20 flex justify-between rounded-lg border p-2 text-sm font-semibold">
-                                <span>Kas Bersih Dari Aktivitas Operasional</span>
-                                <span className="font-mono">{formatRupiah(totalOperating)}</span>
-                            </div>
+                    {/* Report Footer (visible on print) */}
+                    <div className="mt-16 hidden justify-between text-center print:flex">
+                        <div className="w-48 border-t border-neutral-400 pt-2 text-sm text-neutral-500">
+                            Dibuat Oleh, <br /><br /><br /><br />
+                            ( Staff Akunting )
                         </div>
-
-                        {/* 2. INVESTING ACTIVITIES */}
-                        <div className="space-y-2.5">
-                            <div className="border-b pb-1">
-                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">2. ARUS KAS DARI AKTIVITAS INVESTASI</h3>
-                            </div>
-                            {renderCashItems(investingItems)}
-                            <div className="bg-muted/20 flex justify-between rounded-lg border p-2 text-sm font-semibold">
-                                <span>Kas Bersih Dari Aktivitas Investasi</span>
-                                <span className="font-mono">{formatRupiah(totalInvesting)}</span>
-                            </div>
-                        </div>
-
-                        {/* 3. FINANCING ACTIVITIES */}
-                        <div className="space-y-2.5">
-                            <div className="border-b pb-1">
-                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">3. ARUS KAS DARI AKTIVITAS PENDANAAN</h3>
-                            </div>
-                            {renderCashItems(financingItems)}
-                            <div className="bg-muted/20 flex justify-between rounded-lg border p-2 text-sm font-semibold">
-                                <span>Kas Bersih Dari Aktivitas Pendanaan</span>
-                                <span className="font-mono">{formatRupiah(totalFinancing)}</span>
-                            </div>
-                        </div>
-
-                        {/* SUMMARY OF CASH CHANGE */}
-                        <div className="space-y-3.5 pt-6">
-                            <div className="border-border/80 space-y-2.5 border-t-2 pt-4">
-                                <div className="flex justify-between text-sm font-medium">
-                                    <span>Kenaikan (Penurunan) Bersih Kas</span>
-                                    <span className="font-mono">{formatRupiah(netChange)}</span>
-                                </div>
-                                <div className="text-muted-foreground flex justify-between text-sm font-medium">
-                                    <span>Saldo Kas Awal Periode</span>
-                                    <span className="font-mono">{formatRupiah(beginningCash)}</span>
-                                </div>
-                                <div className="bg-primary/10 text-primary border-primary/20 flex justify-between rounded-lg border p-3 text-base font-bold">
-                                    <span>SALDO KAS AKHIR PERIODE</span>
-                                    <span className="font-mono">{formatRupiah(endingCash)}</span>
-                                </div>
-                            </div>
+                        <div className="w-48 border-t border-neutral-400 pt-2 text-sm text-neutral-500">
+                            Disetujui Oleh, <br /><br /><br /><br />
+                            ( Pemilik Perusahaan )
                         </div>
                     </div>
                 </div>

@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
@@ -85,7 +86,7 @@ export default function Index({
 
     const [isOpen, setIsOpen] = useState(false);
     const [ledgerStartDate, setLedgerStartDate] = useState(
-        ledgerFilters?.start_date || new Date(new Date().getFullYear(), 0, 2).toISOString().split('T')[0],
+        ledgerFilters?.start_date || `${new Date().getFullYear()}-01-01`,
     );
     const [ledgerEndDate, setLedgerEndDate] = useState(ledgerFilters?.end_date || new Date().toISOString().split('T')[0]);
     const [ledgerSearch, setLedgerSearch] = useState('');
@@ -322,6 +323,15 @@ export default function Index({
         });
     };
 
+    const formatDate = (dateString: string) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
     const handleDeleteJournal = (id: number) => {
         if (confirm('Apakah Anda yakin ingin menghapus jurnal ini? Tindakan ini akan menghapus detail debit dan kredit secara permanen.')) {
             router.delete(route('journals.destroy', id));
@@ -403,11 +413,18 @@ export default function Index({
                             {activeTab === 'ledger' ? 'Buku Besar Umum' : activeTab === 'depresiasi' ? 'Penyusutan Bulanan' : 'Jurnal Umum'}
                         </h1>
                         <p className="text-muted-foreground text-sm">
-                            {activeTab === 'ledger'
-                                ? 'Lihat ringkasan mutasi debit dan kredit serta saldo berjalan untuk setiap akun.'
-                                : activeTab === 'depresiasi'
-                                  ? 'Kelola dan lakukan posting penyusutan nilai buku aset secara berkala.'
-                                  : 'Pencatatan akuntansi double-entry manual maupun otomatis.'}
+                            {activeTab === 'ledger' ? (
+                                <>
+                                    Lihat ringkasan mutasi debit dan kredit serta saldo berjalan untuk setiap akun.
+                                    <span className="block mt-1 font-medium text-foreground">
+                                        Periode: {formatDate(ledgerStartDate)} - {formatDate(ledgerEndDate)}
+                                    </span>
+                                </>
+                            ) : activeTab === 'depresiasi' ? (
+                                'Kelola dan lakukan posting penyusutan nilai buku aset secara berkala.'
+                            ) : (
+                                'Pencatatan akuntansi double-entry manual maupun otomatis.'
+                            )}
                         </p>
                     </div>
                     {activeTab === 'umum' && (
@@ -517,18 +534,17 @@ export default function Index({
                                     <div className="flex items-end gap-2">
                                         <div className="grid flex-grow gap-1.5">
                                             <Label htmlFor="tanggal_filter">Tanggal Spesifik</Label>
-                                            <Input
+                                            <DatePicker
                                                 id="tanggal_filter"
-                                                type="date"
                                                 value={filterTanggal}
-                                                onChange={(e) => {
-                                                    setFilterTanggal(e.target.value);
-                                                    if (e.target.value) {
+                                                onChange={(val) => {
+                                                    setFilterTanggal(val);
+                                                    if (val) {
                                                         setFilterTahun('all');
                                                         setFilterBulan('all');
                                                     }
                                                 }}
-                                                className="h-9"
+                                                className="w-full"
                                             />
                                         </div>
                                         {isFilterActive && (
@@ -583,11 +599,7 @@ export default function Index({
                                                                             className="text-muted-foreground animate-none px-6 py-4 align-top font-medium"
                                                                             rowSpan={journal.items.length}
                                                                         >
-                                                                            {new Date(journal.tanggal).toLocaleDateString('id-ID', {
-                                                                                year: 'numeric',
-                                                                                month: '2-digit',
-                                                                                day: '2-digit',
-                                                                            })}
+                                                                            {formatDate(journal.tanggal)}
                                                                         </td>
                                                                         <td className="px-6 py-4 align-top" rowSpan={journal.items.length}>
                                                                             <span className="text-foreground mb-1 block font-mono font-bold">
@@ -728,24 +740,22 @@ export default function Index({
                                     {/* Tanggal Mulai */}
                                     <div className="grid gap-1.5">
                                         <Label htmlFor="ledger_start_date">Tanggal Mulai</Label>
-                                        <input
-                                            type="date"
+                                        <DatePicker
                                             id="ledger_start_date"
                                             value={ledgerStartDate}
-                                            onChange={(e) => setLedgerStartDate(e.target.value)}
-                                            className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                            onChange={setLedgerStartDate}
+                                            className="w-full font-mono text-xs"
                                         />
                                     </div>
 
                                     {/* Tanggal Selesai */}
                                     <div className="grid gap-1.5">
                                         <Label htmlFor="ledger_end_date">Tanggal Selesai</Label>
-                                        <input
-                                            type="date"
+                                        <DatePicker
                                             id="ledger_end_date"
                                             value={ledgerEndDate}
-                                            onChange={(e) => setLedgerEndDate(e.target.value)}
-                                            className="border-input bg-background text-foreground focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                                            onChange={setLedgerEndDate}
+                                            className="w-full font-mono text-xs"
                                         />
                                     </div>
 
@@ -880,7 +890,7 @@ export default function Index({
                                                                     return (
                                                                         <tr key={item.id} className="hover:bg-muted/10 transition-colors">
                                                                             <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
-                                                                                {new Date(item.tanggal).toLocaleDateString('id-ID')}
+                                                                                {formatDate(item.tanggal)}
                                                                             </td>
                                                                             <td className="text-foreground border-border/40 border-r px-6 py-3 font-sans font-medium">
                                                                                 {item.nomor_jurnal} &bull;{' '}
@@ -1056,7 +1066,7 @@ export default function Index({
                                                         <td className="text-foreground px-6 py-4 font-semibold">{asset.nama}</td>
                                                         <td className="text-muted-foreground px-6 py-4 capitalize">{asset.jenis}</td>
                                                         <td className="text-muted-foreground px-6 py-4 text-center font-mono">
-                                                            {new Date(asset.tanggal_perolehan).toLocaleDateString('id-ID')}
+                                                            {formatDate(asset.tanggal_perolehan)}
                                                         </td>
                                                         <td className="text-foreground px-6 py-4 text-right font-mono">
                                                             {formatIDR(asset.harga_perolehan)}
@@ -1092,12 +1102,11 @@ export default function Index({
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="tanggal">Tanggal Transaksi</Label>
-                                    <Input
+                                    <DatePicker
                                         id="tanggal"
-                                        type="date"
                                         value={data.tanggal}
-                                        onChange={(e) => setData('tanggal', e.target.value)}
-                                        required
+                                        onChange={(val) => setData('tanggal', val)}
+                                        className="w-full"
                                     />
                                     {errors.tanggal && <span className="text-xs text-red-500">{errors.tanggal}</span>}
                                 </div>

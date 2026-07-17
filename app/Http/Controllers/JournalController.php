@@ -45,7 +45,7 @@ class JournalController extends Controller
         ]);
 
         $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
 
         if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
             throw ValidationException::withMessages([

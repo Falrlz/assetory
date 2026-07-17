@@ -36,6 +36,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/balance-sheet', [ReportController::class, 'balanceSheet'])->name('reports.balance-sheet');
     Route::get('reports/profit-loss', [ReportController::class, 'profitLoss'])->name('reports.profit-loss');
     Route::get('reports/cash-flow', [ReportController::class, 'cashFlow'])->name('reports.cash-flow');
+    Route::get('reports/equity-change', [ReportController::class, 'equityChange'])->name('reports.equity-change');
+    Route::get('reports/calk', [ReportController::class, 'calk'])->name('reports.calk');
+    Route::post('reports/calk', [ReportController::class, 'updateCalk'])->name('reports.calk.update');
 });
 
 require __DIR__.'/settings.php';

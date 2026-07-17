@@ -24,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'lock_date',
+        'calk_notes',
     ];
 
     /**
