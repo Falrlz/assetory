@@ -1,3 +1,4 @@
+import { FinancialTrendChart } from '@/components/financial-trend-chart';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
@@ -258,64 +259,7 @@ export default function Dashboard({
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Monthly Trend Chart (2 Cols) */}
                     <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs lg:col-span-2 dark:border-neutral-800 dark:bg-neutral-900">
-                        <div className="flex items-center justify-between border-b border-neutral-100 pb-4 dark:border-neutral-800">
-                            <div>
-                                <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
-                                    Tren Pendapatan vs Beban
-                                </h3>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                                    Kinerja operasional keuangan selama 6 bulan terakhir
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-4 text-xs font-medium">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="size-2.5 rounded-full bg-emerald-500" />
-                                    <span className="text-neutral-600 dark:text-neutral-300">Pendapatan</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="size-2.5 rounded-full bg-rose-500" />
-                                    <span className="text-neutral-600 dark:text-neutral-300">Beban</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Custom Chart Bars */}
-                        <div className="mt-6">
-                            <div className="flex h-56 items-end justify-between gap-3 pt-6">
-                                {monthly_trend.map((item, idx) => {
-                                    const incPct = Math.min(100, Math.max(4, (item.income / maxChartValue) * 100));
-                                    const expPct = Math.min(100, Math.max(4, (item.expense / maxChartValue) * 100));
-
-                                    return (
-                                        <div key={idx} className="flex flex-1 flex-col items-center gap-2 group relative">
-                                            {/* Tooltip on Hover */}
-                                            <div className="absolute -top-12 z-20 hidden rounded-lg bg-neutral-900 px-2.5 py-1.5 text-[11px] text-white shadow-lg group-hover:block dark:bg-neutral-100 dark:text-neutral-900 whitespace-nowrap">
-                                                <div className="font-semibold">{item.month}</div>
-                                                <div className="text-emerald-400 dark:text-emerald-600">Masuk: {formatRupiah(item.income)}</div>
-                                                <div className="text-rose-400 dark:text-rose-600">Keluar: {formatRupiah(item.expense)}</div>
-                                            </div>
-
-                                            {/* Bars Pair */}
-                                            <div className="flex h-full w-full items-end justify-center gap-1.5 rounded-t-md bg-neutral-50 px-1 py-1 dark:bg-neutral-800/40">
-                                                <div
-                                                    style={{ height: `${incPct}%` }}
-                                                    className="w-full max-w-[18px] rounded-t-sm bg-emerald-500 transition-all group-hover:bg-emerald-400"
-                                                />
-                                                <div
-                                                    style={{ height: `${expPct}%` }}
-                                                    className="w-full max-w-[18px] rounded-t-sm bg-rose-500 transition-all group-hover:bg-rose-400"
-                                                />
-                                            </div>
-
-                                            {/* Month Label */}
-                                            <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
-                                                {item.month}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                        <FinancialTrendChart data={monthly_trend} />
                     </div>
 
                     {/* Asset Breakdown (1 Col) */}
