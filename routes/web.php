@@ -3,6 +3,7 @@
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\BeginningBalanceController;
 use App\Http\Controllers\CoaController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
@@ -13,9 +14,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('assets', [AssetController::class, 'index'])->name('assets.index');
     Route::post('assets', [AssetController::class, 'store'])->name('assets.store');
