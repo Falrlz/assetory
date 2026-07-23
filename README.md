@@ -2,6 +2,8 @@
 
 **Simplify fixed asset management and double-entry accounting with real-time financial clarity.**
 
+![Assetory Preview](.github/assets/preview-assetory-home.png)
+
 Have you ever struggled to track asset depreciation, maintain double-entry bookkeeping, and generate accurate financial statements for your business?
 
 **Assetory** helps you streamline fixed asset tracking, automate straight-line depreciation, manage multi-level Chart of Accounts (COA), record balanced journal entries, and generate comprehensive financial reports with a modern, real-time interactive dashboard.
