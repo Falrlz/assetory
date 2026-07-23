@@ -1,6 +1,6 @@
 # Assetory
 
-**Never manage fixed assets and accounting blindly again.**
+**Simplify fixed asset management and double-entry accounting with real-time financial clarity.**
 
 Have you ever struggled to track asset depreciation, maintain double-entry bookkeeping, and generate accurate financial statements for your business?
 
@@ -8,18 +8,18 @@ Have you ever struggled to track asset depreciation, maintain double-entry bookk
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
-- **📊 Executive Financial Dashboard** → Real-time KPI cards, interactive curved trend charts (Income vs Expense), asset portfolio breakdowns, and recent activity logs.
-- **🏢 Fixed Asset Lifecycle & Automated Depreciation** → Track asset acquisition costs, residual values, and tax groups. Automatic straight-line monthly & annual depreciation calculations with single-click ledger posting.
-- **📖 Double-Entry General Ledger & Journals** → Auto-generated sequential journal vouchers (`JV-YYYYMM-XXXX`), strict debit/credit balance enforcement, and journal reversal support.
-- **📂 Pre-Seeded Chart of Accounts (COA)** → Multi-level standard accounting hierarchy (Assets, Liabilities, Equity, Revenues, Expenses) auto-configured for every user.
-- **📈 Comprehensive Financial Statements** → Real-time generation of Balance Sheet (Neraca Keuangan), Income Statement (Laba dan Rugi), Cash Flow Statement (Arus Kas), Trial Balance (Neraca Saldo), Equity Changes, and Financial Notes (CALK).
-- **🔒 Multi-Tenant Data Isolation** → User-scoped data security ensuring complete isolation of accounts, assets, and transactions.
+- **Executive Financial Dashboard** → Real-time KPI cards, interactive curved trend charts (Income vs Expense), asset portfolio breakdowns, and recent activity logs.
+- **Fixed Asset Lifecycle & Automated Depreciation** → Track asset acquisition costs, residual values, and tax groups. Automatic straight-line monthly & annual depreciation calculations with single-click ledger posting.
+- **Double-Entry General Ledger & Journals** → Auto-generated sequential journal vouchers (`JV-YYYYMM-XXXX`), strict debit/credit balance enforcement, and journal reversal support.
+- **Pre-Seeded Chart of Accounts (COA)** → Multi-level standard accounting hierarchy (Assets, Liabilities, Equity, Revenues, Expenses) auto-configured for every user.
+- **Comprehensive Financial Statements** → Real-time generation of Balance Sheet (Neraca Keuangan), Income Statement (Laba dan Rugi), Cash Flow Statement (Arus Kas), Trial Balance (Neraca Saldo), Equity Changes, and Financial Notes (CALK).
+- **Multi-Tenant Data Isolation** → User-scoped data security ensuring complete isolation of accounts, assets, and transactions.
 
 ---
 
-## 🛠️ How It Works
+## How It Works
 
 ### 1. Asset & Depreciation Engine
 - Records fixed assets with tax group categories (4, 8, 16, or 20-year economic life).
@@ -37,7 +37,7 @@ Have you ever struggled to track asset depreciation, maintain double-entry bookk
 
 ---
 
-## 📐 Project Architecture
+## Project Architecture
 
 ```
 assetory/
@@ -90,7 +90,7 @@ assetory/
 
 ---
 
-## 💻 Technology Stack
+## Technology Stack
 
 ### Backend
 - **Laravel 12** → Modern PHP framework with streamlined file structure
@@ -109,7 +109,7 @@ assetory/
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### 1. Clone Repository
 ```bash
@@ -163,7 +163,7 @@ Access the application in your browser at `http://localhost:8000`.
 
 ---
 
-## 🧪 Running Tests & Code Quality
+## Running Tests & Code Quality
 
 ### Run Automated Backend Tests (Pest)
 ```bash
