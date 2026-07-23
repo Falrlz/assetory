@@ -2,7 +2,7 @@
 
 **Simplify fixed asset management and double-entry accounting with real-time financial clarity.**
 
-![Assetory Preview](.github/assets/preview-assetory-home.png)
+![Assetory Preview](.github/assets/preview-home.png)
 
 Have you ever struggled to track asset depreciation, maintain double-entry bookkeeping, and generate accurate financial statements for your business?
 
