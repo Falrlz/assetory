@@ -1,6 +1,7 @@
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/welcome/container';
+import AppearanceToggleDropdown from '@/components/appearance-dropdown';
 import type { SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 
@@ -23,7 +24,7 @@ export function SiteHeader() {
                         aria-label="Assetory, kembali ke beranda"
                     >
                         <span className="flex size-8 items-center justify-center rounded-md bg-neutral-900 dark:bg-white">
-                            <AppLogoIcon className="size-4 text-white dark:text-neutral-900" />
+                            <AppLogoIcon className="size-4 text-white dark:text-neutral-900" aria-hidden="true" />
                         </span>
                         <span className="text-base font-semibold tracking-tight text-neutral-900 dark:text-white">Assetory</span>
                     </Link>
@@ -41,6 +42,8 @@ export function SiteHeader() {
                     </nav>
 
                     <div className="flex items-center gap-2">
+                        <AppearanceToggleDropdown />
+                        
                         {auth.user ? (
                             <Button asChild>
                                 <Link href={route('dashboard')}>Dashboard</Link>
