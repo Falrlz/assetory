@@ -236,15 +236,15 @@ export default function Index({
 
     const handleLedgerFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         const startYear = new Date(ledgerStartDate).getFullYear();
         const endYear = new Date(ledgerEndDate).getFullYear();
-        
+
         if (startYear !== endYear) {
             setLedgerError('Rentang tanggal tidak boleh melewati dua tahun yang berbeda.');
             return;
         }
-        
+
         setLedgerError(null);
         router.get(
             route('journals.index'),
@@ -569,7 +569,7 @@ export default function Index({
                                                 <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
                                                     <th className="w-[120px] px-6 py-3">Tanggal</th>
                                                     <th className="w-[160px] px-6 py-3">No. Referensi</th>
-                                                    <th className="px-6 py-3">Keterangan</th>
+                                                    <th className="px-6 py-3">Uraian Transaksi</th>
                                                     <th className="w-[110px] px-6 py-3 text-center">No Arus Kas</th>
                                                     <th className="w-[120px] px-6 py-3">Kode Akun</th>
                                                     <th className="px-6 py-3">Nama Akun</th>
@@ -607,13 +607,12 @@ export default function Index({
                                                                             </span>
                                                                             <div className="flex flex-col gap-1 items-start">
                                                                                 <span
-                                                                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${
-                                                                                        journal.tipe_jurnal === 'penyusutan'
-                                                                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                                            : journal.tipe_jurnal === 'perolehan_aset'
-                                                                                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                                                              : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
-                                                                                    }`}
+                                                                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${journal.tipe_jurnal === 'penyusutan'
+                                                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                                        : journal.tipe_jurnal === 'perolehan_aset'
+                                                                                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                                            : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
+                                                                                        }`}
                                                                                 >
                                                                                     {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
                                                                                 </span>
@@ -833,7 +832,7 @@ export default function Index({
                                                                         Tanggal
                                                                     </th>
                                                                     <th className="border-border/40 border-r px-6 py-3 text-left" rowSpan={2}>
-                                                                        Keterangan
+                                                                        Uraian Transaksi
                                                                     </th>
                                                                     <th className="border-border/40 w-36 border-r px-6 py-3 text-right" rowSpan={2}>
                                                                         Debit

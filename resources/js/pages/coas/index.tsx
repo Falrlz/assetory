@@ -28,8 +28,8 @@ const KATEGORI_LABELS: Record<string, string> = {
 };
 
 const JENIS_LAPORAN_LABELS: Record<string, string> = {
-    LPK: 'Laporan Posisi Keuangan (Neraca)',
-    LR: 'Laba Rugi',
+    LPK: 'Laporan Posisi Keuangan (LPK)',
+    LR: 'Laba Rugi (LR)',
 };
 
 const SALDO_LABELS: Record<string, string> = {

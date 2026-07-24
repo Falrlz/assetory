@@ -410,9 +410,9 @@ export default function Dashboard({
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-neutral-900 dark:text-white">
-                                                Neraca Keuangan
+                                                Laporan Posisi Keuangan
                                             </div>
-                                            <div className="text-[11px] text-neutral-500">Laporan Posisi Keuangan</div>
+                                            <div className="text-[11px] text-neutral-500">Neraca (Balance Sheet)</div>
                                         </div>
                                     </div>
                                     <ChevronRight className="size-4 text-neutral-400" />

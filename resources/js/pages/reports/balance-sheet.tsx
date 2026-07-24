@@ -8,7 +8,7 @@ import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Neraca Keuangan',
+        title: 'Laporan Posisi Keuangan',
         href: '/reports/balance-sheet',
     },
 ];
@@ -87,13 +87,13 @@ export default function BalanceSheet({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Neraca Keuangan (Balance Sheet)" />
+            <Head title="Laporan Posisi Keuangan" />
 
             <div className="flex h-full min-w-0 flex-1 flex-col gap-6 p-6 print:p-0">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Neraca Keuangan</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">Laporan Posisi Keuangan</h1>
                         <p className="text-muted-foreground text-sm">
                             Laporan Posisi Keuangan yang memuat Aset, Kewajiban, dan Ekuitas organisasi Anda.
                         </p>
@@ -143,7 +143,7 @@ export default function BalanceSheet({
 
                     <div className="mb-8 hidden text-center md:block print:hidden">
                         <h2 className="text-md text-muted-foreground font-semibold uppercase">Laporan Posisi Keuangan</h2>
-                        <h1 className="text-foreground mt-0.5 text-2xl font-bold">NERACA KEUANGAN</h1>
+                        <h1 className="text-foreground mt-0.5 text-2xl font-bold">LAPORAN POSISI KEUANGAN</h1>
                         <p className="text-muted-foreground mt-1 text-sm">Per tanggal {formatAsDate(filters.end_date)}</p>
                     </div>
 
