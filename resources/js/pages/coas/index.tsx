@@ -1,12 +1,16 @@
+import { Field, FilterBar, PageHeader, PageShell } from '@/components/page-header';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Table, TableBody, TableCell, TableContainer, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Coa } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Edit, Plus, Search, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -108,6 +112,39 @@ export default function Index({ coas }: CoasProps) {
         [transactionCoas],
     );
 
+    /** Single source of truth for both the result count and the table rows. */
+    const filteredCoas = useMemo(() => {
+        const prefix = level3Filter !== 'all' ? level3Filter : level2Filter !== 'all' ? level2Filter : level1Filter !== 'all' ? level1Filter : null;
+        const query = searchQuery.trim().toLowerCase();
+
+        return transactionCoas.filter((coa) => {
+            if (prefix && !coa.kode_akun.startsWith(prefix + '.')) return false;
+            if (saldoFilter !== 'all' && coa.saldo_normal !== saldoFilter) return false;
+            if (laporanFilter !== 'all' && coa.jenis_laporan !== laporanFilter) return false;
+            if (query !== '') {
+                return coa.nama_akun.toLowerCase().includes(query) || coa.kode_akun.toLowerCase().includes(query);
+            }
+            return true;
+        });
+    }, [transactionCoas, level1Filter, level2Filter, level3Filter, saldoFilter, laporanFilter, searchQuery]);
+
+    const isFilterActive =
+        searchQuery !== '' ||
+        level1Filter !== 'all' ||
+        level2Filter !== 'all' ||
+        level3Filter !== 'all' ||
+        saldoFilter !== 'all' ||
+        laporanFilter !== 'all';
+
+    const handleResetFilters = () => {
+        setSearchQuery('');
+        setLevel1Filter('all');
+        setLevel2Filter('all');
+        setLevel3Filter('all');
+        setSaldoFilter('all');
+        setLaporanFilter('all');
+    };
+
     const { data, setData, post, processing, errors, reset } = useForm({
         kode_akun: '',
         nama_akun: '',
@@ -191,44 +228,40 @@ export default function Index({ coas }: CoasProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Chart of Accounts (COA)" />
 
-            <div className="flex h-full min-w-0 flex-1 flex-col gap-6 p-6">
-                {/* Header */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Chart of Accounts (COA)</h1>
-                        <p className="text-muted-foreground text-sm">
-                            Kelola daftar akun untuk mencatat transaksi keuangan organisasi Anda secara terstruktur.
-                        </p>
-                    </div>
-                    <Button onClick={() => setIsOpen(true)} className="w-full sm:w-auto">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Tambah Akun
-                    </Button>
-                </div>
+            <PageShell>
+                <PageHeader
+                    title="Chart of Accounts (COA)"
+                    description="Kelola daftar akun untuk mencatat transaksi keuangan organisasi Anda secara terstruktur."
+                    actions={
+                        <Button onClick={() => setIsOpen(true)}>
+                            <Plus />
+                            Tambah Akun
+                        </Button>
+                    }
+                />
 
                 {/* Filter Bar */}
-                <div className="bg-card grid grid-cols-1 items-end gap-4 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {/* Search - Row 1, Spans 2 cols */}
-                    <div className="relative grid gap-1.5 sm:col-span-2 lg:col-span-2">
+                <FilterBar className="sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+                    <Field className="sm:col-span-2">
                         <Label htmlFor="search">Cari Akun</Label>
                         <div className="relative">
-                            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+                            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                             <Input
                                 id="search"
+                                inputSize="sm"
                                 placeholder="Cari nama atau kode akun..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-9 pl-9"
+                                className="pl-9"
                             />
                         </div>
-                    </div>
+                    </Field>
 
-                    {/* Level 1 Filter - Row 1, Spans 1 col */}
-                    <div className="grid gap-1.5">
+                    <Field>
                         <Label htmlFor="level1_filter">Kelompok Utama</Label>
-                        <select
+                        <NativeSelect
                             id="level1_filter"
-                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                            selectSize="sm"
                             value={level1Filter}
                             onChange={(e) => {
                                 setLevel1Filter(e.target.value);
@@ -242,15 +275,14 @@ export default function Index({ coas }: CoasProps) {
                                     {p.nama_akun}
                                 </option>
                             ))}
-                        </select>
-                    </div>
+                        </NativeSelect>
+                    </Field>
 
-                    {/* Level 2 Filter - Row 1, Spans 1 col */}
-                    <div className="grid gap-1.5">
+                    <Field>
                         <Label htmlFor="level2_filter">Sub Kelompok</Label>
-                        <select
+                        <NativeSelect
                             id="level2_filter"
-                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                            selectSize="sm"
                             value={level2Filter}
                             disabled={level2Options.length === 0}
                             onChange={(e) => {
@@ -264,15 +296,14 @@ export default function Index({ coas }: CoasProps) {
                                     {p.nama_akun}
                                 </option>
                             ))}
-                        </select>
-                    </div>
+                        </NativeSelect>
+                    </Field>
 
-                    {/* Level 3 Filter - Row 2, Spans 1 col */}
-                    <div className="grid gap-1.5">
+                    <Field>
                         <Label htmlFor="level3_filter">Sub-Sub Kelompok</Label>
-                        <select
+                        <NativeSelect
                             id="level3_filter"
-                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                            selectSize="sm"
                             value={level3Filter}
                             disabled={level3Options.length === 0}
                             onChange={(e) => setLevel3Filter(e.target.value)}
@@ -283,176 +314,112 @@ export default function Index({ coas }: CoasProps) {
                                     {p.nama_akun}
                                 </option>
                             ))}
-                        </select>
-                    </div>
+                        </NativeSelect>
+                    </Field>
 
-                    {/* Saldo Normal - Row 2, Spans 1 col */}
-                    <div className="grid gap-1.5">
+                    <Field>
                         <Label htmlFor="saldo_filter">Saldo Normal</Label>
-                        <select
-                            id="saldo_filter"
-                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                            value={saldoFilter}
-                            onChange={(e) => setSaldoFilter(e.target.value)}
-                        >
+                        <NativeSelect id="saldo_filter" selectSize="sm" value={saldoFilter} onChange={(e) => setSaldoFilter(e.target.value)}>
                             <option value="all">Semua Saldo</option>
                             <option value="debit">Debit</option>
                             <option value="kredit">Kredit</option>
-                        </select>
-                    </div>
+                        </NativeSelect>
+                    </Field>
 
-                    {/* Jenis Laporan - Row 2, Spans 1 col */}
-                    <div className="grid gap-1.5">
+                    <Field>
                         <Label htmlFor="laporan_filter">Jenis Laporan</Label>
-                        <select
-                            id="laporan_filter"
-                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                            value={laporanFilter}
-                            onChange={(e) => setLaporanFilter(e.target.value)}
-                        >
+                        <NativeSelect id="laporan_filter" selectSize="sm" value={laporanFilter} onChange={(e) => setLaporanFilter(e.target.value)}>
                             <option value="all">Semua Laporan</option>
                             <option value="LPK">Neraca (LPK)</option>
                             <option value="LR">Laba Rugi (LR)</option>
-                        </select>
-                    </div>
+                        </NativeSelect>
+                    </Field>
 
-                    {/* Count & Reset Widget - Row 2, Spans 1 col */}
-                    <div className="border-border bg-muted/40 flex h-9 items-center justify-between gap-3 rounded-lg border px-3.5 py-1 text-xs">
-                        <span className="text-muted-foreground whitespace-nowrap">
-                            Menampilkan{' '}
-                            <span className="text-foreground font-semibold">
-                                {
-                                    transactionCoas.filter((c) => {
-                                        const prefix =
-                                            level3Filter !== 'all'
-                                                ? level3Filter
-                                                : level2Filter !== 'all'
-                                                  ? level2Filter
-                                                  : level1Filter !== 'all'
-                                                    ? level1Filter
-                                                    : null;
-                                        if (prefix && !c.kode_akun.startsWith(prefix + '.')) return false;
-                                        if (saldoFilter !== 'all' && c.saldo_normal !== saldoFilter) return false;
-                                        if (laporanFilter !== 'all' && c.jenis_laporan !== laporanFilter) return false;
-                                        if (searchQuery.trim() !== '') {
-                                            const q = searchQuery.toLowerCase();
-                                            return c.nama_akun.toLowerCase().includes(q) || c.kode_akun.toLowerCase().includes(q);
-                                        }
-                                        return true;
-                                    }).length
-                                }
-                            </span>{' '}
-                            dari <span className="text-foreground font-semibold">{transactionCoas.length}</span>
-                        </span>
+                    <div className="flex items-center justify-between gap-3 border-t pt-3 sm:col-span-2 lg:col-span-3 2xl:col-span-6">
+                        <p className="text-muted-foreground text-sm">
+                            Menampilkan <span className="text-foreground font-semibold tabular-nums">{filteredCoas.length}</span> dari{' '}
+                            <span className="text-foreground font-semibold tabular-nums">{transactionCoas.length}</span> akun transaksi
+                        </p>
                         <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:hover:text-muted-foreground flex h-6 cursor-pointer items-center gap-1 px-1.5 text-xs font-medium transition-colors disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent"
-                            onClick={() => {
-                                setSearchQuery('');
-                                setLevel1Filter('all');
-                                setLevel2Filter('all');
-                                setLevel3Filter('all');
-                                setSaldoFilter('all');
-                                setLaporanFilter('all');
-                            }}
-                            disabled={
-                                searchQuery === '' &&
-                                level1Filter === 'all' &&
-                                level2Filter === 'all' &&
-                                level3Filter === 'all' &&
-                                saldoFilter === 'all' &&
-                                laporanFilter === 'all'
-                            }
+                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            onClick={handleResetFilters}
+                            disabled={!isFilterActive}
                         >
-                            <X className="h-3 w-3" />
-                            Reset
+                            <X />
+                            Reset Filter
                         </Button>
                     </div>
-                </div>
+                </FilterBar>
 
                 {/* Table Section */}
-                <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
-                    <div className="w-full overflow-x-auto">
-                        <table className="w-full min-w-[800px] border-collapse text-left">
-                            <thead>
-                                <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
-                                    <th className="px-6 py-4">Kode Akun</th>
-                                    <th className="px-6 py-4">Nama Akun</th>
-                                    <th className="px-6 py-4">Kategori</th>
-                                    <th className="px-6 py-4">Saldo Normal</th>
-                                    <th className="px-6 py-4">Jenis Laporan</th>
-                                    <th className="px-6 py-4 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y text-sm">
-                                {transactionCoas.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="text-muted-foreground px-6 py-16 text-center">
-                                            <Search className="text-muted-foreground/35 mx-auto mb-3 h-10 w-10" />
-                                            <h4 className="text-foreground text-base font-semibold">Tidak Ada Hasil Cocok</h4>
-                                            <p className="text-muted-foreground mt-1 text-sm">
-                                                Coba sesuaikan kata kunci pencarian atau bersihkan filter Anda.
-                                            </p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    transactionCoas
-                                        .filter((coa) => {
-                                            const prefix =
-                                                level3Filter !== 'all'
-                                                    ? level3Filter
-                                                    : level2Filter !== 'all'
-                                                      ? level2Filter
-                                                      : level1Filter !== 'all'
-                                                        ? level1Filter
-                                                        : null;
-                                            if (prefix && !coa.kode_akun.startsWith(prefix + '.')) return false;
-                                            if (saldoFilter !== 'all' && coa.saldo_normal !== saldoFilter) return false;
-                                            if (laporanFilter !== 'all' && coa.jenis_laporan !== laporanFilter) return false;
-                                            if (searchQuery.trim() !== '') {
-                                                const query = searchQuery.toLowerCase();
-                                                return coa.nama_akun.toLowerCase().includes(query) || coa.kode_akun.toLowerCase().includes(query);
-                                            }
-                                            return true;
-                                        })
-                                        .map((coa) => (
-                                            <tr key={coa.id} className="hover:bg-muted/30 border-b transition-colors last:border-0">
-                                                <td className="text-foreground px-6 py-4 font-mono font-bold">{coa.kode_akun}</td>
-                                                <td className="text-foreground px-6 py-4 font-medium">{coa.nama_akun}</td>
-                                                <td className="text-muted-foreground px-6 py-4 capitalize">{KATEGORI_LABELS[coa.kategori]}</td>
-                                                <td className="text-muted-foreground px-6 py-4 capitalize">{SALDO_LABELS[coa.saldo_normal]}</td>
-                                                <td className="text-muted-foreground px-6 py-4">{JENIS_LAPORAN_LABELS[coa.jenis_laporan] || '-'}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="text-muted-foreground hover:text-foreground h-8 w-8"
-                                                            onClick={() => handleOpenEdit(coa)}
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
-                                                            onClick={() => handleDelete(coa.id)}
-                                                            title="Hapus Akun"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+                <TableContainer>
+                    <Table minWidth="min-w-[900px]">
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="w-44">Kode Akun</TableHead>
+                                <TableHead className="min-w-[220px]">Nama Akun</TableHead>
+                                <TableHead className="w-44">Kategori</TableHead>
+                                <TableHead align="center" className="w-36">
+                                    Saldo Normal
+                                </TableHead>
+                                <TableHead className="w-56">Jenis Laporan</TableHead>
+                                <TableHead align="center" className="w-28">
+                                    Aksi
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredCoas.length === 0 ? (
+                                <TableEmpty
+                                    colSpan={6}
+                                    icon={<Search className="text-muted-foreground/40 mb-1 size-10" />}
+                                    title="Tidak Ada Hasil Cocok"
+                                    description="Coba sesuaikan kata kunci pencarian atau bersihkan filter Anda."
+                                />
+                            ) : (
+                                filteredCoas.map((coa) => (
+                                    <TableRow key={coa.id}>
+                                        <TableCell className="text-foreground font-mono font-semibold">{coa.kode_akun}</TableCell>
+                                        <TableCell className="text-foreground font-medium">{coa.nama_akun}</TableCell>
+                                        <TableCell className="text-muted-foreground">{KATEGORI_LABELS[coa.kategori]}</TableCell>
+                                        <TableCell align="center">
+                                            <Badge variant={coa.saldo_normal === 'debit' ? 'info' : 'accent'}>{SALDO_LABELS[coa.saldo_normal]}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">{JENIS_LAPORAN_LABELS[coa.jenis_laporan] || '-'}</TableCell>
+                                        <TableCell align="center">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon-xs"
+                                                    className="text-muted-foreground hover:text-foreground"
+                                                    onClick={() => handleOpenEdit(coa)}
+                                                    title="Ubah akun"
+                                                >
+                                                    <Edit />
+                                                    <span className="sr-only">Ubah akun</span>
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon-xs"
+                                                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                                    onClick={() => handleDelete(coa.id)}
+                                                    title="Hapus akun"
+                                                >
+                                                    <Trash2 />
+                                                    <span className="sr-only">Hapus akun</span>
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </PageShell>
 
             {/* Create COA Dialog */}
             <Dialog
@@ -465,22 +432,20 @@ export default function Index({ coas }: CoasProps) {
                     }
                 }}
             >
-                <DialogContent className="sm:max-w-[500px]">
-                    <form onSubmit={handleSubmit}>
+                <DialogContent className="sm:max-w-[520px]">
+                    <form onSubmit={handleSubmit} className="grid gap-6">
                         <DialogHeader>
                             <DialogTitle>Tambah Akun Baru</DialogTitle>
                             <DialogDescription>Pilih kelompok akun terlebih dahulu, lalu isi nama akun.</DialogDescription>
                         </DialogHeader>
 
-                        <div className="grid gap-4 py-4">
-                            {/* Level 1 */}
-                            <div className="grid gap-2">
+                        <div className="grid gap-4">
+                            <Field>
                                 <Label htmlFor="modal_level1">
-                                    Kelompok Utama <span className="text-red-500">*</span>
+                                    Kelompok Utama <span className="text-destructive">*</span>
                                 </Label>
-                                <select
+                                <NativeSelect
                                     id="modal_level1"
-                                    className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                     value={modalLevel1}
                                     onChange={(e) => {
                                         setModalLevel1(e.target.value);
@@ -494,17 +459,15 @@ export default function Index({ coas }: CoasProps) {
                                             {p.nama_akun}
                                         </option>
                                     ))}
-                                </select>
-                            </div>
+                                </NativeSelect>
+                            </Field>
 
-                            {/* Level 2 */}
-                            <div className="grid gap-2">
+                            <Field>
                                 <Label htmlFor="modal_level2" className={!modalLevel1 ? 'text-muted-foreground' : ''}>
-                                    Sub Kelompok <span className="text-red-500">*</span>
+                                    Sub Kelompok <span className="text-destructive">*</span>
                                 </Label>
-                                <select
+                                <NativeSelect
                                     id="modal_level2"
-                                    className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
                                     value={modalLevel2}
                                     disabled={!modalLevel1}
                                     onChange={(e) => {
@@ -518,17 +481,15 @@ export default function Index({ coas }: CoasProps) {
                                             {p.nama_akun}
                                         </option>
                                     ))}
-                                </select>
-                            </div>
+                                </NativeSelect>
+                            </Field>
 
-                            {/* Level 3 */}
-                            <div className="grid gap-2">
+                            <Field>
                                 <Label htmlFor="modal_level3" className={!modalLevel2 ? 'text-muted-foreground' : ''}>
-                                    Sub-Sub Kelompok <span className="text-red-500">*</span>
+                                    Sub-Sub Kelompok <span className="text-destructive">*</span>
                                 </Label>
-                                <select
+                                <NativeSelect
                                     id="modal_level3"
-                                    className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
                                     value={modalLevel3}
                                     disabled={!modalLevel2}
                                     onChange={(e) => setModalLevel3(e.target.value)}
@@ -539,25 +500,26 @@ export default function Index({ coas }: CoasProps) {
                                             {p.nama_akun}
                                         </option>
                                     ))}
-                                </select>
-                            </div>
+                                </NativeSelect>
+                            </Field>
 
                             {/* Info auto-fill - tampil setelah Level 3 dipilih */}
                             {modalLevel3 && (
-                                <div className="bg-muted/40 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-4 py-2.5 text-xs">
-                                    <span className="text-muted-foreground">Kategori:</span>
-                                    <span className="font-semibold">{KATEGORI_LABELS[data.kategori]}</span>
-                                    <span className="text-muted-foreground/50">·</span>
-                                    <span className="text-muted-foreground">Saldo:</span>
-                                    <span className="font-semibold">{SALDO_LABELS[data.saldo_normal]}</span>
-                                    <span className="text-muted-foreground/50">·</span>
-                                    <span className="text-muted-foreground">Laporan:</span>
-                                    <span className="font-semibold">{JENIS_LAPORAN_LABELS[data.jenis_laporan] || '-'}</span>
-                                </div>
+                                <dl className="bg-muted/40 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border px-4 py-3 text-xs">
+                                    {[
+                                        ['Kategori', KATEGORI_LABELS[data.kategori]],
+                                        ['Saldo', SALDO_LABELS[data.saldo_normal]],
+                                        ['Laporan', JENIS_LAPORAN_LABELS[data.jenis_laporan] || '-'],
+                                    ].map(([label, value]) => (
+                                        <div key={label} className="flex items-center gap-1.5">
+                                            <dt className="text-muted-foreground">{label}:</dt>
+                                            <dd className="text-foreground font-semibold">{value}</dd>
+                                        </div>
+                                    ))}
+                                </dl>
                             )}
 
-                            {/* Nama Akun */}
-                            <div className="grid gap-2">
+                            <Field>
                                 <Label htmlFor="nama_akun" className={!modalLevel3 ? 'text-muted-foreground' : ''}>
                                     Nama Akun
                                 </Label>
@@ -569,11 +531,10 @@ export default function Index({ coas }: CoasProps) {
                                     disabled={!modalLevel3}
                                     required
                                 />
-                                {errors.nama_akun && <span className="text-xs text-red-500">{errors.nama_akun}</span>}
-                            </div>
+                                {errors.nama_akun && <p className="text-destructive text-xs font-medium">{errors.nama_akun}</p>}
+                            </Field>
 
-                            {/* Kode Akun */}
-                            <div className="grid gap-2">
+                            <Field>
                                 <Label htmlFor="kode_akun" className={!modalLevel3 ? 'text-muted-foreground' : ''}>
                                     Kode Akun
                                 </Label>
@@ -583,13 +544,16 @@ export default function Index({ coas }: CoasProps) {
                                     value={data.kode_akun}
                                     onChange={(e) => setData('kode_akun', e.target.value)}
                                     disabled={!modalLevel3}
+                                    className="font-mono"
                                     required
                                 />
                                 {data.kode_akun && !/^\d{2}\.\d{4}\.\d{2}\.\d{2}$/.test(data.kode_akun) && (
-                                    <span className="text-xs text-amber-500">⚠ Format: XX.XXXX.XX.XX (contoh: 01.1000.01.01)</span>
+                                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                                        Format: XX.XXXX.XX.XX (contoh: 01.1000.01.01)
+                                    </p>
                                 )}
-                                {errors.kode_akun && <span className="text-xs text-red-500">{errors.kode_akun}</span>}
-                            </div>
+                                {errors.kode_akun && <p className="text-destructive text-xs font-medium">{errors.kode_akun}</p>}
+                            </Field>
                         </div>
 
                         <DialogFooter>
@@ -614,28 +578,27 @@ export default function Index({ coas }: CoasProps) {
 
             {/* Edit COA Dialog */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[480px]">
-                    <form onSubmit={handleUpdate}>
+                <DialogContent className="sm:max-w-[520px]">
+                    <form onSubmit={handleUpdate} className="grid gap-6">
                         <DialogHeader>
                             <DialogTitle>Edit Detail Akun</DialogTitle>
                             <DialogDescription>Perbarui rincian untuk akun keuangan terpilih.</DialogDescription>
                         </DialogHeader>
 
-                        <div className="grid gap-4 py-4">
-                            {/* Kode Akun */}
-                            <div className="grid gap-2">
+                        <div className="grid gap-4">
+                            <Field>
                                 <Label htmlFor="edit_kode_akun">Kode Akun</Label>
                                 <Input
                                     id="edit_kode_akun"
                                     value={editForm.data.kode_akun}
                                     onChange={(e) => editForm.setData('kode_akun', e.target.value)}
+                                    className="font-mono"
                                     required
                                 />
-                                {editForm.errors.kode_akun && <span className="text-xs text-red-500">{editForm.errors.kode_akun}</span>}
-                            </div>
+                                {editForm.errors.kode_akun && <p className="text-destructive text-xs font-medium">{editForm.errors.kode_akun}</p>}
+                            </Field>
 
-                            {/* Nama Akun */}
-                            <div className="grid gap-2">
+                            <Field>
                                 <Label htmlFor="edit_nama_akun">Nama Akun</Label>
                                 <Input
                                     id="edit_nama_akun"
@@ -643,57 +606,55 @@ export default function Index({ coas }: CoasProps) {
                                     onChange={(e) => editForm.setData('nama_akun', e.target.value)}
                                     required
                                 />
-                                {editForm.errors.nama_akun && <span className="text-xs text-red-500">{editForm.errors.nama_akun}</span>}
-                            </div>
+                                {editForm.errors.nama_akun && <p className="text-destructive text-xs font-medium">{editForm.errors.nama_akun}</p>}
+                            </Field>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                {/* Kategori */}
-                                <div className="grid gap-2">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <Field>
                                     <Label htmlFor="edit_kategori">Kategori Akun</Label>
-                                    <select
+                                    <NativeSelect
                                         id="edit_kategori"
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={editForm.data.kategori}
                                         onChange={(e) => editForm.setData('kategori', e.target.value as Coa['kategori'])}
                                     >
-                                        <option value="aset">Aset / Harta</option>
-                                        <option value="kewajiban">Kewajiban / Utang</option>
-                                        <option value="ekuitas">Ekuitas / Modal</option>
-                                        <option value="pendapatan">Pendapatan</option>
-                                        <option value="beban">Beban</option>
-                                    </select>
-                                    {editForm.errors.kategori && <span className="text-xs text-red-500">{editForm.errors.kategori}</span>}
-                                </div>
+                                        {Object.entries(KATEGORI_LABELS).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                                {label}
+                                            </option>
+                                        ))}
+                                    </NativeSelect>
+                                    {editForm.errors.kategori && <p className="text-destructive text-xs font-medium">{editForm.errors.kategori}</p>}
+                                </Field>
 
-                                {/* Saldo Normal */}
-                                <div className="grid gap-2">
+                                <Field>
                                     <Label htmlFor="edit_saldo_normal">Saldo Normal</Label>
-                                    <select
+                                    <NativeSelect
                                         id="edit_saldo_normal"
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={editForm.data.saldo_normal}
                                         onChange={(e) => editForm.setData('saldo_normal', e.target.value as Coa['saldo_normal'])}
                                     >
                                         <option value="debit">Debit</option>
                                         <option value="kredit">Kredit</option>
-                                    </select>
-                                    {editForm.errors.saldo_normal && <span className="text-xs text-red-500">{editForm.errors.saldo_normal}</span>}
-                                </div>
+                                    </NativeSelect>
+                                    {editForm.errors.saldo_normal && (
+                                        <p className="text-destructive text-xs font-medium">{editForm.errors.saldo_normal}</p>
+                                    )}
+                                </Field>
 
-                                {/* Jenis Laporan */}
-                                <div className="col-span-2 grid gap-2">
+                                <Field className="sm:col-span-2">
                                     <Label htmlFor="edit_jenis_laporan">Jenis Laporan</Label>
-                                    <select
+                                    <NativeSelect
                                         id="edit_jenis_laporan"
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
                                         value={editForm.data.jenis_laporan}
                                         onChange={(e) => editForm.setData('jenis_laporan', e.target.value as Coa['jenis_laporan'])}
                                     >
                                         <option value="LPK">Laporan Posisi Keuangan (Neraca)</option>
                                         <option value="LR">Laba Rugi</option>
-                                    </select>
-                                    {editForm.errors.jenis_laporan && <span className="text-xs text-red-500">{editForm.errors.jenis_laporan}</span>}
-                                </div>
+                                    </NativeSelect>
+                                    {editForm.errors.jenis_laporan && (
+                                        <p className="text-destructive text-xs font-medium">{editForm.errors.jenis_laporan}</p>
+                                    )}
+                                </Field>
                             </div>
                         </div>
 

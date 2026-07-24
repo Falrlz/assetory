@@ -21,24 +21,24 @@ export function HeroSection() {
     return (
         <Section>
             <div className="grid items-center gap-10 xl:grid-cols-2 xl:gap-16">
-                <div className="max-w-xl mx-auto xl:mx-0 xl:scale-90 xl:origin-top-left 2xl:scale-100 2xl:origin-center">
+                <div className="mx-auto max-w-xl xl:mx-0 xl:origin-top-left xl:scale-90 2xl:origin-center 2xl:scale-100">
                     <Badge variant="secondary" className={`gap-1.5 py-1 ${enter}`}>
                         <ShieldCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                         Aset tetap &amp; akuntansi double-entry
                     </Badge>
 
                     <h1
-                        className={`mt-6 lg:mt-4 text-3xl leading-tight font-bold tracking-tight text-balance text-neutral-900 delay-75 sm:text-4xl lg:text-5xl dark:text-white ${enter}`}
+                        className={`mt-6 text-3xl leading-tight font-bold tracking-tight text-balance text-neutral-900 delay-75 sm:text-4xl lg:mt-4 lg:text-5xl dark:text-white ${enter}`}
                     >
                         Kelola aset dan pembukuan usaha dalam satu sistem
                     </h1>
 
-                    <p className={`mt-5 lg:mt-3 text-base leading-relaxed text-neutral-600 delay-150 sm:text-lg dark:text-neutral-400 ${enter}`}>
+                    <p className={`mt-5 text-base leading-relaxed text-neutral-600 delay-150 sm:text-lg lg:mt-3 dark:text-neutral-400 ${enter}`}>
                         Assetory menghitung penyusutan garis lurus secara otomatis, menjaga setiap jurnal tetap seimbang, dan menyusun laporan
                         keuangan lengkap secara real-time.
                     </p>
 
-                    <div className={`mt-8 lg:mt-5 flex flex-col gap-3 delay-200 sm:flex-row sm:items-center ${enter}`}>
+                    <div className={`mt-8 flex flex-col gap-3 delay-200 sm:flex-row sm:items-center lg:mt-5 ${enter}`}>
                         {auth.user ? (
                             <Button asChild size="lg">
                                 <Link href={route('dashboard')}>
@@ -59,7 +59,7 @@ export function HeroSection() {
                         </Button>
                     </div>
 
-                    <dl className={`mt-10 lg:mt-6 grid grid-cols-3 gap-x-4 sm:gap-x-8 delay-300 ${enter}`}>
+                    <dl className={`mt-10 grid grid-cols-3 gap-x-4 delay-300 sm:gap-x-8 lg:mt-6 ${enter}`}>
                         {highlights.map((item) => (
                             <div key={item.label}>
                                 <dt className="sr-only">{item.label}</dt>
@@ -70,7 +70,9 @@ export function HeroSection() {
                     </dl>
                 </div>
 
-                <div className={`delay-200 mt-10 mx-auto max-w-2xl w-full xl:max-w-none xl:mx-0 xl:mt-0 xl:pl-4 xl:scale-90 xl:origin-top-right 2xl:scale-100 2xl:origin-center ${enter}`}>
+                <div
+                    className={`mx-auto mt-10 w-full max-w-2xl delay-200 xl:mx-0 xl:mt-0 xl:max-w-none xl:origin-top-right xl:scale-90 xl:pl-4 2xl:origin-center 2xl:scale-100 ${enter}`}
+                >
                     <DashboardPreview />
                 </div>
             </div>

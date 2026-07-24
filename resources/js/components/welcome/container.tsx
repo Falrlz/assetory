@@ -28,7 +28,7 @@ export function Section({ id, children, className }: SectionProps) {
         <section
             id={id}
             className={cn(
-                'flex xl:min-h-[calc(100svh-4rem)] scroll-mt-16 items-center border-b border-neutral-200 py-12 sm:py-16 xl:py-6 dark:border-neutral-800',
+                'flex scroll-mt-16 items-center border-b border-neutral-200 py-12 sm:py-16 xl:min-h-[calc(100svh-4rem)] xl:py-6 dark:border-neutral-800',
                 className,
             )}
         >

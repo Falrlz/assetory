@@ -1,11 +1,25 @@
+import { Field, PageShell } from '@/components/page-header';
+import {
+    formatDateRange,
+    formatDateSlash,
+    ReportDocument,
+    ReportFilterCard,
+    ReportSection,
+    ReportSignatures,
+    ReportToolbar,
+} from '@/components/reports/report-layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
+import { controlBaseClass } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableEmpty, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { AlertCircle, FileText, Printer, RotateCcw, Save } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { AlertCircle, Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -41,19 +55,20 @@ interface CalkProps {
     };
 }
 
+const DEFAULT_NOTES = [
+    'Kebijakan Akuntansi:',
+    '1. Pengakuan Aset Tetap: Aset tetap dinyatakan berdasarkan harga perolehan dikurangi akumulasi penyusutan.',
+    '2. Metode Penyusutan: Penyusutan aset tetap dihitung menggunakan metode Garis Lurus (Straight-Line Method) untuk mengalokasikan harga perolehan aset tetap hingga mencapai nilai residu selama estimasi masa manfaat ekonomisnya.',
+    '3. Kas dan Setara Kas: Kas dan setara kas mencakup kas tunai serta saldo rekening bank yang tidak dibatasi penggunaannya.',
+].join('\n');
+
 export default function Calk({ assets, cashItems, calkNotes, filters }: CalkProps) {
     const { errors } = usePage().props;
     const [startDate, setStartDate] = useState(filters.start_date);
     const [endDate, setEndDate] = useState(filters.end_date);
     const [localError, setLocalError] = useState<string | null>(null);
 
-    const defaultNotes = calkNotes || 
-        "Kebijakan Akuntansi:\n" +
-        "1. Pengakuan Aset Tetap: Aset tetap dinyatakan berdasarkan harga perolehan dikurangi akumulasi penyusutan.\n" +
-        "2. Metode Penyusutan: Penyusutan aset tetap dihitung menggunakan metode Garis Lurus (Straight-Line Method) untuk mengalokasikan harga perolehan aset tetap hingga mencapai nilai residu selama estimasi masa manfaat ekonomisnya.\n" +
-        "3. Kas dan Setara Kas: Kas dan setara kas mencakup kas tunai serta saldo rekening bank yang tidak dibatasi penggunaannya.";
-
-    const [notes, setNotes] = useState(defaultNotes);
+    const [notes, setNotes] = useState(calkNotes || DEFAULT_NOTES);
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -114,43 +129,21 @@ export default function Calk({ assets, cashItems, calkNotes, filters }: CalkProp
                 onError: () => {
                     setIsSaving(false);
                 },
-            }
+            },
         );
     };
 
-    const formatRupiah = (value: number) => {
-        return new Intl.NumberFormat('id-ID', {
+    const formatRupiah = (value: number) =>
+        new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
         }).format(value);
-    };
 
-    const formatDateSlash = (dateString: string) => {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-    };
+    const translatePeriode = (p: string) => p.replace('_', ' ');
 
-    const formatDateRange = (start: string, end: string) => {
-        const s = formatDateSlash(start);
-        const e = formatDateSlash(end);
-        return `${s} - ${e}`;
-    };
-
-    const formatAcquisitionDate = (dateString: string) => {
-        return formatDateSlash(dateString);
-    };
-
-    const translatePeriode = (p: string) => {
-        return p.replace('_', ' ');
-    };
-
-    const totalAssetsPerolehan = assets.sum ? (assets as any).sum('harga_perolehan') : assets.reduce((sum, item) => sum + item.harga_perolehan, 0);
+    const totalAssetsPerolehan = assets.reduce((sum, item) => sum + item.harga_perolehan, 0);
     const totalAssetsAkm = assets.reduce((sum, item) => sum + item.akumulasi_penyusutan, 0);
     const totalAssetsBuku = assets.reduce((sum, item) => sum + item.nilai_buku, 0);
 
@@ -160,230 +153,175 @@ export default function Calk({ assets, cashItems, calkNotes, filters }: CalkProp
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Catatan Keuangan (CALK)" />
 
-            <div className="flex h-full min-w-0 flex-1 flex-col gap-6 p-6 print:p-0">
-                {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-foreground">Catatan Atas Laporan Keuangan (CALK)</h1>
-                        <p className="text-sm text-neutral-500">
-                            Merinci rincian akun penting seperti kas dan rincian mutasi nilai buku aset tetap.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => window.print()}>
-                            <Printer className="mr-2 h-4 w-4" />
-                            Cetak Laporan
-                        </Button>
-                    </div>
-                </div>
+            <PageShell className="print:p-0">
+                <ReportToolbar
+                    title="Catatan Atas Laporan Keuangan (CALK)"
+                    description="Merinci akun penting seperti kas dan rincian mutasi nilai buku aset tetap."
+                />
 
-                {/* Filter Section */}
-                <div className="rounded-xl border bg-card p-4 shadow-sm print:hidden">
-                    <form onSubmit={handleFilter} className="flex flex-col gap-4 sm:flex-row sm:items-end">
-                        <div className="grid flex-1 gap-1.5">
-                            <label htmlFor="start_date" className="text-xs font-semibold text-neutral-500 uppercase">
-                                Tanggal Mulai
-                            </label>
-                            <DatePicker
-                                id="start_date"
-                                value={startDate}
-                                onChange={setStartDate}
-                                className="w-full"
-                            />
-                        </div>
-                        <div className="grid flex-1 gap-1.5">
-                            <label htmlFor="end_date" className="text-xs font-semibold text-neutral-500 uppercase">
-                                Tanggal Selesai
-                            </label>
-                            <DatePicker
-                                id="end_date"
-                                value={endDate}
-                                onChange={setEndDate}
-                                className="w-full"
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <Button type="submit" size="sm" className="h-9">
-                                Filter
-                            </Button>
-                            <Button type="button" variant="outline" size="sm" onClick={handleReset} className="h-9">
-                                <RotateCcw className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </form>
+                {(errors.start_date || errors.end_date || localError) && (
+                    <Alert variant="destructive" className="print:hidden">
+                        <AlertCircle className="size-4" />
+                        <AlertTitle>Kesalahan Validasi</AlertTitle>
+                        <AlertDescription>{errors.start_date || errors.end_date || localError}</AlertDescription>
+                    </Alert>
+                )}
 
-                    {(errors.start_date || errors.end_date || localError) && (
-                        <Alert variant="destructive" className="mt-4">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Kesalahan Validasi</AlertTitle>
-                            <AlertDescription>
-                                {errors.start_date || errors.end_date || localError}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                </div>
+                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset}>
+                    <Field className="w-48">
+                        <Label htmlFor="start_date">Tanggal Mulai</Label>
+                        <DatePicker id="start_date" value={startDate} onChange={setStartDate} />
+                    </Field>
+                    <Field className="w-48">
+                        <Label htmlFor="end_date">Tanggal Selesai</Label>
+                        <DatePicker id="end_date" value={endDate} onChange={setEndDate} />
+                    </Field>
+                </ReportFilterCard>
 
-                {/* Main Content Card */}
-                <div className="flex-1 space-y-8 rounded-2xl border bg-card p-8 shadow-sm print:border-none print:p-0 print:shadow-none">
-                    {/* Document Header */}
-                    <div className="text-center">
-                        <h2 className="text-2xl font-bold text-foreground">Assetory Company</h2>
-                        <h3 className="text-lg font-semibold text-neutral-600 dark:text-neutral-400">Catatan Atas Laporan Keuangan</h3>
-                        <p className="text-sm text-neutral-500 mt-1">Periode: {formatDateRange(filters.start_date, filters.end_date)}</p>
-                    </div>
-
+                <ReportDocument
+                    className="space-y-8"
+                    title="Catatan Atas Laporan Keuangan"
+                    period={`Periode ${formatDateRange(filters.start_date, filters.end_date)}`}
+                >
                     {/* Section 1: Narrative Notes */}
-                    <div className="space-y-3">
-                        <h4 className="flex items-center text-base font-bold text-foreground border-b pb-2">
-                            <FileText className="mr-2 h-4 w-4 text-neutral-500" />
-                            1. Ikhtisar Kebijakan Akuntansi & Catatan Umum
-                        </h4>
-                        
+                    <ReportSection title="1. Ikhtisar Kebijakan Akuntansi & Catatan Umum">
                         {/* Editor (hidden on print) */}
                         <div className="space-y-3 print:hidden">
                             <textarea
+                                id="calk_notes"
+                                aria-label="Catatan kebijakan akuntansi"
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 rows={6}
-                                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                className={cn(controlBaseClass, 'min-h-32 resize-y px-3 py-2 text-sm leading-relaxed')}
                                 placeholder="Tulis kebijakan akuntansi di sini..."
                             />
-                            <div className="flex items-center gap-2 justify-end">
-                                {saveSuccess && <span className="text-xs text-emerald-600 font-medium">Catatan berhasil disimpan!</span>}
+                            <div className="flex items-center justify-end gap-3">
+                                {saveSuccess && (
+                                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Catatan berhasil disimpan.</span>
+                                )}
                                 <Button size="sm" onClick={handleSaveNotes} disabled={isSaving}>
-                                    <Save className="mr-1.5 h-3.5 w-3.5" />
+                                    <Save />
                                     Simpan Catatan
                                 </Button>
                             </div>
                         </div>
 
-                        {/* Readable Text (visible on print, fallback for screen reader) */}
-                        <div className="hidden print:block whitespace-pre-line text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 bg-neutral-50/50 dark:bg-neutral-900/30 p-4 rounded-xl border">
-                            {notes}
-                        </div>
-                    </div>
+                        {/* Readable text (print only) */}
+                        <p className="hidden text-sm leading-relaxed whitespace-pre-line print:block">{notes}</p>
+                    </ReportSection>
 
                     {/* Section 2: Cash breakdown */}
-                    <div className="space-y-3">
-                        <h4 className="text-base font-bold text-foreground border-b pb-2">
-                            2. Rincian Kas dan Setara Kas
-                        </h4>
-                        <p className="text-xs text-neutral-500">
-                            Berikut adalah rincian saldo rekening kas tunai dan rekening bank per tanggal {formatDateSlash(endDate)}:
-                        </p>
-                        <table className="w-full text-sm border-collapse">
-                            <thead>
-                                <tr className="border-b bg-neutral-50 dark:bg-neutral-900/30">
-                                    <th className="px-4 py-2 text-left font-semibold text-neutral-600 dark:text-neutral-400">Kode & Nama Rekening</th>
-                                    <th className="px-4 py-2 text-right font-semibold text-neutral-600 dark:text-neutral-400">Saldo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <ReportSection
+                        title="2. Rincian Kas dan Setara Kas"
+                        description={`Rincian saldo rekening kas tunai dan rekening bank per tanggal ${formatDateSlash(endDate)}.`}
+                    >
+                        <Table minWidth="min-w-[480px]">
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="min-w-[240px]">Kode &amp; Nama Rekening</TableHead>
+                                    <TableHead align="right" className="w-52">
+                                        Saldo
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {cashItems.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={2} className="px-4 py-4 text-center text-neutral-500">
-                                            Tidak ada saldo kas berjalan pada periode ini.
-                                        </td>
-                                    </tr>
+                                    <TableEmpty colSpan={2} className="py-8" description="Tidak ada saldo kas berjalan pada periode ini." />
                                 ) : (
                                     cashItems.map((item) => (
-                                        <tr key={item.kode_akun} className="border-b hover:bg-neutral-50/50 dark:hover:bg-neutral-900/10">
-                                            <td className="px-4 py-2.5">
-                                                <div className="font-medium text-foreground">{item.nama_akun}</div>
-                                                <div className="text-xs text-neutral-500 font-mono">{item.kode_akun}</div>
-                                            </td>
-                                            <td className="px-4 py-2.5 text-right font-semibold text-foreground font-mono">
+                                        <TableRow key={item.kode_akun}>
+                                            <TableCell>
+                                                <span className="text-foreground block font-medium">{item.nama_akun}</span>
+                                                <span className="text-muted-foreground block font-mono text-xs">{item.kode_akun}</span>
+                                            </TableCell>
+                                            <TableCell numeric className="text-foreground font-semibold">
                                                 {formatRupiah(item.saldo)}
-                                            </td>
-                                        </tr>
+                                            </TableCell>
+                                        </TableRow>
                                     ))
                                 )}
-                                <tr className="bg-neutral-50/30 dark:bg-neutral-900/20 font-bold border-t-2">
-                                    <td className="px-4 py-3 text-foreground">Total Kas & Setara Kas</td>
-                                    <td className="px-4 py-3 text-right text-foreground font-mono text-base">
+                            </TableBody>
+                            <TableFooter>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableCell>Total Kas &amp; Setara Kas</TableCell>
+                                    <TableCell numeric className="text-base">
                                         {formatRupiah(totalCash)}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                    </TableCell>
+                                </TableRow>
+                            </TableFooter>
+                        </Table>
+                    </ReportSection>
 
                     {/* Section 3: Fixed Assets mutation schedule */}
-                    <div className="space-y-3">
-                        <h4 className="text-base font-bold text-foreground border-b pb-2">
-                            3. Rincian Aset Tetap dan Akumulasi Penyusutan
-                        </h4>
-                        <p className="text-xs text-neutral-500">
-                            Rincian detail perolehan, akumulasi penyusutan, dan estimasi sisa masa manfaat ekonomis aset tetap perusahaan:
-                        </p>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-xs border-collapse">
-                                <thead>
-                                    <tr className="border-b bg-neutral-50 dark:bg-neutral-900/30">
-                                        <th className="px-3 py-2 text-left font-semibold text-neutral-600 dark:text-neutral-400">Aset Tetap</th>
-                                        <th className="px-3 py-2 text-left font-semibold text-neutral-600 dark:text-neutral-400">Masa Manfaat</th>
-                                        <th className="px-3 py-2 text-right font-semibold text-neutral-600 dark:text-neutral-400">Sisa Umur</th>
-                                        <th className="px-3 py-2 text-right font-semibold text-neutral-600 dark:text-neutral-400">Harga Perolehan</th>
-                                        <th className="px-3 py-2 text-right font-semibold text-neutral-600 dark:text-neutral-400">Akm. Penyusutan</th>
-                                        <th className="px-3 py-2 text-right font-semibold text-neutral-600 dark:text-neutral-400">Nilai Sisa Buku</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {assets.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-3 py-6 text-center text-neutral-500">
-                                                Tidak ada aset tetap terdaftar pada periode ini.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        assets.map((asset) => (
-                                            <tr key={asset.id} className="border-b hover:bg-neutral-50/50 dark:hover:bg-neutral-900/10">
-                                                <td className="px-3 py-2.5">
-                                                    <div className="font-semibold text-foreground">{asset.nama_aset}</div>
-                                                    <div className="text-[10px] text-neutral-500">Perolehan: {formatAcquisitionDate(asset.tanggal_perolehan)}</div>
-                                                </td>
-                                                <td className="px-3 py-2.5 text-foreground capitalize">
-                                                    {translatePeriode(asset.periode)}
-                                                </td>
-                                                <td className="px-3 py-2.5 text-right font-medium text-foreground">
-                                                    {asset.sisa_bulan} Bulan
-                                                </td>
-                                                <td className="px-3 py-2.5 text-right font-mono text-foreground">
-                                                    {formatRupiah(asset.harga_perolehan)}
-                                                </td>
-                                                <td className="px-3 py-2.5 text-right font-mono text-red-600 dark:text-red-400">
-                                                    -{formatRupiah(asset.akumulasi_penyusutan)}
-                                                </td>
-                                                <td className="px-3 py-2.5 text-right font-semibold text-foreground font-mono">
-                                                    {formatRupiah(asset.nilai_buku)}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                    <tr className="bg-neutral-50/30 dark:bg-neutral-900/20 font-bold border-t-2">
-                                        <td colSpan={3} className="px-3 py-3 text-foreground text-sm">Total Aset Tetap</td>
-                                        <td className="px-3 py-3 text-right font-mono text-foreground">{formatRupiah(totalAssetsPerolehan)}</td>
-                                        <td className="px-3 py-3 text-right font-mono text-red-600 dark:text-red-400">-{formatRupiah(totalAssetsAkm)}</td>
-                                        <td className="px-3 py-3 text-right font-mono text-foreground text-sm">{formatRupiah(totalAssetsBuku)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <ReportSection
+                        title="3. Rincian Aset Tetap dan Akumulasi Penyusutan"
+                        description="Rincian perolehan, akumulasi penyusutan, dan estimasi sisa masa manfaat ekonomis aset tetap perusahaan."
+                    >
+                        <Table minWidth="min-w-[900px]">
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="min-w-[200px]">Aset Tetap</TableHead>
+                                    <TableHead className="w-36">Masa Manfaat</TableHead>
+                                    <TableHead align="right" className="w-32">
+                                        Sisa Umur
+                                    </TableHead>
+                                    <TableHead align="right" className="w-44">
+                                        Harga Perolehan
+                                    </TableHead>
+                                    <TableHead align="right" className="w-44">
+                                        Akm. Penyusutan
+                                    </TableHead>
+                                    <TableHead align="right" className="w-44">
+                                        Nilai Sisa Buku
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {assets.length === 0 ? (
+                                    <TableEmpty colSpan={6} className="py-8" description="Tidak ada aset tetap terdaftar pada periode ini." />
+                                ) : (
+                                    assets.map((asset) => (
+                                        <TableRow key={asset.id}>
+                                            <TableCell>
+                                                <span className="text-foreground block font-medium">{asset.nama_aset}</span>
+                                                <span className="text-muted-foreground block text-xs">
+                                                    Perolehan {formatDateSlash(asset.tanggal_perolehan)}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground capitalize">{translatePeriode(asset.periode)}</TableCell>
+                                            <TableCell numeric className="text-foreground">
+                                                {asset.sisa_bulan} bln
+                                            </TableCell>
+                                            <TableCell numeric className="text-foreground">
+                                                {formatRupiah(asset.harga_perolehan)}
+                                            </TableCell>
+                                            <TableCell numeric className="text-rose-600 dark:text-rose-400">
+                                                −{formatRupiah(asset.akumulasi_penyusutan)}
+                                            </TableCell>
+                                            <TableCell numeric className="text-foreground font-semibold">
+                                                {formatRupiah(asset.nilai_buku)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                            <TableFooter>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableCell colSpan={3}>Total Aset Tetap</TableCell>
+                                    <TableCell numeric>{formatRupiah(totalAssetsPerolehan)}</TableCell>
+                                    <TableCell numeric className="text-rose-600 dark:text-rose-400">
+                                        −{formatRupiah(totalAssetsAkm)}
+                                    </TableCell>
+                                    <TableCell numeric>{formatRupiah(totalAssetsBuku)}</TableCell>
+                                </TableRow>
+                            </TableFooter>
+                        </Table>
+                    </ReportSection>
 
-                    {/* Report Footer (visible on print) */}
-                    <div className="mt-16 hidden justify-between text-center print:flex">
-                        <div className="w-48 border-t border-neutral-400 pt-2 text-sm text-neutral-500">
-                            Dibuat Oleh, <br /><br /><br /><br />
-                            ( Staff Akunting )
-                        </div>
-                        <div className="w-48 border-t border-neutral-400 pt-2 text-sm text-neutral-500">
-                            Disetujui Oleh, <br /><br /><br /><br />
-                            ( Pemilik Perusahaan )
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    <ReportSignatures />
+                </ReportDocument>
+            </PageShell>
         </AppLayout>
     );
 }

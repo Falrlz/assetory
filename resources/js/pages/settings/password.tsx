@@ -66,7 +66,6 @@ export default function Password() {
                                 value={data.current_password}
                                 onChange={(e) => setData('current_password', e.target.value)}
                                 type="password"
-                                className="mt-1 block w-full"
                                 autoComplete="current-password"
                                 placeholder="Current password"
                             />
@@ -83,7 +82,6 @@ export default function Password() {
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
                                 type="password"
-                                className="mt-1 block w-full"
                                 autoComplete="new-password"
                                 placeholder="New password"
                             />
@@ -99,7 +97,6 @@ export default function Password() {
                                 value={data.password_confirmation}
                                 onChange={(e) => setData('password_confirmation', e.target.value)}
                                 type="password"
-                                className="mt-1 block w-full"
                                 autoComplete="new-password"
                                 placeholder="Confirm password"
                             />
@@ -117,7 +114,7 @@ export default function Password() {
                                 leave="transition ease-in-out"
                                 leaveTo="opacity-0"
                             >
-                                <p className="text-sm text-neutral-600">Saved</p>
+                                <p className="text-muted-foreground text-sm">Saved</p>
                             </Transition>
                         </div>
                     </form>

@@ -1,5 +1,8 @@
-import { useState } from 'react';
 import { AreaChart, BarChart2, Layers, TrendingDown, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface MonthlyTrendItem {
     month: string;
@@ -13,6 +16,12 @@ interface FinancialTrendChartProps {
 }
 
 type ChartType = 'area' | 'bar' | 'profit';
+
+const CHART_TABS: { type: ChartType; label: string; icon: typeof AreaChart }[] = [
+    { type: 'area', label: 'Kurva', icon: AreaChart },
+    { type: 'bar', label: 'Batang', icon: BarChart2 },
+    { type: 'profit', label: 'Laba Bersih', icon: Layers },
+];
 
 const formatRupiah = (val: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -46,11 +55,7 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
     const [hoveredIdx, setHoveredIdx] = useState<number | null>(data.length > 0 ? data.length - 1 : null);
 
     if (data.length === 0) {
-        return (
-            <div className="flex h-64 items-center justify-center text-xs text-neutral-400">
-                Belum ada data tren keuangan.
-            </div>
-        );
+        return <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">Belum ada data tren keuangan.</div>;
     }
 
     // Totals for header
@@ -101,103 +106,64 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
     return (
         <div className="flex flex-col gap-5">
             {/* Header Controls & Summary Stats */}
-            <div className="flex flex-col justify-between gap-4 border-b border-neutral-100 pb-4 sm:flex-row sm:items-center dark:border-neutral-800">
+            <div className="flex flex-col justify-between gap-4 border-b pb-4 sm:flex-row sm:items-center">
                 <div>
                     <div className="flex items-center gap-2">
-                        <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
-                            Tren Pendapatan vs Beban
-                        </h3>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-                            Margin {profitMargin}%
-                        </span>
+                        <h3 className="text-foreground text-base font-semibold">Tren Pendapatan vs Beban</h3>
+                        <Badge variant="success">Margin {profitMargin}%</Badge>
                     </div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        Visualisasi perbandingan pendapatan dan pengeluaran 6 bulan terakhir
-                    </p>
+                    <p className="text-muted-foreground text-sm">Perbandingan pendapatan dan pengeluaran enam bulan terakhir</p>
                 </div>
 
                 {/* View Switcher Tabs */}
-                <div className="flex items-center gap-1 rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800">
-                    <button
-                        onClick={() => setChartType('area')}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                            chartType === 'area'
-                                ? 'bg-white text-neutral-900 shadow-xs dark:bg-neutral-900 dark:text-white'
-                                : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
-                        }`}
-                    >
-                        <AreaChart className="size-3.5" />
-                        <span>Kurva</span>
-                    </button>
-                    <button
-                        onClick={() => setChartType('bar')}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                            chartType === 'bar'
-                                ? 'bg-white text-neutral-900 shadow-xs dark:bg-neutral-900 dark:text-white'
-                                : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
-                        }`}
-                    >
-                        <BarChart2 className="size-3.5" />
-                        <span>Batang</span>
-                    </button>
-                    <button
-                        onClick={() => setChartType('profit')}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                            chartType === 'profit'
-                                ? 'bg-white text-neutral-900 shadow-xs dark:bg-neutral-900 dark:text-white'
-                                : 'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
-                        }`}
-                    >
-                        <Layers className="size-3.5" />
-                        <span>Laba Bersih</span>
-                    </button>
+                <div className="bg-muted flex items-center gap-1 rounded-lg p-1">
+                    {CHART_TABS.map((tab) => (
+                        <button
+                            key={tab.type}
+                            type="button"
+                            onClick={() => setChartType(tab.type)}
+                            className={cn(
+                                'inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition-colors',
+                                chartType === tab.type ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            <tab.icon className="size-3.5" aria-hidden="true" />
+                            {tab.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
             {/* Interactive Inspection Card */}
             {activeItem && (
-                <div className="grid gap-3 rounded-xl border border-neutral-100 bg-neutral-50/80 p-3.5 sm:grid-cols-4 dark:border-neutral-800 dark:bg-neutral-800/40">
+                <div className="bg-muted/40 grid gap-4 rounded-xl border p-4 sm:grid-cols-4">
                     <div className="flex flex-col">
-                        <span className="text-[11px] font-medium text-neutral-400">Periode Terpilih</span>
-                        <span className="text-sm font-bold text-neutral-900 dark:text-white">
-                            {activeItem.month}
-                        </span>
+                        <span className="text-muted-foreground text-xs font-medium">Periode Terpilih</span>
+                        <span className="text-foreground text-sm font-bold">{activeItem.month}</span>
                     </div>
 
                     <div className="flex flex-col">
-                        <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                            Pendapatan (Masuk)
-                        </span>
-                        <span className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Pendapatan (Masuk)</span>
+                        <span className="font-mono text-sm font-bold text-emerald-600 tabular-nums dark:text-emerald-400">
                             {formatRupiah(activeItem.income)}
                         </span>
                     </div>
 
                     <div className="flex flex-col">
-                        <span className="text-[11px] font-medium text-rose-500 dark:text-rose-400">
-                            Beban (Keluar)
-                        </span>
-                        <span className="text-sm font-bold font-mono text-rose-600 dark:text-rose-400">
+                        <span className="text-xs font-medium text-rose-600 dark:text-rose-400">Beban (Keluar)</span>
+                        <span className="font-mono text-sm font-bold text-rose-600 tabular-nums dark:text-rose-400">
                             {formatRupiah(activeItem.expense)}
                         </span>
                     </div>
 
                     <div className="flex flex-col">
-                        <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
-                            Hasil Laba/Rugi
-                        </span>
+                        <span className="text-muted-foreground text-xs font-medium">Hasil Laba/Rugi</span>
                         <span
-                            className={`text-sm font-bold font-mono flex items-center gap-1 ${
-                                activeItem.profit >= 0
-                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                    : 'text-rose-600 dark:text-rose-400'
+                            className={`flex items-center gap-1 font-mono text-sm font-bold tabular-nums ${
+                                activeItem.profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                             }`}
                         >
-                            {activeItem.profit >= 0 ? (
-                                <TrendingUp className="size-3.5" />
-                            ) : (
-                                <TrendingDown className="size-3.5" />
-                            )}
+                            {activeItem.profit >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
                             {formatRupiah(activeItem.profit)}
                         </span>
                     </div>
@@ -208,7 +174,7 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
             <div className="relative w-full overflow-hidden">
                 {chartType === 'bar' ? (
                     /* Grouped 3D-styled Bar Chart View */
-                    <div className="flex h-56 items-end justify-between gap-4 pt-6 px-2">
+                    <div className="flex h-56 items-end justify-between gap-4 px-2 pt-6">
                         {data.map((item, idx) => {
                             const incH = Math.max(6, (item.income / maxVal) * 180);
                             const expH = Math.max(6, (item.expense / maxVal) * 180);
@@ -218,28 +184,27 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
                                 <div
                                     key={idx}
                                     onMouseEnter={() => setHoveredIdx(idx)}
-                                    className={`flex flex-1 flex-col items-center gap-2 group cursor-pointer transition-all ${
+                                    className={`group flex flex-1 cursor-pointer flex-col items-center gap-2 transition-all ${
                                         isHovered ? 'scale-105' : 'opacity-85 hover:opacity-100'
                                     }`}
                                 >
-                                    <div className="flex h-full w-full items-end justify-center gap-2 rounded-t-xl bg-neutral-50/70 p-1.5 dark:bg-neutral-800/30">
+                                    <div className="bg-muted/40 flex h-full w-full items-end justify-center gap-2 rounded-t-xl p-1.5">
                                         {/* Income Bar */}
                                         <div
                                             style={{ height: `${incH}px` }}
-                                            className="w-full max-w-[20px] rounded-t-md bg-gradient-to-t from-emerald-600 to-emerald-400 transition-all shadow-xs group-hover:shadow-emerald-500/20"
+                                            className="w-full max-w-[20px] rounded-t-md bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-xs transition-all group-hover:shadow-emerald-500/20"
                                         />
                                         {/* Expense Bar */}
                                         <div
                                             style={{ height: `${expH}px` }}
-                                            className="w-full max-w-[20px] rounded-t-md bg-gradient-to-t from-rose-600 to-rose-400 transition-all shadow-xs group-hover:shadow-rose-500/20"
+                                            className="w-full max-w-[20px] rounded-t-md bg-gradient-to-t from-rose-600 to-rose-400 shadow-xs transition-all group-hover:shadow-rose-500/20"
                                         />
                                     </div>
                                     <span
-                                        className={`text-xs font-semibold ${
-                                            isHovered
-                                                ? 'text-emerald-600 dark:text-emerald-400'
-                                                : 'text-neutral-500 dark:text-neutral-400'
-                                        }`}
+                                        className={cn(
+                                            'text-xs font-semibold',
+                                            isHovered ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground',
+                                        )}
                                     >
                                         {item.month}
                                     </span>
@@ -250,7 +215,7 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
                 ) : (
                     /* SVG Area / Profit Curve View */
                     <div className="relative">
-                        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-56 overflow-visible">
+                        <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full overflow-visible">
                             <defs>
                                 <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stopColor="#10b981" stopOpacity="0.45" />
@@ -275,7 +240,7 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
                                     x2={width - paddingX}
                                     y2={height - paddingY - ratio * chartH}
                                     stroke="currentColor"
-                                    className="text-neutral-100 dark:text-neutral-800"
+                                    className="text-border"
                                     strokeDasharray="4 4"
                                 />
                             ))}
@@ -284,35 +249,17 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
                                 <>
                                     {/* Expense Area & Path */}
                                     <path d={expenseArea} fill="url(#expenseGradient)" />
-                                    <path
-                                        d={expenseCurve}
-                                        fill="none"
-                                        stroke="#f43f5e"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                    />
+                                    <path d={expenseCurve} fill="none" stroke="#f43f5e" strokeWidth="2.5" strokeLinecap="round" />
 
                                     {/* Income Area & Path */}
                                     <path d={incomeArea} fill="url(#incomeGradient)" />
-                                    <path
-                                        d={incomeCurve}
-                                        fill="none"
-                                        stroke="#10b981"
-                                        strokeWidth="3"
-                                        strokeLinecap="round"
-                                    />
+                                    <path d={incomeCurve} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" />
                                 </>
                             ) : (
                                 <>
                                     {/* Profit Area & Path */}
                                     <path d={profitArea} fill="url(#profitGradient)" />
-                                    <path
-                                        d={profitCurve}
-                                        fill="none"
-                                        stroke="#3b82f6"
-                                        strokeWidth="3"
-                                        strokeLinecap="round"
-                                    />
+                                    <path d={profitCurve} fill="none" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round" />
                                 </>
                             )}
 
@@ -325,13 +272,7 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
                                 return (
                                     <g key={idx} className="cursor-pointer" onMouseEnter={() => setHoveredIdx(idx)}>
                                         {/* Transparent Hover Hitbox Area */}
-                                        <rect
-                                            x={paddingX + idx * stepX - stepX / 2}
-                                            y={paddingY}
-                                            width={stepX}
-                                            height={chartH}
-                                            fill="transparent"
-                                        />
+                                        <rect x={paddingX + idx * stepX - stepX / 2} y={paddingY} width={stepX} height={chartH} fill="transparent" />
 
                                         {/* Vertical Guide Line */}
                                         {isHovered && (
@@ -387,11 +328,10 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
                                             x={paddingX + idx * stepX}
                                             y={height - 8}
                                             textAnchor="middle"
-                                            className={`text-[11px] font-semibold ${
-                                                isHovered
-                                                    ? 'fill-emerald-600 dark:fill-emerald-400 font-bold'
-                                                    : 'fill-neutral-400 dark:fill-neutral-500'
-                                            }`}
+                                            className={cn(
+                                                'text-xs font-semibold',
+                                                isHovered ? 'fill-emerald-600 font-bold dark:fill-emerald-400' : 'fill-muted-foreground',
+                                            )}
                                         >
                                             {item.month}
                                         </text>

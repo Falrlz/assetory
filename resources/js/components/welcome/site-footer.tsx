@@ -60,9 +60,7 @@ export function SiteFooter() {
                     ))}
                 </div>
 
-                <p className="mt-12 text-xs text-neutral-500 dark:text-neutral-400">
-                    &copy; {new Date().getFullYear()} Assetory.
-                </p>
+                <p className="mt-12 text-xs text-neutral-500 dark:text-neutral-400">&copy; {new Date().getFullYear()} Assetory.</p>
             </Container>
         </footer>
     );

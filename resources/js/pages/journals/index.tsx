@@ -1,9 +1,13 @@
+import { Field, FilterBar, PageHeader, PageShell, SectionHeading } from '@/components/page-header';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Table, TableBody, TableCell, TableContainer, TableEmpty, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
@@ -51,6 +55,30 @@ const TIPE_JURNAL_LABELS: Record<string, string> = {
     penyusutan: 'Penyusutan Aset',
 };
 
+const TIPE_JURNAL_TONES: Record<string, 'warning' | 'info' | 'secondary'> = {
+    penyusutan: 'warning',
+    perolehan_aset: 'info',
+    umum: 'secondary',
+};
+
+const BULAN_OPTIONS = [
+    ['01', 'Januari'],
+    ['02', 'Februari'],
+    ['03', 'Maret'],
+    ['04', 'April'],
+    ['05', 'Mei'],
+    ['06', 'Juni'],
+    ['07', 'Juli'],
+    ['08', 'Agustus'],
+    ['09', 'September'],
+    ['10', 'Oktober'],
+    ['11', 'November'],
+    ['12', 'Desember'],
+];
+
+/** Vertical rule separating the ledger's column groups. */
+const LEDGER_DIVIDER = 'border-border/60 border-r';
+
 export default function Index({
     journals,
     coas,
@@ -85,9 +113,7 @@ export default function Index({
     }, [page.url]);
 
     const [isOpen, setIsOpen] = useState(false);
-    const [ledgerStartDate, setLedgerStartDate] = useState(
-        ledgerFilters?.start_date || `${new Date().getFullYear()}-01-01`,
-    );
+    const [ledgerStartDate, setLedgerStartDate] = useState(ledgerFilters?.start_date || `${new Date().getFullYear()}-01-01`);
     const [ledgerEndDate, setLedgerEndDate] = useState(ledgerFilters?.end_date || new Date().toISOString().split('T')[0]);
     const [ledgerSearch, setLedgerSearch] = useState('');
     const [selectedLedgerCoa, setSelectedLedgerCoa] = useState('all');
@@ -339,7 +365,11 @@ export default function Index({
     };
 
     const handleReverseJournal = (id: number) => {
-        if (confirm('Apakah Anda yakin ingin membalikkan jurnal ini? Tindakan ini akan membuat jurnal pembalik baru untuk menihilkan efek transaksi asli.')) {
+        if (
+            confirm(
+                'Apakah Anda yakin ingin membalikkan jurnal ini? Tindakan ini akan membuat jurnal pembalik baru untuk menihilkan efek transaksi asli.',
+            )
+        ) {
             router.post(route('journals.reverse', id));
         }
     };
@@ -401,317 +431,295 @@ export default function Index({
         }).format(num || 0);
     };
 
+    const pageTitle = activeTab === 'ledger' ? 'Buku Besar Umum' : activeTab === 'depresiasi' ? 'Penyusutan Bulanan' : 'Jurnal Umum';
+
     return (
         <AppLayout breadcrumbs={dynamicBreadcrumbs}>
-            <Head title={activeTab === 'ledger' ? 'Buku Besar Umum' : activeTab === 'depresiasi' ? 'Penyusutan Bulanan' : 'Jurnal Umum'} />
+            <Head title={pageTitle} />
 
-            <div className="flex h-full min-w-0 flex-1 flex-col gap-6 p-6">
-                {/* Header */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">
-                            {activeTab === 'ledger' ? 'Buku Besar Umum' : activeTab === 'depresiasi' ? 'Penyusutan Bulanan' : 'Jurnal Umum'}
-                        </h1>
-                        <p className="text-muted-foreground text-sm">
-                            {activeTab === 'ledger' ? (
-                                <>
-                                    Lihat ringkasan mutasi debit dan kredit serta saldo berjalan untuk setiap akun.
-                                    <span className="block mt-1 font-medium text-foreground">
-                                        Periode: {formatDate(ledgerStartDate)} - {formatDate(ledgerEndDate)}
-                                    </span>
-                                </>
-                            ) : activeTab === 'depresiasi' ? (
-                                'Kelola dan lakukan posting penyusutan nilai buku aset secara berkala.'
-                            ) : (
-                                'Pencatatan akuntansi double-entry manual maupun otomatis.'
-                            )}
-                        </p>
-                    </div>
-                    {activeTab === 'umum' && (
-                        <Button onClick={() => setIsOpen(true)} className="w-full sm:w-auto">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Jurnal Manual
-                        </Button>
-                    )}
-                </div>
+            <PageShell>
+                <PageHeader
+                    title={pageTitle}
+                    description={
+                        activeTab === 'ledger' ? (
+                            <>
+                                Lihat ringkasan mutasi debit dan kredit serta saldo berjalan untuk setiap akun.
+                                <span className="text-foreground mt-1 block font-medium">
+                                    Periode: {formatDate(ledgerStartDate)} – {formatDate(ledgerEndDate)}
+                                </span>
+                            </>
+                        ) : activeTab === 'depresiasi' ? (
+                            'Kelola dan lakukan posting penyusutan nilai buku aset secara berkala.'
+                        ) : (
+                            'Pencatatan akuntansi double-entry manual maupun otomatis.'
+                        )
+                    }
+                    actions={
+                        activeTab === 'umum' ? (
+                            <Button onClick={() => setIsOpen(true)}>
+                                <Plus />
+                                Jurnal Manual
+                            </Button>
+                        ) : undefined
+                    }
+                />
 
                 {/* TAB CONTENT: JURNAL UMUM */}
-                {activeTab === 'umum' && (
-                    <div className="space-y-6">
-                        {journals.length === 0 ? (
-                            <div className="bg-card flex flex-col items-center justify-center rounded-xl border py-16 text-center">
-                                <FileText className="text-muted-foreground/50 mb-3 h-10 w-10" />
-                                <h3 className="text-base font-semibold">Belum Ada Transaksi Jurnal</h3>
-                                <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-                                    Mulai catat transaksi manual Anda atau buat aset tetap untuk memicu jurnal otomatis.
-                                </p>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Filter Controls */}
-                                <div className="bg-card grid grid-cols-1 items-end gap-4 rounded-xl border p-4 sm:grid-cols-2 md:grid-cols-5">
-                                    {/* Searching */}
-                                    <div className="relative grid flex-1 gap-1.5">
-                                        <Label htmlFor="search">Cari Nama Aset</Label>
-                                        <div className="relative">
-                                            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-                                            <Input
-                                                id="search"
-                                                placeholder="Ketik nama aset..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="h-9 pl-9"
-                                            />
-                                        </div>
+                {activeTab === 'umum' &&
+                    (journals.length === 0 ? (
+                        <div className="bg-card flex flex-col items-center justify-center gap-1 rounded-xl border py-16 text-center shadow-xs">
+                            <FileText className="text-muted-foreground/40 mb-2 size-10" aria-hidden="true" />
+                            <h2 className="text-base font-semibold">Belum Ada Transaksi Jurnal</h2>
+                            <p className="text-muted-foreground max-w-sm text-sm">
+                                Mulai catat transaksi manual Anda atau buat aset tetap untuk memicu jurnal otomatis.
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Filter Controls */}
+                            <FilterBar className="sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+                                <Field>
+                                    <Label htmlFor="search">Cari Jurnal</Label>
+                                    <div className="relative">
+                                        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                                        <Input
+                                            id="search"
+                                            inputSize="sm"
+                                            placeholder="No. referensi, uraian, aset..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="pl-9"
+                                        />
                                     </div>
+                                </Field>
 
-                                    {/* Filter Jenis */}
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="jenis_filter">Jenis Aset</Label>
-                                        <select
-                                            id="jenis_filter"
-                                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                                            value={filterJenis}
-                                            onChange={(e) => setFilterJenis(e.target.value)}
-                                        >
-                                            <option value="all">Semua Jenis</option>
-                                            <option value="inventaris">Inventaris</option>
-                                            <option value="kendaraan">Kendaraan</option>
-                                            <option value="gedung">Gedung</option>
-                                        </select>
-                                    </div>
+                                <Field>
+                                    <Label htmlFor="jenis_filter">Jenis Aset</Label>
+                                    <NativeSelect
+                                        id="jenis_filter"
+                                        selectSize="sm"
+                                        value={filterJenis}
+                                        onChange={(e) => setFilterJenis(e.target.value)}
+                                    >
+                                        <option value="all">Semua Jenis</option>
+                                        <option value="inventaris">Inventaris</option>
+                                        <option value="kendaraan">Kendaraan</option>
+                                        <option value="gedung">Gedung</option>
+                                    </NativeSelect>
+                                </Field>
 
-                                    {/* Filter Tahun */}
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="tahun_filter">Tahun Perolehan</Label>
-                                        <select
-                                            id="tahun_filter"
-                                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                                            value={filterTahun}
-                                            onChange={(e) => {
-                                                setFilterTahun(e.target.value);
-                                                setFilterTanggal('');
+                                <Field>
+                                    <Label htmlFor="tahun_filter">Tahun Transaksi</Label>
+                                    <NativeSelect
+                                        id="tahun_filter"
+                                        selectSize="sm"
+                                        value={filterTahun}
+                                        onChange={(e) => {
+                                            setFilterTahun(e.target.value);
+                                            setFilterTanggal('');
+                                        }}
+                                    >
+                                        <option value="all">Semua Tahun</option>
+                                        {listTahun.map((yr) => (
+                                            <option key={yr} value={yr}>
+                                                {yr}
+                                            </option>
+                                        ))}
+                                    </NativeSelect>
+                                </Field>
+
+                                <Field>
+                                    <Label htmlFor="bulan_filter">Bulan Transaksi</Label>
+                                    <NativeSelect
+                                        id="bulan_filter"
+                                        selectSize="sm"
+                                        value={filterBulan}
+                                        onChange={(e) => {
+                                            setFilterBulan(e.target.value);
+                                            setFilterTanggal('');
+                                        }}
+                                    >
+                                        <option value="all">Semua Bulan</option>
+                                        {BULAN_OPTIONS.map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                                {label}
+                                            </option>
+                                        ))}
+                                    </NativeSelect>
+                                </Field>
+
+                                <div className="flex items-end gap-2">
+                                    <Field className="min-w-0 flex-1">
+                                        <Label htmlFor="tanggal_filter">Tanggal Spesifik</Label>
+                                        <DatePicker
+                                            id="tanggal_filter"
+                                            size="sm"
+                                            value={filterTanggal}
+                                            onChange={(val) => {
+                                                setFilterTanggal(val);
+                                                if (val) {
+                                                    setFilterTahun('all');
+                                                    setFilterBulan('all');
+                                                }
                                             }}
-                                        >
-                                            <option value="all">Semua Tahun</option>
-                                            {listTahun.map((yr) => (
-                                                <option key={yr} value={yr}>
-                                                    {yr}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Filter Bulan */}
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="bulan_filter">Bulan Perolehan</Label>
-                                        <select
-                                            id="bulan_filter"
-                                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                                            value={filterBulan}
-                                            onChange={(e) => {
-                                                setFilterBulan(e.target.value);
-                                                setFilterTanggal('');
-                                            }}
-                                        >
-                                            <option value="all">Semua Bulan</option>
-                                            <option value="01">Januari</option>
-                                            <option value="02">Februari</option>
-                                            <option value="03">Maret</option>
-                                            <option value="04">April</option>
-                                            <option value="05">Mei</option>
-                                            <option value="06">Juni</option>
-                                            <option value="07">Juli</option>
-                                            <option value="08">Agustus</option>
-                                            <option value="09">September</option>
-                                            <option value="10">Oktober</option>
-                                            <option value="11">November</option>
-                                            <option value="12">Desember</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Filter Tanggal Spesifik & Reset */}
-                                    <div className="flex items-end gap-2">
-                                        <div className="grid flex-grow gap-1.5">
-                                            <Label htmlFor="tanggal_filter">Tanggal Spesifik</Label>
-                                            <DatePicker
-                                                id="tanggal_filter"
-                                                value={filterTanggal}
-                                                onChange={(val) => {
-                                                    setFilterTanggal(val);
-                                                    if (val) {
-                                                        setFilterTahun('all');
-                                                        setFilterBulan('all');
-                                                    }
-                                                }}
-                                                className="w-full"
-                                            />
-                                        </div>
-                                        {isFilterActive && (
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="h-9 flex-shrink-0 px-3"
-                                                onClick={handleResetFilters}
-                                                title="Reset Filter"
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
+                                        />
+                                    </Field>
+                                    {isFilterActive && (
+                                        <Button type="button" variant="outline" size="icon-sm" onClick={handleResetFilters} title="Reset filter">
+                                            <X />
+                                            <span className="sr-only">Reset filter</span>
+                                        </Button>
+                                    )}
                                 </div>
+                            </FilterBar>
 
-                                {/* Table */}
-                                <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
-                                    <div className="w-full overflow-x-auto">
-                                        <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
-                                            <thead>
-                                                <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
-                                                    <th className="w-[120px] px-6 py-3">Tanggal</th>
-                                                    <th className="w-[160px] px-6 py-3">No. Referensi</th>
-                                                    <th className="px-6 py-3">Uraian Transaksi</th>
-                                                    <th className="w-[110px] px-6 py-3 text-center">No Arus Kas</th>
-                                                    <th className="w-[120px] px-6 py-3">Kode Akun</th>
-                                                    <th className="px-6 py-3">Nama Akun</th>
-                                                    <th className="w-[140px] px-6 py-3 text-right">Debit</th>
-                                                    <th className="w-[140px] px-6 py-3 text-right">Kredit</th>
-                                                    <th className="w-[80px] px-6 py-3 text-center">Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y">
-                                                {filteredJournals.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan={9} className="text-muted-foreground px-6 py-16 text-center">
-                                                            <Search className="text-muted-foreground/35 mx-auto mb-3 h-10 w-10" />
-                                                            <h4 className="text-foreground text-base font-semibold">Tidak Ada Hasil Cocok</h4>
-                                                            <p className="text-muted-foreground mt-1 text-sm">
-                                                                Coba sesuaikan kata kunci pencarian atau bersihkan filter Anda.
-                                                            </p>
-                                                        </td>
-                                                    </tr>
-                                                ) : (
-                                                    filteredJournals.flatMap((journal) =>
-                                                        journal.items?.map((item, index) => (
-                                                            <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                                                                {index === 0 ? (
-                                                                    <>
-                                                                        <td
-                                                                            className="text-muted-foreground animate-none px-6 py-4 align-top font-medium"
-                                                                            rowSpan={journal.items.length}
-                                                                        >
-                                                                            {formatDate(journal.tanggal)}
-                                                                        </td>
-                                                                        <td className="px-6 py-4 align-top" rowSpan={journal.items.length}>
-                                                                            <span className="text-foreground mb-1 block font-mono font-bold">
-                                                                                {journal.nomor_jurnal}
-                                                                            </span>
-                                                                            <div className="flex flex-col gap-1 items-start">
-                                                                                <span
-                                                                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${journal.tipe_jurnal === 'penyusutan'
-                                                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                                        : journal.tipe_jurnal === 'perolehan_aset'
-                                                                                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                                                            : 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400'
-                                                                                        }`}
-                                                                                >
-                                                                                    {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
-                                                                                </span>
-                                                                                {journal.reversed_by_id && (
-                                                                                    <span
-                                                                                        className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-semibold text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                                                                                        title={`Jurnal pembalik: ${journal.reversed_by?.nomor_jurnal}`}
-                                                                                    >
-                                                                                        [Sudah Dibalik]
-                                                                                    </span>
-                                                                                )}
-                                                                                {journal.reverses_journal_id && (
-                                                                                    <span
-                                                                                        className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[9px] font-semibold text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-                                                                                        title={`Membalik jurnal: ${journal.reverses_journal?.nomor_jurnal}`}
-                                                                                    >
-                                                                                        [Jurnal Pembalik]
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                        </td>
-                                                                        <td
-                                                                            className="text-muted-foreground max-w-[200px] px-6 py-4 align-top text-xs break-words"
-                                                                            rowSpan={journal.items.length}
-                                                                        >
-                                                                            {journal.keterangan}
-                                                                        </td>
-                                                                    </>
-                                                                ) : null}
-                                                                <td className="text-foreground px-6 py-3 text-center font-mono text-xs">
-                                                                    {journal.kode_arus_kas || '-'}
-                                                                </td>
-                                                                <td className="text-muted-foreground px-6 py-3 font-mono text-xs">
-                                                                    {item.coa?.kode_akun}
-                                                                </td>
-                                                                <td
-                                                                    className={`px-6 py-3 font-medium ${Number(item.kredit) > 0 ? 'text-muted-foreground pl-6' : 'text-foreground'}`}
+                            {/* Journal Table */}
+                            <TableContainer>
+                                <Table minWidth="min-w-[1100px]">
+                                    <TableHeader>
+                                        <TableRow className="hover:bg-transparent">
+                                            <TableHead align="center" className="w-32">
+                                                Tanggal
+                                            </TableHead>
+                                            <TableHead className="w-44">No. Referensi</TableHead>
+                                            <TableHead className="min-w-[200px]">Rincian Transaksi</TableHead>
+                                            <TableHead align="center" className="w-28">
+                                                No Arus Kas
+                                            </TableHead>
+                                            <TableHead className="w-36">Kode Akun</TableHead>
+                                            <TableHead className="min-w-[180px]">Nama Akun</TableHead>
+                                            <TableHead align="right" className="w-40">
+                                                Debit
+                                            </TableHead>
+                                            <TableHead align="right" className="w-40">
+                                                Kredit
+                                            </TableHead>
+                                            <TableHead align="center" className="w-20">
+                                                Aksi
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredJournals.length === 0 ? (
+                                            <TableEmpty
+                                                colSpan={9}
+                                                icon={<Search className="text-muted-foreground/40 mb-1 size-10" />}
+                                                title="Tidak Ada Hasil Cocok"
+                                                description="Coba sesuaikan kata kunci pencarian atau bersihkan filter Anda."
+                                            />
+                                        ) : (
+                                            filteredJournals.flatMap((journal) => {
+                                                const items = journal.items ?? [];
+                                                const isLocked = !!lockDate && new Date(journal.tanggal) <= new Date(lockDate);
+                                                const isReversed = !!journal.reversed_by_id;
+                                                const isReversal = !!journal.reverses_journal_id;
+
+                                                return items.map((item, index) => (
+                                                    <TableRow key={item.id}>
+                                                        {index === 0 ? (
+                                                            <>
+                                                                <TableCell
+                                                                    align="center"
+                                                                    className="text-muted-foreground align-top font-mono font-medium tabular-nums"
+                                                                    rowSpan={items.length}
                                                                 >
-                                                                    {item.coa?.nama_akun}
-                                                                </td>
-                                                                <td className="text-foreground px-6 py-3 text-right font-mono font-medium">
-                                                                    {Number(item.debit) > 0 ? formatIDR(item.debit) : '-'}
-                                                                </td>
-                                                                <td className="text-foreground px-6 py-3 text-right font-mono font-medium">
-                                                                    {Number(item.kredit) > 0 ? formatIDR(item.kredit) : '-'}
-                                                                </td>
-                                                                {index === 0 ? (
-                                                                    <td className="px-6 py-4 text-center align-top" rowSpan={journal.items.length}>
-                                                                        {(() => {
-                                                                            const isLocked = lockDate && new Date(journal.tanggal) <= new Date(lockDate);
-                                                                            const isReversed = !!journal.reversed_by_id;
-                                                                            const isReversal = !!journal.reverses_journal_id;
-
-                                                                            if (isReversed || isReversal) {
-                                                                                return (
-                                                                                    <span className="text-xs text-neutral-400 font-medium">Locked</span>
-                                                                                );
-                                                                            }
-
-                                                                            if (isLocked) {
-                                                                                return (
-                                                                                    <Button
-                                                                                        variant="ghost"
-                                                                                        size="icon"
-                                                                                        className="h-8 w-8 text-purple-500 hover:bg-purple-50 hover:text-purple-600 dark:hover:bg-purple-950/20"
-                                                                                        onClick={() => handleReverseJournal(journal.id)}
-                                                                                        title="Balikkan Jurnal (Reverse)"
-                                                                                    >
-                                                                                        <Undo className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                );
-                                                                            }
-
-                                                                            return (
-                                                                                <Button
-                                                                                    variant="ghost"
-                                                                                    size="icon"
-                                                                                    className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
-                                                                                    onClick={() => handleDeleteJournal(journal.id)}
-                                                                                    title="Hapus Jurnal"
-                                                                                >
-                                                                                    <Trash2 className="h-4 w-4" />
-                                                                                </Button>
-                                                                            );
-                                                                        })()}
-                                                                    </td>
-                                                                ) : null}
-                                                            </tr>
-                                                        )),
-                                                    )
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                )}
+                                                                    {formatDate(journal.tanggal)}
+                                                                </TableCell>
+                                                                <TableCell className="align-top" rowSpan={items.length}>
+                                                                    <span className="text-foreground block font-mono text-xs font-bold">
+                                                                        {journal.nomor_jurnal}
+                                                                    </span>
+                                                                    <span className="mt-1.5 flex flex-col items-start gap-1">
+                                                                        <Badge variant={TIPE_JURNAL_TONES[journal.tipe_jurnal] ?? 'secondary'}>
+                                                                            {TIPE_JURNAL_LABELS[journal.tipe_jurnal]}
+                                                                        </Badge>
+                                                                        {isReversed && (
+                                                                            <Badge
+                                                                                variant="danger"
+                                                                                title={`Jurnal pembalik: ${journal.reversed_by?.nomor_jurnal}`}
+                                                                            >
+                                                                                Sudah Dibalik
+                                                                            </Badge>
+                                                                        )}
+                                                                        {isReversal && (
+                                                                            <Badge
+                                                                                variant="accent"
+                                                                                title={`Membalik jurnal: ${journal.reverses_journal?.nomor_jurnal}`}
+                                                                            >
+                                                                                Jurnal Pembalik
+                                                                            </Badge>
+                                                                        )}
+                                                                    </span>
+                                                                </TableCell>
+                                                                <TableCell
+                                                                    className="text-muted-foreground align-top break-words"
+                                                                    rowSpan={items.length}
+                                                                >
+                                                                    {journal.keterangan}
+                                                                </TableCell>
+                                                                <TableCell
+                                                                    align="center"
+                                                                    className="text-muted-foreground align-top font-mono text-xs"
+                                                                    rowSpan={items.length}
+                                                                >
+                                                                    {journal.kode_arus_kas || '-'}
+                                                                </TableCell>
+                                                            </>
+                                                        ) : null}
+                                                        <TableCell className="text-muted-foreground font-mono text-xs">
+                                                            {item.coa?.kode_akun}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            className={
+                                                                Number(item.kredit) > 0 ? 'text-muted-foreground pl-8' : 'text-foreground font-medium'
+                                                            }
+                                                        >
+                                                            {item.coa?.nama_akun}
+                                                        </TableCell>
+                                                        <TableCell numeric className="text-foreground font-medium">
+                                                            {Number(item.debit) > 0 ? formatIDR(item.debit) : '-'}
+                                                        </TableCell>
+                                                        <TableCell numeric className="text-foreground font-medium">
+                                                            {Number(item.kredit) > 0 ? formatIDR(item.kredit) : '-'}
+                                                        </TableCell>
+                                                        {index === 0 ? (
+                                                            <TableCell align="center" className="align-top" rowSpan={items.length}>
+                                                                {isReversed || isReversal ? (
+                                                                    <span className="text-muted-foreground text-xs font-medium">Terkunci</span>
+                                                                ) : isLocked ? (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon-xs"
+                                                                        className="text-muted-foreground hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400"
+                                                                        onClick={() => handleReverseJournal(journal.id)}
+                                                                        title="Balikkan jurnal (reverse)"
+                                                                    >
+                                                                        <Undo />
+                                                                        <span className="sr-only">Balikkan jurnal</span>
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon-xs"
+                                                                        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                                                        onClick={() => handleDeleteJournal(journal.id)}
+                                                                        title="Hapus jurnal"
+                                                                    >
+                                                                        <Trash2 />
+                                                                        <span className="sr-only">Hapus jurnal</span>
+                                                                    </Button>
+                                                                )}
+                                                            </TableCell>
+                                                        ) : null}
+                                                    </TableRow>
+                                                ));
+                                            })
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </>
+                    ))}
 
                 {/* TAB CONTENT: BUKU BESAR (LEDGER) */}
                 {activeTab === 'ledger' &&
@@ -724,377 +732,356 @@ export default function Index({
                         });
 
                         return (
-                            <div className="space-y-6">
+                            <>
                                 {/* Error Banner */}
                                 {(ledgerError || (errors && errors.start_date)) && (
                                     <Alert variant="destructive">
-                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertCircle className="size-4" />
                                         <AlertTitle>Kesalahan</AlertTitle>
                                         <AlertDescription>{ledgerError || (errors.start_date as string)}</AlertDescription>
                                     </Alert>
                                 )}
 
                                 {/* Date & Account Filters */}
-                                <form onSubmit={handleLedgerFilterSubmit} className="bg-card grid grid-cols-1 items-end gap-4 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-5">
-                                    {/* Tanggal Mulai */}
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="ledger_start_date">Tanggal Mulai</Label>
-                                        <DatePicker
-                                            id="ledger_start_date"
-                                            value={ledgerStartDate}
-                                            onChange={setLedgerStartDate}
-                                            className="w-full font-mono text-xs"
-                                        />
-                                    </div>
+                                <form onSubmit={handleLedgerFilterSubmit}>
+                                    <FilterBar className="sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+                                        <Field>
+                                            <Label htmlFor="ledger_start_date">Tanggal Mulai</Label>
+                                            <DatePicker id="ledger_start_date" size="sm" value={ledgerStartDate} onChange={setLedgerStartDate} />
+                                        </Field>
 
-                                    {/* Tanggal Selesai */}
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="ledger_end_date">Tanggal Selesai</Label>
-                                        <DatePicker
-                                            id="ledger_end_date"
-                                            value={ledgerEndDate}
-                                            onChange={setLedgerEndDate}
-                                            className="w-full font-mono text-xs"
-                                        />
-                                    </div>
+                                        <Field>
+                                            <Label htmlFor="ledger_end_date">Tanggal Selesai</Label>
+                                            <DatePicker id="ledger_end_date" size="sm" value={ledgerEndDate} onChange={setLedgerEndDate} />
+                                        </Field>
 
-                                    {/* Pilih Akun */}
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="ledger_coa_filter">Pilih Akun Buku Besar</Label>
-                                        <select
-                                            id="ledger_coa_filter"
-                                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                                            value={selectedLedgerCoa}
-                                            onChange={(e) => setSelectedLedgerCoa(e.target.value)}
-                                        >
-                                            <option value="all">Semua Akun</option>
-                                            {ledgerData.map((acc) => (
-                                                <option key={acc.coa.id} value={acc.coa.id}>
-                                                    [{acc.coa.kode_akun}] {acc.coa.nama_akun}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                        <Field>
+                                            <Label htmlFor="ledger_coa_filter">Pilih Akun Buku Besar</Label>
+                                            <NativeSelect
+                                                id="ledger_coa_filter"
+                                                selectSize="sm"
+                                                value={selectedLedgerCoa}
+                                                onChange={(e) => setSelectedLedgerCoa(e.target.value)}
+                                            >
+                                                <option value="all">Semua Akun</option>
+                                                {ledgerData.map((acc) => (
+                                                    <option key={acc.coa.id} value={acc.coa.id}>
+                                                        [{acc.coa.kode_akun}] {acc.coa.nama_akun}
+                                                    </option>
+                                                ))}
+                                            </NativeSelect>
+                                        </Field>
 
-                                    {/* Cari Akun */}
-                                    <div className="grid gap-1.5">
-                                        <Label htmlFor="ledger_search">Cari Nama / Kode</Label>
-                                        <div className="relative">
-                                            <Search className="text-muted-foreground absolute top-2.5 left-3 h-4 w-4" />
-                                            <Input
-                                                id="ledger_search"
-                                                placeholder="Ketik nama/kode..."
-                                                value={ledgerSearch}
-                                                onChange={(e) => setLedgerSearch(e.target.value)}
-                                                className="h-9 pl-9"
-                                            />
+                                        <Field>
+                                            <Label htmlFor="ledger_search">Cari Nama / Kode</Label>
+                                            <div className="relative">
+                                                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                                                <Input
+                                                    id="ledger_search"
+                                                    inputSize="sm"
+                                                    placeholder="Ketik nama/kode..."
+                                                    value={ledgerSearch}
+                                                    onChange={(e) => setLedgerSearch(e.target.value)}
+                                                    className="pl-9"
+                                                />
+                                            </div>
+                                        </Field>
+
+                                        <div className="flex items-end gap-2">
+                                            <Button type="submit" size="sm" className="flex-1">
+                                                Terapkan
+                                            </Button>
+                                            <Button type="button" size="sm" variant="outline" onClick={handleLedgerFilterReset}>
+                                                Reset
+                                            </Button>
                                         </div>
-                                    </div>
-
-                                    {/* Tombol Terapkan & Reset */}
-                                    <div className="flex gap-2">
-                                        <Button type="submit" className="h-9 flex-1">
-                                            Terapkan
-                                        </Button>
-                                        <Button type="button" variant="outline" onClick={handleLedgerFilterReset} className="h-9 px-3" title="Reset Filter">
-                                            Reset
-                                        </Button>
-                                    </div>
+                                    </FilterBar>
                                 </form>
 
                                 {/* Traditional Indonesian 6-Column General Ledger Cards */}
-                                <div className="space-y-8">
-                                    {filteredLedger.length === 0 ? (
-                                        <div className="bg-card flex flex-col items-center justify-center rounded-xl border py-16 text-center">
-                                            <Landmark className="text-muted-foreground/50 mb-3 h-10 w-10" />
-                                            <h3 className="text-base font-semibold">Tidak ada akun Buku Besar</h3>
-                                            <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-                                                Tidak ada data yang cocok dengan pencarian Anda atau periode terpilih.
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        filteredLedger.map((account) => {
-                                            return (
-                                                <div key={account.coa.id} className="bg-card overflow-hidden rounded-xl border shadow-xs">
-                                                    {/* Header */}
-                                                    <div className="bg-muted/30 border-border/80 flex items-center justify-between border-b px-6 py-4">
-                                                        <span className="text-foreground text-base font-mono font-bold">
-                                                            {account.coa.kode_akun} - {account.coa.nama_akun}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Table */}
-                                                    <div className="w-full overflow-x-auto">
-                                                        <table className="w-full min-w-[850px] border-collapse text-left text-sm">
-                                                            <thead>
-                                                                <tr className="bg-muted/10 text-muted-foreground border-t border-b text-center text-xs font-bold tracking-wider uppercase">
-                                                                    <th className="border-border/40 border-r px-6 py-3 text-left w-32" rowSpan={2}>
-                                                                        Tanggal
-                                                                    </th>
-                                                                    <th className="border-border/40 border-r px-6 py-3 text-left w-48" rowSpan={2}>
-                                                                        No. Referensi
-                                                                    </th>
-                                                                    <th className="border-border/40 border-r px-6 py-3 text-left" rowSpan={2}>
-                                                                        Uraian Transaksi
-                                                                    </th>
-                                                                    <th className="border-border/40 w-36 border-r px-6 py-3 text-right" rowSpan={2}>
-                                                                        Debit
-                                                                    </th>
-                                                                    <th className="border-border/40 w-36 border-r px-6 py-3 text-right" rowSpan={2}>
-                                                                        Kredit
-                                                                    </th>
-                                                                    <th className="w-80 px-6 py-1.5 text-center" colSpan={2}>
-                                                                        Saldo
-                                                                    </th>
-                                                                </tr>
-                                                                <tr className="bg-muted/10 text-muted-foreground border-b text-right text-xs font-bold tracking-wider uppercase">
-                                                                    <th className="border-border/40 w-40 border-r px-6 py-2">Debit</th>
-                                                                    <th className="w-40 px-6 py-2">Kredit</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y font-mono">
-                                                                {/* Saldo Awal (Opening Balance) Row */}
-                                                                <tr className="bg-muted/5 hover:bg-muted/10 italic transition-colors">
-                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
-                                                                        -
-                                                                    </td>
-                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
-                                                                        -
-                                                                    </td>
-                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
-                                                                        Saldo Awal (Opening Balance)
-                                                                    </td>
-                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 text-right">
-                                                                        -
-                                                                    </td>
-                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 text-right">
-                                                                        -
-                                                                    </td>
-                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 text-right">
-                                                                        {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_awal) : '-'}
-                                                                    </td>
-                                                                    <td className="text-muted-foreground px-6 py-3 text-right">
-                                                                        {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_awal) : '-'}
-                                                                    </td>
-                                                                </tr>
-
-                                                                {/* Journal Items */}
-                                                                {account.items.map((item) => {
-                                                                    const isDeb = Number(item.debit) > 0;
-                                                                    const isKred = Number(item.kredit) > 0;
-                                                                    const runningVal = Number(item.saldo_berjalan) || 0;
-
-                                                                    // Determine if running balance goes in Debit or Kredit column based on normal balance
-                                                                    const showInDebColumn =
-                                                                        account.coa.saldo_normal === 'debit' ? runningVal >= 0 : runningVal < 0;
-                                                                    const showInKredColumn =
-                                                                        account.coa.saldo_normal === 'kredit' ? runningVal >= 0 : runningVal < 0;
-
-                                                                    const finalVal = Math.abs(runningVal);
-
-                                                                    return (
-                                                                        <tr key={item.id} className="hover:bg-muted/10 transition-colors">
-                                                                            <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
-                                                                                {formatDate(item.tanggal)}
-                                                                            </td>
-                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 font-sans font-bold">
-                                                                                {item.nomor_jurnal}
-                                                                            </td>
-                                                                            <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
-                                                                                {item.keterangan}
-                                                                            </td>
-                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 text-right">
-                                                                                {isDeb ? formatIDR(item.debit) : '-'}
-                                                                            </td>
-                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 text-right">
-                                                                                {isKred ? formatIDR(item.kredit) : '-'}
-                                                                            </td>
-                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 text-right">
-                                                                                {showInDebColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
-                                                                            </td>
-                                                                            <td className="text-foreground px-6 py-3 text-right">
-                                                                                {showInKredColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
-                                                                            </td>
-                                                                        </tr>
-                                                                    );
-                                                                })}
-                                                            </tbody>
-                                                            {/* Subtotal Row */}
-                                                            <tfoot>
-                                                                <tr className="bg-muted/30 text-foreground border-t font-sans font-bold">
-                                                                    <td className="border-border/40 border-r px-6 py-3" colSpan={3}>
-                                                                        Total
-                                                                    </td>
-                                                                    <td className="border-border/40 border-r px-6 py-3 text-right font-mono">
-                                                                        {formatIDR(account.total_debit)}
-                                                                    </td>
-                                                                    <td className="border-border/40 border-r px-6 py-3 text-right font-mono">
-                                                                        {formatIDR(account.total_kredit)}
-                                                                    </td>
-                                                                    <td className="border-border/40 border-r px-6 py-3 text-right font-mono">
-                                                                        {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_akhir) : '-'}
-                                                                    </td>
-                                                                    <td className="px-6 py-3 text-right font-mono">
-                                                                        {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_akhir) : '-'}
-                                                                    </td>
-                                                                </tr>
-                                                            </tfoot>
-                                                        </table>
-                                                    </div>
+                                {filteredLedger.length === 0 ? (
+                                    <div className="bg-card flex flex-col items-center justify-center gap-1 rounded-xl border py-16 text-center shadow-xs">
+                                        <Landmark className="text-muted-foreground/40 mb-2 size-10" aria-hidden="true" />
+                                        <h2 className="text-base font-semibold">Tidak Ada Akun Buku Besar</h2>
+                                        <p className="text-muted-foreground max-w-sm text-sm">
+                                            Tidak ada data yang cocok dengan pencarian Anda atau periode terpilih.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {filteredLedger.map((account) => (
+                                            <TableContainer key={account.coa.id}>
+                                                <div className="bg-muted/30 border-b px-4 py-3 sm:px-5 sm:py-4">
+                                                    <h2 className="text-foreground font-mono text-sm font-bold sm:text-base">
+                                                        {account.coa.kode_akun} — {account.coa.nama_akun}
+                                                    </h2>
                                                 </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
+
+                                                <Table minWidth="min-w-[950px]">
+                                                    <TableHeader>
+                                                        <TableRow className="hover:bg-transparent">
+                                                            <TableHead className={`w-32 ${LEDGER_DIVIDER}`} rowSpan={2}>
+                                                                Tanggal
+                                                            </TableHead>
+                                                            <TableHead className={`w-44 ${LEDGER_DIVIDER}`} rowSpan={2}>
+                                                                No. Referensi
+                                                            </TableHead>
+                                                            <TableHead className={`min-w-[200px] ${LEDGER_DIVIDER}`} rowSpan={2}>
+                                                                Rincian Transaksi
+                                                            </TableHead>
+                                                            <TableHead align="right" className={`w-40 ${LEDGER_DIVIDER}`} rowSpan={2}>
+                                                                Debit
+                                                            </TableHead>
+                                                            <TableHead align="right" className={`w-40 ${LEDGER_DIVIDER}`} rowSpan={2}>
+                                                                Kredit
+                                                            </TableHead>
+                                                            <TableHead align="center" className="w-80 py-2" colSpan={2}>
+                                                                Saldo
+                                                            </TableHead>
+                                                        </TableRow>
+                                                        <TableRow className="hover:bg-transparent">
+                                                            <TableHead align="right" className={`w-40 py-2 ${LEDGER_DIVIDER}`}>
+                                                                Debit
+                                                            </TableHead>
+                                                            <TableHead align="right" className="w-40 py-2">
+                                                                Kredit
+                                                            </TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {/* Saldo Awal (Opening Balance) Row */}
+                                                        <TableRow className="bg-muted/20">
+                                                            <TableCell align="center" className={`text-muted-foreground ${LEDGER_DIVIDER}`}>
+                                                                -
+                                                            </TableCell>
+                                                            <TableCell className={`text-muted-foreground ${LEDGER_DIVIDER}`}>-</TableCell>
+                                                            <TableCell className={`text-muted-foreground italic ${LEDGER_DIVIDER}`}>
+                                                                Saldo Awal (Opening Balance)
+                                                            </TableCell>
+                                                            <TableCell numeric className={`text-muted-foreground ${LEDGER_DIVIDER}`}>
+                                                                -
+                                                            </TableCell>
+                                                            <TableCell numeric className={`text-muted-foreground ${LEDGER_DIVIDER}`}>
+                                                                -
+                                                            </TableCell>
+                                                            <TableCell numeric className={`text-muted-foreground ${LEDGER_DIVIDER}`}>
+                                                                {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_awal) : '-'}
+                                                            </TableCell>
+                                                            <TableCell numeric className="text-muted-foreground">
+                                                                {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_awal) : '-'}
+                                                            </TableCell>
+                                                        </TableRow>
+
+                                                        {/* Journal Items */}
+                                                        {account.items.map((item) => {
+                                                            const isDeb = Number(item.debit) > 0;
+                                                            const isKred = Number(item.kredit) > 0;
+                                                            const runningVal = Number(item.saldo_berjalan) || 0;
+
+                                                            // Running balance sits in the column matching the account's normal balance
+                                                            const showInDebColumn =
+                                                                account.coa.saldo_normal === 'debit' ? runningVal >= 0 : runningVal < 0;
+                                                            const showInKredColumn =
+                                                                account.coa.saldo_normal === 'kredit' ? runningVal >= 0 : runningVal < 0;
+
+                                                            const finalVal = Math.abs(runningVal);
+
+                                                            return (
+                                                                <TableRow key={item.id}>
+                                                                    <TableCell
+                                                                        align="center"
+                                                                        className={`text-muted-foreground font-mono tabular-nums ${LEDGER_DIVIDER}`}
+                                                                    >
+                                                                        {formatDate(item.tanggal)}
+                                                                    </TableCell>
+                                                                    <TableCell
+                                                                        className={`text-foreground font-mono text-xs font-bold ${LEDGER_DIVIDER}`}
+                                                                    >
+                                                                        {item.nomor_jurnal}
+                                                                    </TableCell>
+                                                                    <TableCell className={`text-muted-foreground ${LEDGER_DIVIDER}`}>
+                                                                        {item.keterangan}
+                                                                    </TableCell>
+                                                                    <TableCell numeric className={`text-foreground ${LEDGER_DIVIDER}`}>
+                                                                        {isDeb ? formatIDR(item.debit) : '-'}
+                                                                    </TableCell>
+                                                                    <TableCell numeric className={`text-foreground ${LEDGER_DIVIDER}`}>
+                                                                        {isKred ? formatIDR(item.kredit) : '-'}
+                                                                    </TableCell>
+                                                                    <TableCell numeric className={`text-foreground ${LEDGER_DIVIDER}`}>
+                                                                        {showInDebColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
+                                                                    </TableCell>
+                                                                    <TableCell numeric className="text-foreground">
+                                                                        {showInKredColumn && finalVal !== 0 ? formatIDR(finalVal) : '-'}
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            );
+                                                        })}
+                                                    </TableBody>
+                                                    <TableFooter>
+                                                        <TableRow className="hover:bg-transparent">
+                                                            <TableCell className={`uppercase ${LEDGER_DIVIDER}`} colSpan={3}>
+                                                                Total
+                                                            </TableCell>
+                                                            <TableCell numeric className={LEDGER_DIVIDER}>
+                                                                {formatIDR(account.total_debit)}
+                                                            </TableCell>
+                                                            <TableCell numeric className={LEDGER_DIVIDER}>
+                                                                {formatIDR(account.total_kredit)}
+                                                            </TableCell>
+                                                            <TableCell numeric className={LEDGER_DIVIDER}>
+                                                                {account.coa.saldo_normal === 'debit' ? formatIDR(account.saldo_akhir) : '-'}
+                                                            </TableCell>
+                                                            <TableCell numeric>
+                                                                {account.coa.saldo_normal === 'kredit' ? formatIDR(account.saldo_akhir) : '-'}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    </TableFooter>
+                                                </Table>
+                                            </TableContainer>
+                                        ))}
+                                    </div>
+                                )}
 
                                 {/* Grand Total Buku Besar */}
                                 {filteredLedger.length > 0 && (
                                     <div className="bg-primary/5 border-primary/20 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-5">
-                                        <span className="text-foreground text-sm font-bold uppercase">Total Keseluruhan Buku Besar Umum</span>
-                                        <div className="flex gap-6 font-mono text-sm font-bold">
+                                        <h2 className="text-foreground text-sm font-bold uppercase">Total Keseluruhan Buku Besar Umum</h2>
+                                        <div className="flex gap-6">
                                             <div className="text-right">
-                                                <span className="text-muted-foreground block font-sans text-[10px]">Total Debit</span>
-                                                <span className="text-foreground text-base">{formatIDR(grandTotalDebit)}</span>
+                                                <span className="text-muted-foreground block text-xs">Total Debit</span>
+                                                <span className="text-foreground font-mono text-base font-bold tabular-nums">
+                                                    {formatIDR(grandTotalDebit)}
+                                                </span>
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-muted-foreground block font-sans text-[10px]">Total Kredit</span>
-                                                <span className="text-foreground text-base">{formatIDR(grandTotalKredit)}</span>
+                                                <span className="text-muted-foreground block text-xs">Total Kredit</span>
+                                                <span className="text-foreground font-mono text-base font-bold tabular-nums">
+                                                    {formatIDR(grandTotalKredit)}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                            </>
                         );
                     })()}
 
                 {/* TAB CONTENT: PENYUSUTAN BULANAN */}
                 {activeTab === 'depresiasi' && (
-                    <div className="space-y-6">
+                    <>
                         {/* Selector Month */}
-                        <div className="bg-card grid max-w-2xl items-end gap-4 rounded-xl border p-5 md:grid-cols-3">
-                            <div className="grid gap-2 grid-cols-2">
-                                <div className="grid gap-1">
-                                    <Label htmlFor="dep_month_select">Bulan</Label>
-                                    <select
-                                        id="dep_month_select"
-                                        value={depMonth}
-                                        onChange={(e) => setDepMonth(e.target.value)}
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                                    >
-                                        <option value="01">Januari</option>
-                                        <option value="02">Februari</option>
-                                        <option value="03">Maret</option>
-                                        <option value="04">April</option>
-                                        <option value="05">Mei</option>
-                                        <option value="06">Juni</option>
-                                        <option value="07">Juli</option>
-                                        <option value="08">Agustus</option>
-                                        <option value="09">September</option>
-                                        <option value="10">Oktober</option>
-                                        <option value="11">November</option>
-                                        <option value="12">Desember</option>
-                                    </select>
-                                </div>
-                                <div className="grid gap-1">
-                                    <Label htmlFor="dep_year_select">Tahun</Label>
-                                    <select
-                                        id="dep_year_select"
-                                        value={depYear}
-                                        onChange={(e) => setDepYear(e.target.value)}
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                                    >
-                                        {Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString()).map((yr) => (
-                                            <option key={yr} value={yr}>
-                                                {yr}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="flex items-center">
+                        <FilterBar className="sm:grid-cols-2 lg:grid-cols-4">
+                            <Field>
+                                <Label htmlFor="dep_month_select">Bulan</Label>
+                                <NativeSelect id="dep_month_select" selectSize="sm" value={depMonth} onChange={(e) => setDepMonth(e.target.value)}>
+                                    {BULAN_OPTIONS.map(([value, label]) => (
+                                        <option key={value} value={value}>
+                                            {label}
+                                        </option>
+                                    ))}
+                                </NativeSelect>
+                            </Field>
+
+                            <Field>
+                                <Label htmlFor="dep_year_select">Tahun</Label>
+                                <NativeSelect id="dep_year_select" selectSize="sm" value={depYear} onChange={(e) => setDepYear(e.target.value)}>
+                                    {Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - 2 + i).toString()).map((yr) => (
+                                        <option key={yr} value={yr}>
+                                            {yr}
+                                        </option>
+                                    ))}
+                                </NativeSelect>
+                            </Field>
+
+                            <div className="flex h-9 items-center">
                                 {isMonthAlreadyPosted ? (
-                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-800 dark:border-green-800/30 dark:bg-green-900/30 dark:text-green-400">
-                                        <ShieldCheck className="h-4 w-4" />
-                                        Sudah Diposting ke Jurnal
-                                    </div>
+                                    <Badge variant="success">
+                                        <ShieldCheck aria-hidden="true" />
+                                        Sudah diposting ke jurnal
+                                    </Badge>
                                 ) : (
-                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/30 dark:text-amber-400">
-                                        <AlertCircle className="h-4 w-4" />
-                                        Belum Diposting ke Jurnal
-                                    </div>
+                                    <Badge variant="warning">
+                                        <AlertCircle aria-hidden="true" />
+                                        Belum diposting ke jurnal
+                                    </Badge>
                                 )}
                             </div>
-                            <div>
-                                <Button
-                                    onClick={handlePostDepreciation}
-                                    disabled={isMonthAlreadyPosted || previewAssets.length === 0}
-                                    className="w-full"
-                                >
-                                    <Calculator className="mr-2 h-4 w-4" />
-                                    Posting Jurnal
-                                </Button>
-                            </div>
-                        </div>
+
+                            <Button size="sm" onClick={handlePostDepreciation} disabled={isMonthAlreadyPosted || previewAssets.length === 0}>
+                                <Calculator />
+                                Posting Jurnal
+                            </Button>
+                        </FilterBar>
 
                         {/* Estimasi Aset yg Disusutkan */}
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-bold">Rincian Penyusutan Aset</h3>
+                        <SectionHeading
+                            title="Rincian Penyusutan Aset"
+                            description="Aset aktif yang menyusut pada bulan terpilih."
+                            actions={
                                 <div className="text-right">
-                                    <span className="text-muted-foreground block text-xs">Total Estimasi Penyusutan</span>
-                                    <span className="text-foreground font-mono text-base font-bold">{formatIDR(totalMonthDepreciation)}</span>
+                                    <span className="text-muted-foreground block text-xs">Total estimasi penyusutan</span>
+                                    <span className="text-foreground font-mono text-base font-bold tabular-nums">
+                                        {formatIDR(totalMonthDepreciation)}
+                                    </span>
                                 </div>
-                            </div>
+                            }
+                        />
 
-                            <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
-                                <div className="w-full overflow-x-auto">
-                                    <table className="w-full min-w-[800px] border-collapse text-left text-sm">
-                                        <thead>
-                                            <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
-                                                <th className="px-6 py-4">Nama Aset</th>
-                                                <th className="w-32 px-6 py-4">Jenis</th>
-                                                <th className="w-40 px-6 py-4 text-center">Tanggal Perolehan</th>
-                                                <th className="w-44 px-6 py-4 text-right">Harga Perolehan</th>
-                                                <th className="w-44 px-6 py-4 text-right">Beban Penyusutan / Bulan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            {previewAssets.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={5} className="text-muted-foreground px-6 py-12 text-center">
-                                                        Tidak ada aset aktif yang menyusut pada bulan terpilih.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                previewAssets.map((asset) => (
-                                                    <tr key={asset.id} className="hover:bg-muted/30 transition-colors">
-                                                        <td className="text-foreground px-6 py-4 font-semibold">{asset.nama}</td>
-                                                        <td className="text-muted-foreground px-6 py-4 capitalize">{asset.jenis}</td>
-                                                        <td className="text-muted-foreground px-6 py-4 text-center font-mono">
-                                                            {formatDate(asset.tanggal_perolehan)}
-                                                        </td>
-                                                        <td className="text-foreground px-6 py-4 text-right font-mono">
-                                                            {formatIDR(asset.harga_perolehan)}
-                                                        </td>
-                                                        <td className="text-foreground px-6 py-4 text-right font-mono font-bold">
-                                                            {formatIDR(asset.penyusutan_bulanan)}
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                        <TableContainer>
+                            <Table minWidth="min-w-[850px]">
+                                <TableHeader>
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead className="min-w-[220px]">Nama Aset</TableHead>
+                                        <TableHead align="center" className="w-36">
+                                            Jenis
+                                        </TableHead>
+                                        <TableHead align="center" className="w-44">
+                                            Tanggal Perolehan
+                                        </TableHead>
+                                        <TableHead align="right" className="w-48">
+                                            Harga Perolehan
+                                        </TableHead>
+                                        <TableHead align="right" className="w-52">
+                                            Beban Penyusutan / Bulan
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {previewAssets.length === 0 ? (
+                                        <TableEmpty colSpan={5} description="Tidak ada aset aktif yang menyusut pada bulan terpilih." />
+                                    ) : (
+                                        previewAssets.map((asset) => (
+                                            <TableRow key={asset.id}>
+                                                <TableCell className="text-foreground font-medium">{asset.nama}</TableCell>
+                                                <TableCell align="center">
+                                                    <Badge variant="secondary" className="capitalize">
+                                                        {asset.jenis}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell align="center" className="text-muted-foreground font-mono tabular-nums">
+                                                    {formatDate(asset.tanggal_perolehan)}
+                                                </TableCell>
+                                                <TableCell numeric className="text-foreground">
+                                                    {formatIDR(asset.harga_perolehan)}
+                                                </TableCell>
+                                                <TableCell numeric className="text-foreground font-semibold">
+                                                    {formatIDR(asset.penyusutan_bulanan)}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </>
                 )}
-            </div>
+            </PageShell>
 
             {/* DIALOG FORM: CREATE MANUAL JOURNAL */}
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[700px]">
-                    <form onSubmit={handleSubmitJournal}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[720px]">
+                    <form onSubmit={handleSubmitJournal} className="grid gap-6">
                         <DialogHeader>
                             <DialogTitle>Buat Jurnal Manual Baru</DialogTitle>
                             <DialogDescription>
@@ -1102,26 +1089,20 @@ export default function Index({
                             </DialogDescription>
                         </DialogHeader>
 
-                        <div className="grid gap-4 py-4">
+                        <div className="grid gap-4">
                             {/* Row 1: Tanggal, Jenis Transaksi, Kategori, Kode Arus Kas */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-                                <div className="grid gap-2">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                <Field>
                                     <Label htmlFor="tanggal">Tanggal Transaksi</Label>
-                                    <DatePicker
-                                        id="tanggal"
-                                        value={data.tanggal}
-                                        onChange={(val) => setData('tanggal', val)}
-                                        className="w-full"
-                                    />
-                                    {errors.tanggal && <span className="text-xs text-red-500">{errors.tanggal}</span>}
-                                </div>
-                                <div className="grid gap-2">
+                                    <DatePicker id="tanggal" value={data.tanggal} onChange={(val) => setData('tanggal', val)} />
+                                    {errors.tanggal && <p className="text-destructive text-xs font-medium">{errors.tanggal}</p>}
+                                </Field>
+                                <Field>
                                     <Label htmlFor="jenis_transaksi">Jenis Transaksi</Label>
-                                    <select
+                                    <NativeSelect
                                         id="jenis_transaksi"
                                         value={data.jenis_transaksi}
                                         onChange={(e) => setData('jenis_transaksi', e.target.value)}
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                                         required
                                     >
                                         <option value="jurnal_umum">Jurnal Umum</option>
@@ -1130,34 +1111,33 @@ export default function Index({
                                         <option value="bank_masuk">Bank Masuk</option>
                                         <option value="bank_keluar">Bank Keluar</option>
                                         <option value="jurnal_koreksi">Jurnal Koreksi</option>
-                                    </select>
-                                    {errors.jenis_transaksi && <span className="text-xs text-red-500">{errors.jenis_transaksi}</span>}
-                                </div>
-                                <div className="grid gap-2">
+                                    </NativeSelect>
+                                    {errors.jenis_transaksi && <p className="text-destructive text-xs font-medium">{errors.jenis_transaksi}</p>}
+                                </Field>
+                                <Field>
                                     <Label htmlFor="kategori_arus_kas">Kategori Arus Kas</Label>
-                                    <select
+                                    <NativeSelect
                                         id="kategori_arus_kas"
                                         value={data.kategori_arus_kas}
                                         onChange={(e) => setData('kategori_arus_kas', e.target.value)}
-                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
                                         required
                                     >
                                         <option value="operasional">Operasional (O)</option>
                                         <option value="investasi">Investasi (I)</option>
                                         <option value="pendanaan">Pendanaan (P)</option>
-                                    </select>
-                                    {errors.kategori_arus_kas && <span className="text-xs text-red-500">{errors.kategori_arus_kas}</span>}
-                                </div>
-                                <div className="grid gap-2">
+                                    </NativeSelect>
+                                    {errors.kategori_arus_kas && <p className="text-destructive text-xs font-medium">{errors.kategori_arus_kas}</p>}
+                                </Field>
+                                <Field>
                                     <Label htmlFor="kode_arus_kas">Kode Arus Kas</Label>
-                                    <Input id="kode_arus_kas" value={data.kode_arus_kas} readOnly className="bg-muted h-9 font-mono font-semibold" />
-                                    {errors.kode_arus_kas && <span className="text-xs text-red-500">{errors.kode_arus_kas}</span>}
-                                </div>
+                                    <Input id="kode_arus_kas" value={data.kode_arus_kas} readOnly className="bg-muted font-mono font-semibold" />
+                                    {errors.kode_arus_kas && <p className="text-destructive text-xs font-medium">{errors.kode_arus_kas}</p>}
+                                </Field>
                             </div>
 
-                            {/* Row 2: Uraian Transaksi */}
-                            <div className="grid gap-2">
-                                <Label htmlFor="keterangan">Uraian Transaksi</Label>
+                            {/* Row 2: Rincian Transaksi */}
+                            <Field>
+                                <Label htmlFor="keterangan">Rincian Transaksi</Label>
                                 <Input
                                     id="keterangan"
                                     placeholder="Contoh: Pembelian perlengkapan kantor secara tunai"
@@ -1165,99 +1145,95 @@ export default function Index({
                                     onChange={(e) => setData('keterangan', e.target.value)}
                                     required
                                 />
-                                {errors.keterangan && <span className="text-xs text-red-500">{errors.keterangan}</span>}
-                            </div>
+                                {errors.keterangan && <p className="text-destructive text-xs font-medium">{errors.keterangan}</p>}
+                            </Field>
 
                             {/* Baris Debit/Kredit Dinamis */}
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-sm font-semibold">Baris Posting Jurnal</Label>
+                                <div className="flex items-center justify-between gap-3">
+                                    <h3 className="text-sm font-semibold">Baris Posting Jurnal</h3>
                                     <Button type="button" variant="outline" size="sm" onClick={handleAddItemRow}>
+                                        <Plus />
                                         Tambah Baris
                                     </Button>
                                 </div>
 
                                 {errors.items && (
-                                    <div className="rounded-lg border bg-red-50 p-2 text-xs font-semibold text-red-500">{errors.items}</div>
+                                    <p className="bg-destructive/10 text-destructive rounded-lg border px-3 py-2 text-xs font-medium">
+                                        {errors.items}
+                                    </p>
                                 )}
 
                                 <div className="space-y-3">
                                     {data.items.map((item, index) => (
-                                        <div key={index} className="flex flex-col gap-1 border-b border-muted/50 pb-2.5 last:border-0 last:pb-0">
+                                        <div key={index} className="border-border/60 space-y-1.5 border-b pb-3 last:border-0 last:pb-0">
                                             <div className="flex items-center gap-2">
-                                                {/* COA SELECT */}
-                                                <div className="flex-1">
-                                                    <select
-                                                        value={item.coa_id}
-                                                        onChange={(e) => handleItemChange(index, 'coa_id', e.target.value)}
-                                                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1.5 text-sm focus:ring-2 focus:outline-hidden"
-                                                        required
-                                                    >
-                                                        <option value="">-- Pilih Akun --</option>
-                                                        {Object.entries(groupCoasByParent(transactionCoas)).map(([parentLabel, items]) => (
-                                                            <optgroup key={parentLabel} label={parentLabel}>
-                                                                {items.map((coa) => (
-                                                                    <option key={coa.id} value={coa.id}>
-                                                                        {coa.nama_akun}
-                                                                    </option>
-                                                                ))}
-                                                            </optgroup>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                                <NativeSelect
+                                                    wrapperClassName="flex-1"
+                                                    selectSize="sm"
+                                                    value={item.coa_id}
+                                                    onChange={(e) => handleItemChange(index, 'coa_id', e.target.value)}
+                                                    aria-label={`Akun baris ${index + 1}`}
+                                                    required
+                                                >
+                                                    <option value="">-- Pilih Akun --</option>
+                                                    {Object.entries(groupCoasByParent(transactionCoas)).map(([parentLabel, items]) => (
+                                                        <optgroup key={parentLabel} label={parentLabel}>
+                                                            {items.map((coa) => (
+                                                                <option key={coa.id} value={coa.id}>
+                                                                    {coa.nama_akun}
+                                                                </option>
+                                                            ))}
+                                                        </optgroup>
+                                                    ))}
+                                                </NativeSelect>
 
-                                                {/* DEBIT INPUT */}
-                                                <div className="w-1/4">
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        placeholder="Debit (Rp)"
-                                                        className="h-9 font-mono"
-                                                        value={item.debit || ''}
-                                                        onChange={(e) => handleItemChange(index, 'debit', e.target.value)}
-                                                        disabled={Number(item.kredit) > 0}
-                                                    />
-                                                </div>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    inputSize="sm"
+                                                    placeholder="Debit (Rp)"
+                                                    aria-label={`Debit baris ${index + 1}`}
+                                                    className="w-1/4 min-w-24 text-right font-mono tabular-nums"
+                                                    value={item.debit || ''}
+                                                    onChange={(e) => handleItemChange(index, 'debit', e.target.value)}
+                                                    disabled={Number(item.kredit) > 0}
+                                                />
 
-                                                {/* KREDIT INPUT */}
-                                                <div className="w-1/4">
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        placeholder="Kredit (Rp)"
-                                                        className="h-9 font-mono"
-                                                        value={item.kredit || ''}
-                                                        onChange={(e) => handleItemChange(index, 'kredit', e.target.value)}
-                                                        disabled={Number(item.debit) > 0}
-                                                    />
-                                                </div>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    inputSize="sm"
+                                                    placeholder="Kredit (Rp)"
+                                                    aria-label={`Kredit baris ${index + 1}`}
+                                                    className="w-1/4 min-w-24 text-right font-mono tabular-nums"
+                                                    value={item.kredit || ''}
+                                                    onChange={(e) => handleItemChange(index, 'kredit', e.target.value)}
+                                                    disabled={Number(item.debit) > 0}
+                                                />
 
-                                                {/* REMOVE BUTTON */}
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
-                                                    size="icon"
-                                                    className="text-muted-foreground h-9 w-9 hover:text-red-500 disabled:opacity-20"
+                                                    size="icon-sm"
+                                                    className="text-muted-foreground hover:text-destructive shrink-0 disabled:opacity-30"
                                                     disabled={data.items.length <= 2}
                                                     onClick={() => handleRemoveItemRow(index)}
+                                                    title="Hapus baris"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Trash2 />
+                                                    <span className="sr-only">Hapus baris</span>
                                                 </Button>
                                             </div>
 
-                                            {/* ROW FIELD ERRORS */}
-                                            {(errors[`items.${index}.coa_id`] || errors[`items.${index}.debit`] || errors[`items.${index}.kredit`]) && (
-                                                <div className="flex gap-2 px-1 text-[11px] font-medium text-red-500">
-                                                    <div className="flex-1 truncate">
-                                                        {errors[`items.${index}.coa_id`]}
-                                                    </div>
-                                                    <div className="w-1/4 truncate">
-                                                        {errors[`items.${index}.debit`]}
-                                                    </div>
-                                                    <div className="w-1/4 truncate">
-                                                        {errors[`items.${index}.kredit`]}
-                                                    </div>
-                                                    <div className="w-9"></div>
+                                            {(errors[`items.${index}.coa_id`] ||
+                                                errors[`items.${index}.debit`] ||
+                                                errors[`items.${index}.kredit`]) && (
+                                                <div className="text-destructive flex gap-2 text-xs font-medium">
+                                                    <span className="flex-1 truncate">{errors[`items.${index}.coa_id`]}</span>
+                                                    <span className="w-1/4 truncate">{errors[`items.${index}.debit`]}</span>
+                                                    <span className="w-1/4 truncate">{errors[`items.${index}.kredit`]}</span>
+                                                    <span className="w-9" />
                                                 </div>
                                             )}
                                         </div>
@@ -1266,33 +1242,23 @@ export default function Index({
                             </div>
 
                             {/* Summary & Balance Check */}
-                            <div className="bg-muted/40 mt-2 flex items-center justify-between rounded-lg border p-3">
-                                <div className="flex gap-4">
-                                    <div className="text-muted-foreground text-xs">
-                                        Total Debit:{' '}
-                                        <span className="text-foreground block font-mono text-sm font-bold">{formatIDR(totalDebit)}</span>
+                            <div className="bg-muted/40 flex flex-wrap items-center justify-between gap-4 rounded-lg border p-4">
+                                <div className="flex gap-6">
+                                    <div>
+                                        <span className="text-muted-foreground block text-xs">Total Debit</span>
+                                        <span className="text-foreground font-mono text-sm font-bold tabular-nums">{formatIDR(totalDebit)}</span>
                                     </div>
-                                    <div className="text-muted-foreground text-xs">
-                                        Total Kredit:{' '}
-                                        <span className="text-foreground block font-mono text-sm font-bold">{formatIDR(totalKredit)}</span>
+                                    <div>
+                                        <span className="text-muted-foreground block text-xs">Total Kredit</span>
+                                        <span className="text-foreground font-mono text-sm font-bold tabular-nums">{formatIDR(totalKredit)}</span>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    {isBalanced ? (
-                                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                            Seimbang (Balanced)
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                            Tidak Seimbang
-                                        </span>
-                                    )}
-                                </div>
+                                <Badge variant={isBalanced ? 'success' : 'danger'}>{isBalanced ? 'Seimbang (Balanced)' : 'Tidak Seimbang'}</Badge>
                             </div>
 
                             {!isBalanced && (
-                                <p className="text-[11px] text-amber-600 mt-1.5 px-1 font-medium leading-normal">
-                                    * Tombol Simpan Jurnal dinonaktifkan karena total Debit dan total Kredit belum seimbang atau masih bernilai Rp 0.
+                                <p className="text-xs leading-relaxed font-medium text-amber-600 dark:text-amber-400">
+                                    Tombol Simpan Jurnal dinonaktifkan karena total debit dan total kredit belum seimbang atau masih bernilai Rp 0.
                                 </p>
                             )}
                         </div>

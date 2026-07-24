@@ -1,12 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+
+import { controlBaseClass, controlSizeClass, type ControlSize } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface DatePickerProps {
     value: string; // YYYY-MM-DD
     onChange: (val: string) => void; // YYYY-MM-DD
     id?: string;
     className?: string;
+    /** Matches the `Input`/`NativeSelect` height scale so rows of controls line up. */
+    size?: ControlSize;
     minYear?: number;
     maxYear?: number;
 }
@@ -16,6 +20,7 @@ export function DatePicker({
     onChange,
     id,
     className,
+    size = 'default',
     minYear = new Date().getFullYear() - 10,
     maxYear = new Date().getFullYear() + 5,
 }: DatePickerProps) {
@@ -131,7 +136,7 @@ export function DatePicker({
     const daysGrid = [];
     // Empty cells before start of month
     for (let i = 0; i < startOffset; i++) {
-        daysGrid.push(<div key={`empty-${i}`} className="h-8 w-8" />);
+        daysGrid.push(<div key={`empty-${i}`} className="size-8" />);
     }
     // Days of the month
     for (let day = 1; day <= totalDays; day++) {
@@ -146,13 +151,14 @@ export function DatePicker({
                 key={`day-${day}`}
                 type="button"
                 onClick={() => handleSelectDay(day)}
-                className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-mono transition-colors ${
+                className={cn(
+                    'flex size-8 items-center justify-center rounded-md font-mono text-xs tabular-nums transition-colors',
                     isSelected
-                        ? 'bg-primary text-primary-foreground font-bold font-sans'
+                        ? 'bg-primary text-primary-foreground font-sans font-bold'
                         : isToday
-                          ? 'border border-primary text-primary font-semibold'
-                          : 'text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                }`}
+                          ? 'border-primary text-primary border font-semibold'
+                          : 'text-foreground hover:bg-accent',
+                )}
             >
                 {day}
             </button>,
@@ -166,38 +172,44 @@ export function DatePicker({
     }
 
     return (
-        <div className="relative inline-block" ref={popoverRef}>
-            <Button
+        <div className="relative w-full min-w-0" ref={popoverRef}>
+            <button
                 id={id}
                 type="button"
-                variant="outline"
                 onClick={() => setIsOpen(!isOpen)}
-                className={`border-input bg-background text-foreground hover:bg-muted/50 flex h-9 w-40 justify-start px-3 py-2 text-left text-sm font-normal ${className}`}
+                className={cn(
+                    controlBaseClass,
+                    controlSizeClass[size],
+                    'hover:bg-muted/50 items-center justify-start gap-2 text-left font-normal transition-colors',
+                    className,
+                )}
             >
-                <CalendarIcon className="text-muted-foreground mr-2 h-4 w-4 shrink-0" />
-                <span className="font-mono text-xs">{formatLabel(value)}</span>
-            </Button>
+                <CalendarIcon className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
+                <span className="truncate font-mono">{formatLabel(value)}</span>
+            </button>
 
             {isOpen && (
-                <div className="absolute left-0 z-50 mt-1 w-72 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 p-4 shadow-md outline-hidden ring-1 ring-black/5 animate-in fade-in-50 zoom-in-95">
+                <div className="bg-popover text-popover-foreground animate-in fade-in-50 zoom-in-95 absolute left-0 z-50 mt-1 w-72 rounded-xl border p-4 shadow-md outline-hidden">
                     {/* Header */}
-                    <div className="mb-3 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                    <div className="mb-3 flex items-center justify-between border-b pb-3">
                         <button
                             type="button"
                             onClick={handlePrevMonth}
-                            className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-md p-1 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            className="text-muted-foreground hover:bg-accent hover:text-foreground rounded-md p-1 transition-colors"
+                            aria-label="Bulan sebelumnya"
                         >
-                            <ChevronLeft className="h-4 w-4" />
+                            <ChevronLeft className="size-4" />
                         </button>
 
                         <div className="flex items-center gap-1">
                             <select
                                 value={viewMonth}
                                 onChange={(e) => setViewMonth(Number(e.target.value))}
-                                className="hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100 cursor-pointer rounded-md border-0 bg-white dark:bg-zinc-900 p-0 px-1 py-0.5 pr-6 text-xs font-semibold focus:ring-0"
+                                className="bg-popover text-popover-foreground hover:bg-accent cursor-pointer rounded-md border-0 px-1 py-0.5 pr-6 text-sm font-semibold focus:ring-0"
+                                aria-label="Pilih bulan"
                             >
                                 {monthNames.map((name, idx) => (
-                                    <option key={name} value={idx} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                                    <option key={name} value={idx}>
                                         {name}
                                     </option>
                                 ))}
@@ -206,10 +218,11 @@ export function DatePicker({
                             <select
                                 value={viewYear}
                                 onChange={(e) => setViewYear(Number(e.target.value))}
-                                className="hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100 cursor-pointer rounded-md border-0 bg-white dark:bg-zinc-900 p-0 px-1 py-0.5 pr-6 text-xs font-semibold focus:ring-0"
+                                className="bg-popover text-popover-foreground hover:bg-accent cursor-pointer rounded-md border-0 px-1 py-0.5 pr-6 text-sm font-semibold focus:ring-0"
+                                aria-label="Pilih tahun"
                             >
                                 {yearsOptions.map((y) => (
-                                    <option key={y} value={y} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
+                                    <option key={y} value={y}>
                                         {y}
                                     </option>
                                 ))}
@@ -219,14 +232,15 @@ export function DatePicker({
                         <button
                             type="button"
                             onClick={handleNextMonth}
-                            className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-md p-1 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            className="text-muted-foreground hover:bg-accent hover:text-foreground rounded-md p-1 transition-colors"
+                            aria-label="Bulan berikutnya"
                         >
-                            <ChevronRight className="h-4 w-4" />
+                            <ChevronRight className="size-4" />
                         </button>
                     </div>
 
                     {/* Weekdays */}
-                    <div className="text-muted-foreground mb-1 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold">
+                    <div className="text-muted-foreground mb-1 grid grid-cols-7 gap-1 text-center text-xs font-semibold">
                         <div>Min</div>
                         <div>Sen</div>
                         <div>Sel</div>
