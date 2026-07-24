@@ -28,11 +28,29 @@ interface CashFlowProps {
     investingItems: CashItem[];
     financingItems: CashItem[];
     totalOperating: number;
+    totalOperatingLastYear: number;
+    totalOperatingIn: number;
+    totalOperatingOut: number;
+    totalOperatingInLastYear: number;
+    totalOperatingOutLastYear: number;
     totalInvesting: number;
+    totalInvestingLastYear: number;
+    totalInvestingIn: number;
+    totalInvestingOut: number;
+    totalInvestingInLastYear: number;
+    totalInvestingOutLastYear: number;
     totalFinancing: number;
+    totalFinancingLastYear: number;
+    totalFinancingIn: number;
+    totalFinancingOut: number;
+    totalFinancingInLastYear: number;
+    totalFinancingOutLastYear: number;
     beginningCash: number;
+    beginningCashLastYear: number;
     endingCash: number;
+    endingCashLastYear: number;
     netChange: number;
+    netChangeLastYear: number;
     filters: {
         start_date: string;
         end_date: string;
@@ -44,11 +62,29 @@ export default function CashFlow({
     investingItems,
     financingItems,
     totalOperating,
+    totalOperatingLastYear,
+    totalOperatingIn,
+    totalOperatingOut,
+    totalOperatingInLastYear,
+    totalOperatingOutLastYear,
     totalInvesting,
+    totalInvestingLastYear,
+    totalInvestingIn,
+    totalInvestingOut,
+    totalInvestingInLastYear,
+    totalInvestingOutLastYear,
     totalFinancing,
+    totalFinancingLastYear,
+    totalFinancingIn,
+    totalFinancingOut,
+    totalFinancingInLastYear,
+    totalFinancingOutLastYear,
     beginningCash,
+    beginningCashLastYear,
     endingCash,
+    endingCashLastYear,
     netChange,
+    netChangeLastYear,
     filters,
 }: CashFlowProps) {
     const { errors } = usePage().props;
@@ -124,113 +160,8 @@ export default function CashFlow({
         return formatRupiah(value);
     };
 
-    const renderActivitySection = (title: string, items: CashItem[], totalActivity: number) => {
-        const receipts = items.filter((item) => (parseFloat(item.cash_in as string) || 0) > 0);
-        const disbursements = items.filter((item) => (parseFloat(item.cash_out as string) || 0) > 0);
-
-        const totalReceipts = receipts.reduce((sum, item) => sum + (parseFloat(item.cash_in as string) || 0), 0);
-        const totalDisbursements = disbursements.reduce((sum, item) => sum + (parseFloat(item.cash_out as string) || 0), 0);
-
-        const sectionName = title.toLowerCase().replace('arus kas dari ', '');
-
-        return (
-            <>
-                {/* Section Header */}
-                <tr className="bg-neutral-100 dark:bg-neutral-900/60 font-bold border-b text-foreground">
-                    <td className="px-4 py-2.5 text-left text-sm uppercase tracking-wide" colSpan={3}>
-                        {title}
-                    </td>
-                </tr>
-
-                {/* Receipts Subheader */}
-                <tr className="font-semibold text-foreground border-b bg-neutral-50/40 dark:bg-neutral-900/10 italic">
-                    <td className="px-4 py-2 pl-6 text-left" colSpan={3}>
-                        Penerimaan kas
-                    </td>
-                </tr>
-                {receipts.length === 0 ? (
-                    <tr className="border-b text-neutral-400">
-                        <td className="px-4 py-2 pl-10 text-left italic text-xs" colSpan={3}>
-                            Tidak ada penerimaan kas
-                        </td>
-                    </tr>
-                ) : (
-                    receipts.map((item, idx) => (
-                        <tr key={`rec-${idx}`} className="border-b hover:bg-neutral-50/50 dark:hover:bg-neutral-900/10">
-                            <td className="px-4 py-2 pl-10 text-left text-sm">
-                                <span className="text-foreground font-medium">{item.keterangan}</span>
-                                <span className="text-muted-foreground block font-mono text-[9px] print:hidden">
-                                    {item.nomor_jurnal} &bull; {formatDateSlash(item.tanggal)}
-                                </span>
-                            </td>
-                            <td className="px-4 py-2 text-right font-mono text-sm text-foreground">
-                                {formatRupiah(parseFloat(item.cash_in as string))}
-                            </td>
-                            <td className="px-4 py-2 text-right font-mono text-neutral-400 text-sm">
-                                -
-                            </td>
-                        </tr>
-                    ))
-                )}
-                <tr className="font-semibold border-b bg-neutral-50/10">
-                    <td className="px-4 py-2.5 pl-8 text-left text-sm">Total penerimaan kas</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-neutral-400 text-sm">-</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-sm text-foreground">
-                        {formatRupiah(totalReceipts)}
-                    </td>
-                </tr>
-
-                {/* Disbursements Subheader */}
-                <tr className="font-semibold text-foreground border-b bg-neutral-50/40 dark:bg-neutral-900/10 italic">
-                    <td className="px-4 py-2 pl-6 text-left" colSpan={3}>
-                        Pengeluaran kas
-                    </td>
-                </tr>
-                {disbursements.length === 0 ? (
-                    <tr className="border-b text-neutral-400">
-                        <td className="px-4 py-2 pl-10 text-left italic text-xs" colSpan={3}>
-                            Tidak ada pengeluaran kas
-                        </td>
-                    </tr>
-                ) : (
-                    disbursements.map((item, idx) => (
-                        <tr key={`dis-${idx}`} className="border-b hover:bg-neutral-50/50 dark:hover:bg-neutral-900/10">
-                            <td className="px-4 py-2 pl-10 text-left text-sm">
-                                <span className="text-foreground font-medium">{item.keterangan}</span>
-                                <span className="text-muted-foreground block font-mono text-[9px] print:hidden">
-                                    {item.nomor_jurnal} &bull; {formatDateSlash(item.tanggal)}
-                                </span>
-                            </td>
-                            <td className="px-4 py-2 text-right font-mono text-sm text-foreground">
-                                {formatRupiah(parseFloat(item.cash_out as string))}
-                            </td>
-                            <td className="px-4 py-2 text-right font-mono text-neutral-400 text-sm">
-                                -
-                            </td>
-                        </tr>
-                    ))
-                )}
-                <tr className="font-semibold border-b bg-neutral-50/10">
-                    <td className="px-4 py-2.5 pl-8 text-left text-sm">Total pengeluaran kas</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-neutral-400 text-sm">-</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-sm text-red-600 dark:text-red-400">
-                        {totalDisbursements > 0 ? `(${formatRupiah(totalDisbursements)})` : formatRupiah(0)}
-                    </td>
-                </tr>
-
-                {/* Section Summary */}
-                <tr className="font-bold border-b bg-neutral-50/50 dark:bg-neutral-900/20 text-foreground">
-                    <td className="px-4 py-2.5 pl-6 text-left text-sm">
-                        Arus kas bersih dari {sectionName}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono text-neutral-400 text-sm">-</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-sm font-semibold">
-                        {formatParenthesis(totalActivity)}
-                    </td>
-                </tr>
-            </>
-        );
-    };
+    const currentYear = new Date(filters.end_date).getFullYear();
+    const lastYear = currentYear - 1;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -307,40 +238,96 @@ export default function CashFlow({
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-left">
+                        <table className="w-full border-collapse text-left text-sm">
                             <thead>
-                                <tr className="border-b-2 bg-neutral-50 dark:bg-neutral-900/40">
-                                    <th className="px-4 py-3 font-semibold text-sm text-neutral-600 dark:text-neutral-400">Uraian</th>
-                                    <th className="px-4 py-3 text-right font-semibold text-sm text-neutral-600 dark:text-neutral-400 w-48">Nilai Transaksi</th>
-                                    <th className="px-4 py-3 text-right font-semibold text-sm text-neutral-600 dark:text-neutral-400 w-48">Total Sub/Aktivitas</th>
+                                <tr className="border-b bg-neutral-50 dark:bg-neutral-900/40 text-[10px] uppercase font-bold text-muted-foreground">
+                                    <th className="px-4 py-3 font-semibold text-left">Uraian</th>
+                                    <th className="px-4 py-3 text-right font-semibold w-40 font-mono">{currentYear}</th>
+                                    <th className="px-4 py-3 text-right font-semibold w-40 font-mono text-muted-foreground">{lastYear}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {renderActivitySection('Arus kas dari aktivitas operasi', operatingItems, totalOperating)}
-                                {renderActivitySection('Arus kas dari aktivitas investasi', investingItems, totalInvesting)}
-                                {renderActivitySection('Arus kas dari aktivitas pendanaan', financingItems, totalFinancing)}
-                                
-                                {/* Final Cash Balance summary matching image layout */}
-                                <tr className="bg-neutral-50/50 dark:bg-neutral-900/30 border-t-2 font-semibold">
-                                    <td className="px-4 py-3 text-sm text-foreground">Kenaikan (Penurunan) Bersih Kas</td>
-                                    <td className="px-4 py-3 text-right font-mono text-neutral-400">-</td>
-                                    <td className="px-4 py-3 text-right font-mono text-sm text-foreground">
-                                        {formatParenthesis(netChange)}
+                                {/* OPERATING ACTIVITY */}
+                                <tr className="bg-neutral-100/50 dark:bg-neutral-900/40 font-bold border-b text-foreground">
+                                    <td className="px-4 py-2.5 text-left text-xs uppercase tracking-wide" colSpan={3}>
+                                        Arus Kas Dari Aktivitas Operasi
                                     </td>
+                                </tr>
+                                <tr className="border-b hover:bg-neutral-50/20 dark:hover:bg-neutral-900/5">
+                                    <td className="px-4 py-2 pl-6 text-left">Penerimaan Kas</td>
+                                    <td className="px-4 py-2 text-right font-mono">{formatRupiah(totalOperatingIn)}</td>
+                                    <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatRupiah(totalOperatingInLastYear)}</td>
+                                </tr>
+                                <tr className="border-b hover:bg-neutral-50/20 dark:hover:bg-neutral-900/5">
+                                    <td className="px-4 py-2 pl-6 text-left">Pengeluaran Kas</td>
+                                    <td className="px-4 py-2 text-right font-mono text-red-600 dark:text-red-400">{totalOperatingOut > 0 ? `(${formatRupiah(totalOperatingOut)})` : formatRupiah(0)}</td>
+                                    <td className="px-4 py-2 text-right font-mono text-red-500/80 dark:text-red-500/80">{totalOperatingOutLastYear > 0 ? `(${formatRupiah(totalOperatingOutLastYear)})` : formatRupiah(0)}</td>
+                                </tr>
+                                <tr className="font-semibold border-b bg-neutral-50/30 dark:bg-neutral-900/10 text-foreground">
+                                    <td className="px-4 py-2.5 pl-6 text-left">Arus kas bersih dari aktivitas operasi</td>
+                                    <td className="px-4 py-2.5 text-right font-mono">{formatParenthesis(totalOperating)}</td>
+                                    <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{formatParenthesis(totalOperatingLastYear)}</td>
+                                </tr>
+
+                                {/* INVESTING ACTIVITY */}
+                                <tr className="bg-neutral-100/50 dark:bg-neutral-900/40 font-bold border-b text-foreground mt-4">
+                                    <td className="px-4 py-2.5 text-left text-xs uppercase tracking-wide" colSpan={3}>
+                                        Arus Kas Dari Aktivitas Investasi
+                                    </td>
+                                </tr>
+                                <tr className="border-b hover:bg-neutral-50/20 dark:hover:bg-neutral-900/5">
+                                    <td className="px-4 py-2 pl-6 text-left">Penerimaan Kas</td>
+                                    <td className="px-4 py-2 text-right font-mono">{formatRupiah(totalInvestingIn)}</td>
+                                    <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatRupiah(totalInvestingInLastYear)}</td>
+                                </tr>
+                                <tr className="border-b hover:bg-neutral-50/20 dark:hover:bg-neutral-900/5">
+                                    <td className="px-4 py-2 pl-6 text-left">Pengeluaran Kas</td>
+                                    <td className="px-4 py-2 text-right font-mono text-red-600 dark:text-red-400">{totalInvestingOut > 0 ? `(${formatRupiah(totalInvestingOut)})` : formatRupiah(0)}</td>
+                                    <td className="px-4 py-2 text-right font-mono text-red-500/80 dark:text-red-500/80">{totalInvestingOutLastYear > 0 ? `(${formatRupiah(totalInvestingOutLastYear)})` : formatRupiah(0)}</td>
+                                </tr>
+                                <tr className="font-semibold border-b bg-neutral-50/30 dark:bg-neutral-900/10 text-foreground">
+                                    <td className="px-4 py-2.5 pl-6 text-left">Arus kas bersih dari aktivitas investasi</td>
+                                    <td className="px-4 py-2.5 text-right font-mono">{formatParenthesis(totalInvesting)}</td>
+                                    <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{formatParenthesis(totalInvestingLastYear)}</td>
+                                </tr>
+
+                                {/* FINANCING ACTIVITY */}
+                                <tr className="bg-neutral-100/50 dark:bg-neutral-900/40 font-bold border-b text-foreground mt-4">
+                                    <td className="px-4 py-2.5 text-left text-xs uppercase tracking-wide" colSpan={3}>
+                                        Arus Kas Dari Aktivitas Pendanaan
+                                    </td>
+                                </tr>
+                                <tr className="border-b hover:bg-neutral-50/20 dark:hover:bg-neutral-900/5">
+                                    <td className="px-4 py-2 pl-6 text-left">Penerimaan Kas</td>
+                                    <td className="px-4 py-2 text-right font-mono">{formatRupiah(totalFinancingIn)}</td>
+                                    <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatRupiah(totalFinancingInLastYear)}</td>
+                                </tr>
+                                <tr className="border-b hover:bg-neutral-50/20 dark:hover:bg-neutral-900/5">
+                                    <td className="px-4 py-2 pl-6 text-left">Pengeluaran Kas</td>
+                                    <td className="px-4 py-2 text-right font-mono text-red-600 dark:text-red-400">{totalFinancingOut > 0 ? `(${formatRupiah(totalFinancingOut)})` : formatRupiah(0)}</td>
+                                    <td className="px-4 py-2 text-right font-mono text-red-500/80 dark:text-red-500/80">{totalFinancingOutLastYear > 0 ? `(${formatRupiah(totalFinancingOutLastYear)})` : formatRupiah(0)}</td>
+                                </tr>
+                                <tr className="font-semibold border-b bg-neutral-50/30 dark:bg-neutral-900/10 text-foreground">
+                                    <td className="px-4 py-2.5 pl-6 text-left">Arus kas bersih dari aktivitas pendanaan</td>
+                                    <td className="px-4 py-2.5 text-right font-mono">{formatParenthesis(totalFinancing)}</td>
+                                    <td className="px-4 py-2.5 text-right font-mono text-muted-foreground">{formatParenthesis(totalFinancingLastYear)}</td>
+                                </tr>
+
+                                {/* Final Cash Balance summary */}
+                                <tr className="bg-neutral-50/50 dark:bg-neutral-900/30 border-t-2 font-semibold">
+                                    <td className="px-4 py-3 text-foreground">Kenaikan (Penurunan) Bersih Kas</td>
+                                    <td className="px-4 py-3 text-right font-mono">{formatParenthesis(netChange)}</td>
+                                    <td className="px-4 py-3 text-right font-mono text-muted-foreground">{formatParenthesis(netChangeLastYear)}</td>
                                 </tr>
                                 <tr className="border-b font-semibold">
-                                    <td className="px-4 py-3 text-sm text-foreground">Saldo Kas Awal Periode</td>
-                                    <td className="px-4 py-3 text-right font-mono text-neutral-400">-</td>
-                                    <td className="px-4 py-3 text-right font-mono text-sm text-foreground">
-                                        {formatRupiah(beginningCash)}
-                                    </td>
+                                    <td className="px-4 py-3 text-foreground">Saldo Kas Awal Periode</td>
+                                    <td className="px-4 py-3 text-right font-mono">{formatRupiah(beginningCash)}</td>
+                                    <td className="px-4 py-3 text-right font-mono text-muted-foreground">{formatRupiah(beginningCashLastYear)}</td>
                                 </tr>
                                 <tr className="bg-neutral-100/50 dark:bg-neutral-900/40 border-b-2 font-bold text-foreground">
-                                    <td className="px-4 py-3 text-sm uppercase">Saldo Kas Akhir Periode</td>
-                                    <td className="px-4 py-3 text-right font-mono text-neutral-400">-</td>
-                                    <td className="px-4 py-3 text-right font-mono text-base text-emerald-600 dark:text-emerald-400">
-                                        {formatRupiah(endingCash)}
-                                    </td>
+                                    <td className="px-4 py-3 uppercase">Saldo Kas Akhir Periode</td>
+                                    <td className="px-4 py-3 text-right font-mono text-base text-emerald-600 dark:text-emerald-400">{formatRupiah(endingCash)}</td>
+                                    <td className="px-4 py-3 text-right font-mono text-base text-emerald-500/80 dark:text-emerald-500/80">{formatRupiah(endingCashLastYear)}</td>
                                 </tr>
                             </tbody>
                         </table>

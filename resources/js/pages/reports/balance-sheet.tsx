@@ -22,13 +22,17 @@ interface Account {
 }
 
 interface BalanceSheetProps {
-    assets: Account[];
-    liabilities: Account[];
-    equity: Account[];
+    assets: (Account & { saldo_last_year: number })[];
+    liabilities: (Account & { saldo_last_year: number })[];
+    equity: (Account & { saldo_last_year: number })[];
     totalAssets: number;
+    totalAssetsLastYear: number;
     totalLiabilities: number;
+    totalLiabilitiesLastYear: number;
     totalEquity: number;
+    totalEquityLastYear: number;
     totalLiabilitiesAndEquity: number;
+    totalLiabilitiesAndEquityLastYear: number;
     filters: {
         end_date: string;
     };
@@ -39,12 +43,19 @@ export default function BalanceSheet({
     liabilities,
     equity,
     totalAssets,
+    totalAssetsLastYear,
     totalLiabilities,
+    totalLiabilitiesLastYear,
     totalEquity,
+    totalEquityLastYear,
     totalLiabilitiesAndEquity,
+    totalLiabilitiesAndEquityLastYear,
     filters,
 }: BalanceSheetProps) {
     const [endDate, setEndDate] = useState(filters.end_date);
+
+    const currentYear = new Date(filters.end_date).getFullYear();
+    const lastYear = currentYear - 1;
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
@@ -158,19 +169,28 @@ export default function BalanceSheet({
                                 <div className="space-y-2">
                                     <h4 className="text-muted-foreground text-sm font-semibold">Aset Tetap & Aset Lancar</h4>
                                     <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="text-muted-foreground border-b border-border/40 text-[10px] font-bold uppercase">
+                                                <th className="py-2 font-semibold text-left">Kode</th>
+                                                <th className="py-2 font-semibold text-left">Nama Akun</th>
+                                                <th className="w-28 py-2 text-right font-semibold font-mono">{currentYear}</th>
+                                                <th className="w-28 py-2 text-right font-semibold font-mono text-muted-foreground">{lastYear}</th>
+                                            </tr>
+                                        </thead>
                                         <tbody>
                                             {assets.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={2} className="text-muted-foreground py-2 text-center">
+                                                    <td colSpan={4} className="text-muted-foreground py-2 text-center">
                                                         Tidak ada saldo aset.
                                                     </td>
                                                 </tr>
                                             ) : (
                                                 assets.map((item) => (
                                                     <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
-                                                        <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
+                                                        <td className="text-muted-foreground w-20 py-2.5 font-mono text-xs">{item.kode_akun}</td>
                                                         <td className="py-2.5 font-medium">{item.nama_akun}</td>
                                                         <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
+                                                        <td className="py-2.5 text-right font-mono text-muted-foreground">{formatRupiah(item.saldo_last_year || 0)}</td>
                                                     </tr>
                                                 ))
                                             )}
@@ -180,7 +200,16 @@ export default function BalanceSheet({
                             </div>
                             <div className="bg-muted/30 border-border flex items-center justify-between rounded-lg border-t-2 p-3">
                                 <span className="text-sm font-bold uppercase">TOTAL ASET</span>
-                                <span className="text-primary font-mono text-base font-bold">{formatRupiah(totalAssets)}</span>
+                                <div className="flex gap-6 text-right">
+                                    <div>
+                                        <div className="text-[10px] text-muted-foreground uppercase font-bold">{currentYear}</div>
+                                        <span className="text-primary font-mono text-base font-bold">{formatRupiah(totalAssets)}</span>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-muted-foreground uppercase font-bold">{lastYear}</div>
+                                        <span className="text-muted-foreground font-mono text-base font-medium">{formatRupiah(totalAssetsLastYear)}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -192,19 +221,28 @@ export default function BalanceSheet({
                                     <h3 className="text-primary text-lg font-bold uppercase">2. KEWAJIBAN (UTANG)</h3>
                                 </div>
                                 <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="text-muted-foreground border-b border-border/40 text-[10px] font-bold uppercase">
+                                            <th className="py-2 font-semibold text-left">Kode</th>
+                                            <th className="py-2 font-semibold text-left">Nama Akun</th>
+                                            <th className="w-28 py-2 text-right font-semibold font-mono">{currentYear}</th>
+                                            <th className="w-28 py-2 text-right font-semibold font-mono text-muted-foreground">{lastYear}</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
                                         {liabilities.length === 0 ? (
                                             <tr>
-                                                <td colSpan={2} className="text-muted-foreground py-2 text-center">
+                                                <td colSpan={4} className="text-muted-foreground py-2 text-center">
                                                     Tidak ada saldo kewajiban.
                                                 </td>
                                             </tr>
                                         ) : (
                                             liabilities.map((item) => (
                                                 <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
-                                                    <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
+                                                    <td className="text-muted-foreground w-20 py-2.5 font-mono text-xs">{item.kode_akun}</td>
                                                     <td className="py-2.5 font-medium">{item.nama_akun}</td>
                                                     <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
+                                                    <td className="py-2.5 text-right font-mono text-muted-foreground">{formatRupiah(item.saldo_last_year || 0)}</td>
                                                 </tr>
                                             ))
                                         )}
@@ -212,7 +250,16 @@ export default function BalanceSheet({
                                 </table>
                                 <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
                                     <span className="text-xs font-semibold uppercase">Total Kewajiban</span>
-                                    <span className="font-mono text-sm font-bold">{formatRupiah(totalLiabilities)}</span>
+                                    <div className="flex gap-4 text-right">
+                                        <div>
+                                            <span className="text-[10px] text-muted-foreground block font-bold">{currentYear}</span>
+                                            <span className="font-mono text-sm font-bold">{formatRupiah(totalLiabilities)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] text-muted-foreground block font-bold">{lastYear}</span>
+                                            <span className="font-mono text-sm text-muted-foreground font-medium">{formatRupiah(totalLiabilitiesLastYear)}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -222,35 +269,71 @@ export default function BalanceSheet({
                                     <h3 className="text-primary text-lg font-bold uppercase">3. EKUITAS (MODAL)</h3>
                                 </div>
                                 <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="text-muted-foreground border-b border-border/40 text-[10px] font-bold uppercase">
+                                            <th className="py-2 font-semibold text-left">Kode</th>
+                                            <th className="py-2 font-semibold text-left">Nama Akun</th>
+                                            <th className="w-28 py-2 text-right font-semibold font-mono">{currentYear}</th>
+                                            <th className="w-28 py-2 text-right font-semibold font-mono text-muted-foreground">{lastYear}</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
                                         {equity.map((item) => (
                                             <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
-                                                <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
+                                                <td className="text-muted-foreground w-20 py-2.5 font-mono text-xs">{item.kode_akun}</td>
                                                 <td className="py-2.5 font-medium">{item.nama_akun}</td>
                                                 <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
+                                                <td className="py-2.5 text-right font-mono text-muted-foreground">{formatRupiah(item.saldo_last_year || 0)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                                 <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
                                     <span className="text-xs font-semibold uppercase">Total Ekuitas</span>
-                                    <span className="font-mono text-sm font-bold">{formatRupiah(totalEquity)}</span>
+                                    <div className="flex gap-4 text-right">
+                                        <div>
+                                            <span className="text-[10px] text-muted-foreground block font-bold">{currentYear}</span>
+                                            <span className="font-mono text-sm font-bold">{formatRupiah(totalEquity)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] text-muted-foreground block font-bold">{lastYear}</span>
+                                            <span className="font-mono text-sm text-muted-foreground font-medium">{formatRupiah(totalEquityLastYear)}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* LIABILITIES + EQUITY TOTAL */}
                             <div className="bg-muted/30 border-border flex items-center justify-between rounded-lg border-t-2 p-3">
                                 <span className="text-sm font-bold uppercase">TOTAL KEWAJIBAN & EKUITAS</span>
-                                <span className="text-primary font-mono text-base font-bold">{formatRupiah(totalLiabilitiesAndEquity)}</span>
+                                <div className="flex gap-6 text-right">
+                                    <div>
+                                        <div className="text-[10px] text-muted-foreground uppercase font-bold">{currentYear}</div>
+                                        <span className="text-primary font-mono text-base font-bold">{formatRupiah(totalLiabilitiesAndEquity)}</span>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] text-muted-foreground uppercase font-bold">{lastYear}</div>
+                                        <span className="text-muted-foreground font-mono text-base font-medium">{formatRupiah(totalLiabilitiesAndEquityLastYear)}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Balance Check */}
-                    {Math.abs(totalAssets - totalLiabilitiesAndEquity) > 0.01 && (
+                    {(Math.abs(totalAssets - totalLiabilitiesAndEquity) > 0.01 || Math.abs(totalAssetsLastYear - totalLiabilitiesAndEquityLastYear) > 0.01) && (
                         <div className="bg-destructive/10 border-destructive/20 text-destructive mt-8 rounded-lg border p-4 text-center text-sm font-medium print:hidden">
-                            Peringatan: Posisi Neraca tidak seimbang! Selisih Aset vs (Kewajiban+Ekuitas) sebesar{' '}
-                            {formatRupiah(Math.abs(totalAssets - totalLiabilitiesAndEquity))}
+                            Peringatan: Posisi Laporan Posisi Keuangan tidak seimbang!
+                            {Math.abs(totalAssets - totalLiabilitiesAndEquity) > 0.01 && (
+                                <div className="mt-1">
+                                    Selisih {currentYear}: {formatRupiah(Math.abs(totalAssets - totalLiabilitiesAndEquity))}
+                                </div>
+                            )}
+                            {Math.abs(totalAssetsLastYear - totalLiabilitiesAndEquityLastYear) > 0.01 && (
+                                <div className="mt-1">
+                                    Selisih {lastYear}: {formatRupiah(Math.abs(totalAssetsLastYear - totalLiabilitiesAndEquityLastYear))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

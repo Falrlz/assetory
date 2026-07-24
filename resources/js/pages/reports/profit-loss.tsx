@@ -23,22 +23,38 @@ interface Account {
 }
 
 interface ProfitLossProps {
-    revenues: Account[];
-    expenses: Account[];
+    revenues: (Account & { saldo_last_year: number })[];
+    expenses: (Account & { saldo_last_year: number })[];
     totalRevenues: number;
+    totalRevenuesLastYear: number;
     totalExpenses: number;
+    totalExpensesLastYear: number;
     netProfit: number;
+    netProfitLastYear: number;
     filters: {
         start_date: string;
         end_date: string;
     };
 }
 
-export default function ProfitLoss({ revenues, expenses, totalRevenues, totalExpenses, netProfit, filters }: ProfitLossProps) {
+export default function ProfitLoss({
+    revenues,
+    expenses,
+    totalRevenues,
+    totalRevenuesLastYear,
+    totalExpenses,
+    totalExpensesLastYear,
+    netProfit,
+    netProfitLastYear,
+    filters,
+}: ProfitLossProps) {
     const { errors } = usePage().props;
     const [startDate, setStartDate] = useState(filters.start_date);
     const [endDate, setEndDate] = useState(filters.end_date);
     const [localError, setLocalError] = useState<string | null>(null);
+
+    const currentYear = new Date(filters.end_date).getFullYear();
+    const lastYear = currentYear - 1;
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
@@ -177,89 +193,134 @@ export default function ProfitLoss({ revenues, expenses, totalRevenues, totalExp
                     </div>
 
                     <div className="mb-8 hidden text-center md:block print:hidden">
-                        <h2 className="text-md text-muted-foreground font-semibold uppercase">Laporan Kinerja Keuangan</h2>
-                        <h1 className="text-foreground mt-0.5 text-2xl font-bold">LAPORAN LABA RUGI</h1>
-                        <p className="text-muted-foreground mt-1 text-sm">Periode {formatDateRange(filters.start_date, filters.end_date)}</p>
-                    </div>
+                                    <h2 className="text-md text-muted-foreground font-semibold uppercase">Laporan Kinerja Keuangan</h2>
+                                    <h1 className="text-foreground mt-0.5 text-2xl font-bold">LAPORAN LABA RUGI</h1>
+                                    <p className="text-muted-foreground mt-1 text-sm">Periode {formatDateRange(filters.start_date, filters.end_date)}</p>
+                                </div>
 
-                    <div className="space-y-8">
-                        {/* REVENUES SECTION */}
-                        <div className="space-y-3">
-                            <div className="border-b pb-1">
-                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">PENDAPATAN</h3>
-                            </div>
-                            <table className="w-full text-sm">
-                                <tbody>
-                                    {revenues.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={2} className="text-muted-foreground py-2 text-center">
-                                                Tidak ada pendapatan tercatat.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        revenues.map((item) => (
-                                            <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
-                                                <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
-                                                <td className="py-2.5 font-medium">{item.nama_akun}</td>
-                                                <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                            <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
-                                <span className="text-sm font-semibold">TOTAL PENDAPATAN</span>
-                                <span className="font-mono text-sm font-bold">{formatRupiah(totalRevenues)}</span>
-                            </div>
-                        </div>
+                                <div className="space-y-8">
+                                    {/* REVENUES SECTION */}
+                                    <div className="space-y-3">
+                                        <div className="border-b pb-1">
+                                            <h3 className="text-primary text-sm font-bold tracking-wider uppercase">PENDAPATAN</h3>
+                                        </div>
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="text-muted-foreground border-b border-border/40 text-[10px] font-bold uppercase">
+                                                    <th className="py-2 font-semibold text-left">Kode</th>
+                                                    <th className="py-2 font-semibold text-left">Nama Akun</th>
+                                                    <th className="w-28 py-2 text-right font-semibold font-mono">{currentYear}</th>
+                                                    <th className="w-28 py-2 text-right font-semibold font-mono text-muted-foreground">{lastYear}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {revenues.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={4} className="text-muted-foreground py-2 text-center">
+                                                            Tidak ada pendapatan tercatat.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    revenues.map((item) => (
+                                                        <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
+                                                            <td className="text-muted-foreground w-20 py-2.5 font-mono text-xs">{item.kode_akun}</td>
+                                                            <td className="py-2.5 font-medium">{item.nama_akun}</td>
+                                                            <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
+                                                            <td className="py-2.5 text-right font-mono text-muted-foreground">{formatRupiah(item.saldo_last_year || 0)}</td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                        <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
+                                            <span className="text-xs font-semibold uppercase">TOTAL PENDAPATAN</span>
+                                            <div className="flex gap-4 text-right">
+                                                <div>
+                                                    <span className="text-[10px] text-muted-foreground block font-bold">{currentYear}</span>
+                                                    <span className="font-mono text-sm font-bold">{formatRupiah(totalRevenues)}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[10px] text-muted-foreground block font-bold">{lastYear}</span>
+                                                    <span className="font-mono text-sm text-muted-foreground font-medium">{formatRupiah(totalRevenuesLastYear)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                        {/* EXPENSES SECTION */}
-                        <div className="space-y-3">
-                            <div className="border-b pb-1">
-                                <h3 className="text-primary text-sm font-bold tracking-wider uppercase">BEBAN OPERASIONAL & PENYUSUTAN</h3>
-                            </div>
-                            <table className="w-full text-sm">
-                                <tbody>
-                                    {expenses.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={2} className="text-muted-foreground py-2 text-center">
-                                                Tidak ada beban tercatat.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        expenses.map((item) => (
-                                            <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
-                                                <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
-                                                <td className="py-2.5 font-medium">{item.nama_akun}</td>
-                                                <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                            <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
-                                <span className="text-sm font-semibold">TOTAL BEBAN</span>
-                                <span className="font-mono text-sm font-bold">{formatRupiah(totalExpenses)}</span>
-                            </div>
-                        </div>
+                                    {/* EXPENSES SECTION */}
+                                    <div className="space-y-3">
+                                        <div className="border-b pb-1">
+                                            <h3 className="text-primary text-sm font-bold tracking-wider uppercase">BEBAN OPERASIONAL & PENYUSUTAN</h3>
+                                        </div>
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="text-muted-foreground border-b border-border/40 text-[10px] font-bold uppercase">
+                                                    <th className="py-2 font-semibold text-left">Kode</th>
+                                                    <th className="py-2 font-semibold text-left">Nama Akun</th>
+                                                    <th className="w-28 py-2 text-right font-semibold font-mono">{currentYear}</th>
+                                                    <th className="w-28 py-2 text-right font-semibold font-mono text-muted-foreground">{lastYear}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {expenses.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={4} className="text-muted-foreground py-2 text-center">
+                                                            Tidak ada beban tercatat.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    expenses.map((item) => (
+                                                        <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
+                                                            <td className="text-muted-foreground w-20 py-2.5 font-mono text-xs">{item.kode_akun}</td>
+                                                            <td className="py-2.5 font-medium">{item.nama_akun}</td>
+                                                            <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
+                                                            <td className="py-2.5 text-right font-mono text-muted-foreground">{formatRupiah(item.saldo_last_year || 0)}</td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                        <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
+                                            <span className="text-xs font-semibold uppercase">TOTAL BEBAN</span>
+                                            <div className="flex gap-4 text-right">
+                                                <div>
+                                                    <span className="text-[10px] text-muted-foreground block font-bold">{currentYear}</span>
+                                                    <span className="font-mono text-sm font-bold">{formatRupiah(totalExpenses)}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[10px] text-muted-foreground block font-bold">{lastYear}</span>
+                                                    <span className="font-mono text-sm text-muted-foreground font-medium">{formatRupiah(totalExpensesLastYear)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                        {/* NET PROFIT/LOSS FOOTER */}
-                        <div
-                            className={`flex items-center justify-between rounded-xl border-2 p-4 ${
-                                netProfit >= 0
-                                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
-                                    : 'border-red-500/20 bg-red-500/10 text-red-700 dark:bg-red-950/20 dark:text-red-400'
-                            }`}
-                        >
-                            <div className="flex items-center gap-2">
-                                {netProfit >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-                                <span className="text-sm font-bold uppercase md:text-base">
-                                    {netProfit >= 0 ? 'LABA BERSIH (NET INCOME)' : 'RUGI BERSIH (NET LOSS)'}
-                                </span>
+                                    {/* NET PROFIT/LOSS FOOTER */}
+                                    <div
+                                        className={`flex items-center justify-between rounded-xl border-2 p-4 ${
+                                            netProfit >= 0
+                                                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
+                                                : 'border-red-500/20 bg-red-500/10 text-red-700 dark:bg-red-950/20 dark:text-red-400'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {netProfit >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+                                            <span className="text-sm font-bold uppercase md:text-base">
+                                                {netProfit >= 0 ? 'LABA BERSIH (NET INCOME)' : 'RUGI BERSIH (NET LOSS)'}
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-6 text-right">
+                                            <div>
+                                                <span className="text-[10px] text-muted-foreground block font-bold">{currentYear}</span>
+                                                <span className="font-mono text-base font-bold md:text-lg">{formatRupiah(netProfit)}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-muted-foreground block font-bold">{lastYear}</span>
+                                                <span className="font-mono text-base text-muted-foreground font-medium md:text-lg">{formatRupiah(netProfitLastYear)}</span>
+                                            </div>
+                                        </div>
+                                </div>
                             </div>
-                            <span className="font-mono text-lg font-bold md:text-xl">{formatRupiah(netProfit)}</span>
-                        </div>
-                    </div>
                 </div>
             </div>
         </AppLayout>

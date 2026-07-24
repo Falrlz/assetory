@@ -137,13 +137,14 @@ class ReportController extends Controller
     {
         $user = $request->user();
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
-        $startDate = Carbon::parse($endDate)->startOfYear()->toDateString(); // For cumulative calculation up to end_date
+        $prevEndDate = Carbon::parse($endDate)->subYear()->toDateString();
 
         // Get all accounts
         $allCoas = $user->coas()
             ->orderBy('kode_akun')
             ->get()
-            ->map(function ($coa) use ($user, $endDate) {
+            ->map(function ($coa) use ($user, $endDate, $prevEndDate) {
+                // Current Year
                 $sums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
@@ -152,14 +153,28 @@ class ReportController extends Controller
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
 
+                // Last Year
+                $prevSums = DB::table('journal_items')
+                    ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                    ->where('journals.user_id', $user->id)
+                    ->where('journal_items.coa_id', $coa->id)
+                    ->where('journals.tanggal', '<=', $prevEndDate) // Cumulative since beginning of last year
+                    ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
+                    ->first();
+
                 $coa->total_debit = (float) $sums->total_debit;
                 $coa->total_kredit = (float) $sums->total_kredit;
 
-                // Net balance
+                $coa->total_debit_last_year = (float) $prevSums->total_debit;
+                $coa->total_kredit_last_year = (float) $prevSums->total_kredit;
+
+                // Net balance Current Year
                 if ($coa->saldo_normal === 'debit') {
                     $coa->saldo = $coa->total_debit - $coa->total_kredit;
+                    $coa->saldo_last_year = $coa->total_debit_last_year - $coa->total_kredit_last_year;
                 } else {
                     $coa->saldo = $coa->total_kredit - $coa->total_debit;
+                    $coa->saldo_last_year = $coa->total_kredit_last_year - $coa->total_debit_last_year;
                 }
 
                 return $coa;
@@ -175,6 +190,10 @@ class ReportController extends Controller
         $expenses = $allCoas->filter(fn ($coa) => $coa->kategori === 'beban' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
         $currentEarnings = $revenues - $expenses;
 
+        $revenuesLastYear = $allCoas->filter(fn ($coa) => $coa->kategori === 'pendapatan' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo_last_year');
+        $expensesLastYear = $allCoas->filter(fn ($coa) => $coa->kategori === 'beban' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo_last_year');
+        $currentEarningsLastYear = $revenuesLastYear - $expensesLastYear;
+
         // Add current earnings to Equity list
         $equity->push((object) [
             'id' => 99999,
@@ -182,20 +201,30 @@ class ReportController extends Controller
             'nama_akun' => 'Laba (Rugi) Tahun Berjalan',
             'kategori' => 'ekuitas',
             'saldo' => $currentEarnings,
+            'saldo_last_year' => $currentEarningsLastYear,
         ]);
 
         $totalAssets = $assets->sum('saldo');
+        $totalAssetsLastYear = $assets->sum('saldo_last_year');
+
         $totalLiabilities = $liabilities->sum('saldo');
+        $totalLiabilitiesLastYear = $liabilities->sum('saldo_last_year');
+
         $totalEquity = $equity->sum('saldo');
+        $totalEquityLastYear = $equity->sum('saldo_last_year');
 
         return Inertia::render('reports/balance-sheet', [
             'assets' => $assets,
             'liabilities' => $liabilities,
             'equity' => $equity,
             'totalAssets' => $totalAssets,
+            'totalAssetsLastYear' => $totalAssetsLastYear,
             'totalLiabilities' => $totalLiabilities,
+            'totalLiabilitiesLastYear' => $totalLiabilitiesLastYear,
             'totalEquity' => $totalEquity,
+            'totalEquityLastYear' => $totalEquityLastYear,
             'totalLiabilitiesAndEquity' => $totalLiabilities + $totalEquity,
+            'totalLiabilitiesAndEquityLastYear' => $totalLiabilitiesLastYear + $totalEquityLastYear,
             'filters' => [
                 'end_date' => $endDate,
             ],
@@ -223,11 +252,15 @@ class ReportController extends Controller
             ]);
         }
 
+        $prevStartDate = Carbon::parse($startDate)->subYear()->toDateString();
+        $prevEndDate = Carbon::parse($endDate)->subYear()->toDateString();
+
         // Get accounts
         $allCoas = $user->coas()
             ->orderBy('kode_akun')
             ->get()
-            ->map(function ($coa) use ($user, $startDate, $endDate) {
+            ->map(function ($coa) use ($user, $startDate, $endDate, $prevStartDate, $prevEndDate) {
+                // Current Year
                 $sums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
@@ -240,14 +273,32 @@ class ReportController extends Controller
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
 
+                // Last Year
+                $prevSums = DB::table('journal_items')
+                    ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+                    ->where('journals.user_id', $user->id)
+                    ->where('journal_items.coa_id', $coa->id)
+                    ->whereBetween('journals.tanggal', [$prevStartDate, $prevEndDate])
+                    ->where(function ($query) {
+                        $query->whereNotIn('journals.jenis_transaksi', ['saldo_awal', 'jurnal_penutup'])
+                            ->orWhereNull('journals.jenis_transaksi');
+                    })
+                    ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
+                    ->first();
+
                 $coa->total_debit = (float) $sums->total_debit;
                 $coa->total_kredit = (float) $sums->total_kredit;
+
+                $coa->total_debit_last_year = (float) $prevSums->total_debit;
+                $coa->total_kredit_last_year = (float) $prevSums->total_kredit;
 
                 // Net balance
                 if ($coa->saldo_normal === 'debit') {
                     $coa->saldo = $coa->total_debit - $coa->total_kredit;
+                    $coa->saldo_last_year = $coa->total_debit_last_year - $coa->total_kredit_last_year;
                 } else {
                     $coa->saldo = $coa->total_kredit - $coa->total_debit;
+                    $coa->saldo_last_year = $coa->total_kredit_last_year - $coa->total_debit_last_year;
                 }
 
                 return $coa;
@@ -257,15 +308,23 @@ class ReportController extends Controller
         $expenses = $allCoas->filter(fn ($coa) => $coa->kategori === 'beban' && count(explode('.', $coa->kode_akun)) === 4)->values();
 
         $totalRevenues = $revenues->sum('saldo');
+        $totalRevenuesLastYear = $revenues->sum('saldo_last_year');
+
         $totalExpenses = $expenses->sum('saldo');
+        $totalExpensesLastYear = $expenses->sum('saldo_last_year');
+
         $netProfit = $totalRevenues - $totalExpenses;
+        $netProfitLastYear = $totalRevenuesLastYear - $totalExpensesLastYear;
 
         return Inertia::render('reports/profit-loss', [
             'revenues' => $revenues,
             'expenses' => $expenses,
             'totalRevenues' => $totalRevenues,
+            'totalRevenuesLastYear' => $totalRevenuesLastYear,
             'totalExpenses' => $totalExpenses,
+            'totalExpensesLastYear' => $totalExpensesLastYear,
             'netProfit' => $netProfit,
+            'netProfitLastYear' => $netProfitLastYear,
             'filters' => [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
@@ -293,6 +352,9 @@ class ReportController extends Controller
                 'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
             ]);
         }
+
+        $prevStartDate = Carbon::parse($startDate)->subYear()->toDateString();
+        $prevEndDate = Carbon::parse($endDate)->subYear()->toDateString();
 
         // Retrieve cash flow items matching cash accounts (excluding setup beginning balance)
         $cashItems = DB::table('journal_items')
@@ -324,6 +386,35 @@ class ReportController extends Controller
             )
             ->get();
 
+        // Last Year items
+        $prevCashItems = DB::table('journal_items')
+            ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+            ->join('coas', 'journal_items.coa_id', '=', 'coas.id')
+            ->where('journals.user_id', $user->id)
+            ->whereBetween('journals.tanggal', [$prevStartDate, $prevEndDate])
+            ->where(function ($query) {
+                $query->where('journals.jenis_transaksi', '!=', 'saldo_awal')
+                    ->orWhereNull('journals.jenis_transaksi');
+            })
+            ->where(function ($query) {
+                $query->where('coas.kategori', 'aset')
+                    ->where(function ($q) {
+                        $q->where('coas.kode_akun', 'like', '01.1%')
+                            ->orWhere('coas.kode_akun', 'like', '1-1%')
+                            ->orWhere('coas.nama_akun', 'like', '%Kas%')
+                            ->orWhere('coas.nama_akun', 'like', '%Bank%');
+                    });
+            })
+            ->select(
+                'journals.kategori_arus_kas',
+                'journals.keterangan',
+                'journals.tanggal',
+                'journals.nomor_jurnal',
+                'journal_items.debit as cash_in',
+                'journal_items.kredit as cash_out'
+            )
+            ->get();
+
         // Group by cash flow categories
         $operating = $cashItems->filter(fn ($item) => $item->kategori_arus_kas === 'operasional');
         $investing = $cashItems->filter(fn ($item) => $item->kategori_arus_kas === 'investasi');
@@ -333,8 +424,32 @@ class ReportController extends Controller
         $totalInvesting = $investing->sum('cash_in') - $investing->sum('cash_out');
         $totalFinancing = $financing->sum('cash_in') - $financing->sum('cash_out');
 
+        $totalOperatingIn = (float) $operating->sum('cash_in');
+        $totalOperatingOut = (float) $operating->sum('cash_out');
+        $totalInvestingIn = (float) $investing->sum('cash_in');
+        $totalInvestingOut = (float) $investing->sum('cash_out');
+        $totalFinancingIn = (float) $financing->sum('cash_in');
+        $totalFinancingOut = (float) $financing->sum('cash_out');
+
+        // Last Year groups
+        $prevOperating = $prevCashItems->filter(fn ($item) => $item->kategori_arus_kas === 'operasional');
+        $prevInvesting = $prevCashItems->filter(fn ($item) => $item->kategori_arus_kas === 'investasi');
+        $prevFinancing = $prevCashItems->filter(fn ($item) => $item->kategori_arus_kas === 'pendanaan');
+
+        $totalOperatingLastYear = $prevOperating->sum('cash_in') - $prevOperating->sum('cash_out');
+        $totalInvestingLastYear = $prevInvesting->sum('cash_in') - $prevInvesting->sum('cash_out');
+        $totalFinancingLastYear = $prevFinancing->sum('cash_in') - $prevFinancing->sum('cash_out');
+
+        $totalOperatingInLastYear = (float) $prevOperating->sum('cash_in');
+        $totalOperatingOutLastYear = (float) $prevOperating->sum('cash_out');
+        $totalInvestingInLastYear = (float) $prevInvesting->sum('cash_in');
+        $totalInvestingOutLastYear = (float) $prevInvesting->sum('cash_out');
+        $totalFinancingInLastYear = (float) $prevFinancing->sum('cash_in');
+        $totalFinancingOutLastYear = (float) $prevFinancing->sum('cash_out');
+
         // Net change in cash
         $netChange = $totalOperating + $totalInvesting + $totalFinancing;
+        $netChangeLastYear = $totalOperatingLastYear + $totalInvestingLastYear + $totalFinancingLastYear;
 
         // Calculate beginning cash (transactions before start_date or setup beginning balance)
         $beginningCash = DB::table('journal_items')
@@ -357,18 +472,58 @@ class ReportController extends Controller
             ->selectRaw('COALESCE(SUM(journal_items.debit - journal_items.kredit), 0) as balance')
             ->value('balance');
 
+        // Calculate beginning cash for last year
+        $beginningCashLastYear = DB::table('journal_items')
+            ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
+            ->join('coas', 'journal_items.coa_id', '=', 'coas.id')
+            ->where('journals.user_id', $user->id)
+            ->where(function ($query) use ($prevStartDate) {
+                $query->where('journals.tanggal', '<', $prevStartDate)
+                    ->orWhere('journals.jenis_transaksi', 'saldo_awal');
+            })
+            ->where(function ($query) {
+                $query->where('coas.kategori', 'aset')
+                    ->where(function ($q) {
+                        $q->where('coas.kode_akun', 'like', '01.1%')
+                            ->orWhere('coas.kode_akun', 'like', '1-1%')
+                            ->orWhere('coas.nama_akun', 'like', '%Kas%')
+                            ->orWhere('coas.nama_akun', 'like', '%Bank%');
+                    });
+            })
+            ->selectRaw('COALESCE(SUM(journal_items.debit - journal_items.kredit), 0) as balance')
+            ->value('balance');
+
         $endingCash = $beginningCash + $netChange;
+        $endingCashLastYear = $beginningCashLastYear + $netChangeLastYear;
 
         return Inertia::render('reports/cash-flow', [
             'operatingItems' => $operating->values(),
             'investingItems' => $investing->values(),
             'financingItems' => $financing->values(),
             'totalOperating' => $totalOperating,
+            'totalOperatingLastYear' => $totalOperatingLastYear,
+            'totalOperatingIn' => $totalOperatingIn,
+            'totalOperatingOut' => $totalOperatingOut,
+            'totalOperatingInLastYear' => $totalOperatingInLastYear,
+            'totalOperatingOutLastYear' => $totalOperatingOutLastYear,
             'totalInvesting' => $totalInvesting,
+            'totalInvestingLastYear' => $totalInvestingLastYear,
+            'totalInvestingIn' => $totalInvestingIn,
+            'totalInvestingOut' => $totalInvestingOut,
+            'totalInvestingInLastYear' => $totalInvestingInLastYear,
+            'totalInvestingOutLastYear' => $totalInvestingOutLastYear,
             'totalFinancing' => $totalFinancing,
+            'totalFinancingLastYear' => $totalFinancingLastYear,
+            'totalFinancingIn' => $totalFinancingIn,
+            'totalFinancingOut' => $totalFinancingOut,
+            'totalFinancingInLastYear' => $totalFinancingInLastYear,
+            'totalFinancingOutLastYear' => $totalFinancingOutLastYear,
             'beginningCash' => (float) $beginningCash,
+            'beginningCashLastYear' => (float) $beginningCashLastYear,
             'endingCash' => (float) $endingCash,
+            'endingCashLastYear' => (float) $endingCashLastYear,
             'netChange' => $netChange,
+            'netChangeLastYear' => $netChangeLastYear,
             'filters' => [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
