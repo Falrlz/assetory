@@ -113,6 +113,23 @@ export default function TrialBalance({
 
     const difference = Math.abs(totalAkhirDebit - totalAkhirKredit);
 
+    let totalLrDebit = 0;
+    let totalLrKredit = 0;
+    let totalLpkDebit = 0;
+    let totalLpkKredit = 0;
+
+    coas.forEach((coa) => {
+        if (coa.jenis_laporan === 'LR') {
+            totalLrDebit += Number(coa.saldo_akhir_debit) || 0;
+            totalLrKredit += Number(coa.saldo_akhir_kredit) || 0;
+        } else if (coa.jenis_laporan === 'LPK') {
+            totalLpkDebit += Number(coa.saldo_akhir_debit) || 0;
+            totalLpkKredit += Number(coa.saldo_akhir_kredit) || 0;
+        }
+    });
+
+    const netIncome = totalLrKredit - totalLrDebit;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Neraca Saldo (Trial Balance)" />
@@ -189,7 +206,7 @@ export default function TrialBalance({
                     </div>
 
                     <div className="w-full overflow-x-auto">
-                        <table className="w-full min-w-[800px] border-collapse text-left text-sm">
+                        <table className="w-full min-w-[1250px] border-collapse text-left text-sm">
                             <thead>
                                 <tr className="bg-muted/40 text-muted-foreground border-b text-center text-[11px] font-semibold tracking-wider uppercase print:bg-transparent">
                                     <th className="w-40 px-4 py-3 text-left" rowSpan={2}>
@@ -204,12 +221,22 @@ export default function TrialBalance({
                                     <th className="border-r px-4 py-3 text-center" colSpan={2}>
                                         Mutasi
                                     </th>
-                                    <th className="px-4 py-3 text-center" colSpan={2}>
+                                    <th className="border-r px-4 py-3 text-center" colSpan={2}>
                                         Saldo Akhir
+                                    </th>
+                                    <th className="border-r px-4 py-3 text-center" colSpan={2}>
+                                        Laba Rugi
+                                    </th>
+                                    <th className="px-4 py-3 text-center" colSpan={2}>
+                                        Posisi Keuangan
                                     </th>
                                 </tr>
                                 <tr className="bg-muted/40 text-muted-foreground border-b text-right text-[10px] font-semibold tracking-wider uppercase print:bg-transparent">
                                     <th className="border-l px-4 py-2 text-right">Debit</th>
+                                    <th className="border-r px-4 py-2 text-right">Kredit</th>
+                                    <th className="px-4 py-2 text-right">Debit</th>
+                                    <th className="border-r px-4 py-2 text-right">Kredit</th>
+                                    <th className="px-4 py-2 text-right">Debit</th>
                                     <th className="border-r px-4 py-2 text-right">Kredit</th>
                                     <th className="px-4 py-2 text-right">Debit</th>
                                     <th className="border-r px-4 py-2 text-right">Kredit</th>
@@ -220,64 +247,129 @@ export default function TrialBalance({
                             <tbody className="divide-y">
                                 {coas.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="text-muted-foreground px-6 py-12 text-center">
+                                        <td colSpan={12} className="text-muted-foreground px-6 py-12 text-center">
                                             Tidak ada transaksi pada periode ini.
                                         </td>
                                     </tr>
                                 ) : (
-                                    coas.map((coa) => (
-                                        <tr key={coa.id} className="hover:bg-muted/30 transition-colors print:hover:bg-transparent">
-                                            <td className="px-4 py-3 font-mono font-medium">{coa.kode_akun}</td>
-                                            <td className="px-4 py-3 font-medium">{coa.nama_akun}</td>
+                                    coas.map((coa) => {
+                                        const isLr = coa.jenis_laporan === 'LR';
+                                        const isLpk = coa.jenis_laporan === 'LPK';
+                                        return (
+                                            <tr key={coa.id} className="hover:bg-muted/30 transition-colors print:hover:bg-transparent">
+                                                <td className="px-4 py-3 font-mono font-medium">{coa.kode_akun}</td>
+                                                <td className="px-4 py-3 font-medium">{coa.nama_akun}</td>
 
-                                            {/* Saldo Awal */}
-                                            <td className="text-muted-foreground border-l px-4 py-3 text-right font-mono">
-                                                {coa.saldo_awal_debit > 0 ? formatRupiah(coa.saldo_awal_debit) : '-'}
-                                            </td>
-                                            <td className="text-muted-foreground border-r px-4 py-3 text-right font-mono">
-                                                {coa.saldo_awal_kredit > 0 ? formatRupiah(coa.saldo_awal_kredit) : '-'}
-                                            </td>
+                                                {/* Saldo Awal */}
+                                                <td className="text-muted-foreground border-l px-4 py-3 text-right font-mono">
+                                                    {coa.saldo_awal_debit > 0 ? formatRupiah(coa.saldo_awal_debit) : '-'}
+                                                </td>
+                                                <td className="text-muted-foreground border-r px-4 py-3 text-right font-mono">
+                                                    {coa.saldo_awal_kredit > 0 ? formatRupiah(coa.saldo_awal_kredit) : '-'}
+                                                </td>
 
-                                            {/* Mutasi */}
-                                            <td className="px-4 py-3 text-right font-mono">
-                                                {coa.mutasi_debit > 0 ? formatRupiah(coa.mutasi_debit) : '-'}
-                                            </td>
-                                            <td className="border-r px-4 py-3 text-right font-mono">
-                                                {coa.mutasi_kredit > 0 ? formatRupiah(coa.mutasi_kredit) : '-'}
-                                            </td>
+                                                {/* Mutasi */}
+                                                <td className="px-4 py-3 text-right font-mono">
+                                                    {coa.mutasi_debit > 0 ? formatRupiah(coa.mutasi_debit) : '-'}
+                                                </td>
+                                                <td className="border-r px-4 py-3 text-right font-mono">
+                                                    {coa.mutasi_kredit > 0 ? formatRupiah(coa.mutasi_kredit) : '-'}
+                                                </td>
 
-                                            {/* Saldo Akhir */}
-                                            <td className="text-foreground px-4 py-3 text-right font-mono font-semibold">
-                                                {coa.saldo_akhir_debit > 0 ? formatRupiah(coa.saldo_akhir_debit) : '-'}
-                                            </td>
-                                            <td className="text-foreground px-4 py-3 text-right font-mono font-semibold">
-                                                {coa.saldo_akhir_kredit > 0 ? formatRupiah(coa.saldo_akhir_kredit) : '-'}
-                                            </td>
-                                        </tr>
-                                    ))
+                                                {/* Saldo Akhir */}
+                                                <td className="text-foreground px-4 py-3 text-right font-mono font-semibold">
+                                                    {coa.saldo_akhir_debit > 0 ? formatRupiah(coa.saldo_akhir_debit) : '-'}
+                                                </td>
+                                                <td className="text-foreground border-r px-4 py-3 text-right font-mono font-semibold">
+                                                    {coa.saldo_akhir_kredit > 0 ? formatRupiah(coa.saldo_akhir_kredit) : '-'}
+                                                </td>
+
+                                                {/* Laba Rugi */}
+                                                <td className="text-foreground px-4 py-3 text-right font-mono">
+                                                    {isLr && coa.saldo_akhir_debit > 0 ? formatRupiah(coa.saldo_akhir_debit) : '-'}
+                                                </td>
+                                                <td className="text-foreground border-r px-4 py-3 text-right font-mono">
+                                                    {isLr && coa.saldo_akhir_kredit > 0 ? formatRupiah(coa.saldo_akhir_kredit) : '-'}
+                                                </td>
+
+                                                {/* Posisi Keuangan */}
+                                                <td className="text-foreground px-4 py-3 text-right font-mono">
+                                                    {isLpk && coa.saldo_akhir_debit > 0 ? formatRupiah(coa.saldo_akhir_debit) : '-'}
+                                                </td>
+                                                <td className="text-foreground px-4 py-3 text-right font-mono">
+                                                    {isLpk && coa.saldo_akhir_kredit > 0 ? formatRupiah(coa.saldo_akhir_kredit) : '-'}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                             <tfoot>
-                                <tr className="bg-muted/50 border-border border-t-2 text-right font-bold print:bg-transparent">
-                                    <td colSpan={2} className="px-4 py-3 text-left text-base">
-                                        TOTAL
+                                {/* Total Belum Laba/Rugi Bersih */}
+                                <tr className="bg-muted/30 border-t border-b font-semibold text-right text-xs">
+                                    <td colSpan={2} className="px-4 py-3 text-left">
+                                        TOTAL SEBELUM LABA/RUGI
                                     </td>
+                                    <td className="border-l px-4 py-3 font-mono">{formatRupiah(totalAwalDebit)}</td>
+                                    <td className="border-r px-4 py-3 font-mono">{formatRupiah(totalAwalKredit)}</td>
+                                    <td className="px-4 py-3 font-mono">{formatRupiah(totalMutasiDebit)}</td>
+                                    <td className="border-r px-4 py-3 font-mono">{formatRupiah(totalMutasiKredit)}</td>
+                                    <td className="px-4 py-3 font-mono">{formatRupiah(totalAkhirDebit)}</td>
+                                    <td className="border-r px-4 py-3 font-mono">{formatRupiah(totalAkhirKredit)}</td>
+                                    <td className="px-4 py-3 font-mono">{formatRupiah(totalLrDebit)}</td>
+                                    <td className="border-r px-4 py-3 font-mono">{formatRupiah(totalLrKredit)}</td>
+                                    <td className="px-4 py-3 font-mono">{formatRupiah(totalLpkDebit)}</td>
+                                    <td className="px-4 py-3 font-mono">{formatRupiah(totalLpkKredit)}</td>
+                                </tr>
 
-                                    {/* Total Saldo Awal */}
-                                    <td className="text-muted-foreground border-l px-4 py-3 text-right font-mono text-base">
-                                        {formatRupiah(totalAwalDebit)}
+                                {/* Laba/Rugi Bersih */}
+                                <tr className="bg-emerald-50/20 dark:bg-emerald-950/10 italic text-right text-xs font-semibold">
+                                    <td colSpan={2} className="px-4 py-3 text-left text-emerald-600 dark:text-emerald-400 font-bold">
+                                        {netIncome >= 0 ? 'LABA BERSIH TAHUN BERJALAN' : 'RUGI BERSIH TAHUN BERJALAN'}
                                     </td>
-                                    <td className="text-muted-foreground border-r px-4 py-3 text-right font-mono text-base">
-                                        {formatRupiah(totalAwalKredit)}
+                                    <td className="border-l px-4 py-3">-</td>
+                                    <td className="border-r px-4 py-3">-</td>
+                                    <td className="px-4 py-3">-</td>
+                                    <td className="border-r px-4 py-3">-</td>
+                                    <td className="px-4 py-3">-</td>
+                                    <td className="border-r px-4 py-3">-</td>
+                                    <td className="px-4 py-3 font-mono text-emerald-600 dark:text-emerald-400">
+                                        {netIncome >= 0 ? formatRupiah(netIncome) : '-'}
                                     </td>
+                                    <td className="border-r px-4 py-3 font-mono text-emerald-600 dark:text-emerald-400">
+                                        {netIncome < 0 ? formatRupiah(Math.abs(netIncome)) : '-'}
+                                    </td>
+                                    <td className="px-4 py-3 font-mono text-emerald-600 dark:text-emerald-400">
+                                        {netIncome < 0 ? formatRupiah(Math.abs(netIncome)) : '-'}
+                                    </td>
+                                    <td className="px-4 py-3 font-mono text-emerald-600 dark:text-emerald-400">
+                                        {netIncome >= 0 ? formatRupiah(netIncome) : '-'}
+                                    </td>
+                                </tr>
 
-                                    {/* Total Mutasi */}
-                                    <td className="px-4 py-3 text-right font-mono text-base">{formatRupiah(totalMutasiDebit)}</td>
-                                    <td className="border-r px-4 py-3 text-right font-mono text-base">{formatRupiah(totalMutasiKredit)}</td>
-
-                                    {/* Total Saldo Akhir */}
-                                    <td className="text-foreground px-4 py-3 text-right font-mono text-base">{formatRupiah(totalAkhirDebit)}</td>
-                                    <td className="text-foreground px-4 py-3 text-right font-mono text-base">{formatRupiah(totalAkhirKredit)}</td>
+                                {/* Total Seimbang */}
+                                <tr className="bg-muted/50 border-t-2 border-b border-border font-bold text-right text-xs print:bg-transparent">
+                                    <td colSpan={2} className="px-4 py-3 text-left text-sm">
+                                        TOTAL AKHIR
+                                    </td>
+                                    <td className="border-l px-4 py-3 font-mono">{formatRupiah(totalAwalDebit)}</td>
+                                    <td className="border-r px-4 py-3 font-mono">{formatRupiah(totalAwalKredit)}</td>
+                                    <td className="px-4 py-3 font-mono">{formatRupiah(totalMutasiDebit)}</td>
+                                    <td className="border-r px-4 py-3 font-mono">{formatRupiah(totalMutasiKredit)}</td>
+                                    <td className="px-4 py-3 font-mono">{formatRupiah(totalAkhirDebit)}</td>
+                                    <td className="border-r px-4 py-3 font-mono">{formatRupiah(totalAkhirKredit)}</td>
+                                    <td className="px-4 py-3 font-mono">
+                                        {formatRupiah(totalLrDebit + (netIncome >= 0 ? netIncome : 0))}
+                                    </td>
+                                    <td className="border-r px-4 py-3 font-mono">
+                                        {formatRupiah(totalLrKredit + (netIncome < 0 ? Math.abs(netIncome) : 0))}
+                                    </td>
+                                    <td className="px-4 py-3 font-mono">
+                                        {formatRupiah(totalLpkDebit + (netIncome < 0 ? Math.abs(netIncome) : 0))}
+                                    </td>
+                                    <td className="px-4 py-3 font-mono">
+                                        {formatRupiah(totalLpkKredit + (netIncome >= 0 ? netIncome : 0))}
+                                    </td>
                                 </tr>
                             </tfoot>
                         </table>
