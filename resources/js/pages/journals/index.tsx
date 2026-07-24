@@ -828,8 +828,11 @@ export default function Index({
                                                         <table className="w-full min-w-[850px] border-collapse text-left text-sm">
                                                             <thead>
                                                                 <tr className="bg-muted/10 text-muted-foreground border-t border-b text-center text-xs font-bold tracking-wider uppercase">
-                                                                    <th className="border-border/40 border-r px-6 py-3 text-left" rowSpan={2}>
+                                                                    <th className="border-border/40 border-r px-6 py-3 text-left w-32" rowSpan={2}>
                                                                         Tanggal
+                                                                    </th>
+                                                                    <th className="border-border/40 border-r px-6 py-3 text-left w-48" rowSpan={2}>
+                                                                        No. Referensi
                                                                     </th>
                                                                     <th className="border-border/40 border-r px-6 py-3 text-left" rowSpan={2}>
                                                                         Uraian Transaksi
@@ -852,6 +855,9 @@ export default function Index({
                                                             <tbody className="divide-y font-mono">
                                                                 {/* Saldo Awal (Opening Balance) Row */}
                                                                 <tr className="bg-muted/5 hover:bg-muted/10 italic transition-colors">
+                                                                    <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
+                                                                        -
+                                                                    </td>
                                                                     <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
                                                                         -
                                                                     </td>
@@ -891,11 +897,11 @@ export default function Index({
                                                                             <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
                                                                                 {formatDate(item.tanggal)}
                                                                             </td>
-                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 font-sans font-medium">
-                                                                                {item.nomor_jurnal} &bull;{' '}
-                                                                                <span className="text-muted-foreground text-xs font-normal">
-                                                                                    {item.keterangan}
-                                                                                </span>
+                                                                            <td className="text-foreground border-border/40 border-r px-6 py-3 font-sans font-bold">
+                                                                                {item.nomor_jurnal}
+                                                                            </td>
+                                                                            <td className="text-muted-foreground border-border/40 border-r px-6 py-3 font-sans">
+                                                                                {item.keterangan}
                                                                             </td>
                                                                             <td className="text-foreground border-border/40 border-r px-6 py-3 text-right">
                                                                                 {isDeb ? formatIDR(item.debit) : '-'}
@@ -916,7 +922,7 @@ export default function Index({
                                                             {/* Subtotal Row */}
                                                             <tfoot>
                                                                 <tr className="bg-muted/30 text-foreground border-t font-sans font-bold">
-                                                                    <td className="border-border/40 border-r px-6 py-3" colSpan={2}>
+                                                                    <td className="border-border/40 border-r px-6 py-3" colSpan={3}>
                                                                         Total
                                                                     </td>
                                                                     <td className="border-border/40 border-r px-6 py-3 text-right font-mono">
