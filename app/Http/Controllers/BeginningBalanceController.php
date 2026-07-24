@@ -54,7 +54,7 @@ class BeginningBalanceController extends Controller
 
         return Inertia::render('beginning-balances/index', [
             'coas' => $coas,
-            'openingDate' => $openingJournal ? $openingJournal->tanggal : date('Y').'-01-01',
+            'openingDate' => $openingJournal ? $openingJournal->tanggal->toDateString() : date('Y').'-01-01',
         ]);
     }
 

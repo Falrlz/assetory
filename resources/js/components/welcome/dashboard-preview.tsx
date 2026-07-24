@@ -64,7 +64,13 @@ export function DashboardPreview() {
                             +18,4%
                         </span>
                     </div>
-                    <svg viewBox="0 0 320 96" preserveAspectRatio="none" className="mt-2.5 h-16 w-full sm:h-24 lg:h-16 xl:h-20" role="presentation" focusable="false">
+                    <svg
+                        viewBox="0 0 320 96"
+                        preserveAspectRatio="none"
+                        className="mt-2.5 h-16 w-full sm:h-24 lg:h-16 xl:h-20"
+                        role="presentation"
+                        focusable="false"
+                    >
                         <defs>
                             <linearGradient id="assetory-preview-area" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />

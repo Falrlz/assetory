@@ -6,7 +6,7 @@ const reports = [
     {
         icon: FileText,
         tone: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400',
-        title: 'Neraca Keuangan',
+        title: 'Laporan Posisi Keuangan',
         caption: 'Laporan posisi keuangan',
     },
     {

@@ -159,4 +159,80 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    /* Tabular figures everywhere money is shown, so columns of digits line up. */
+    .font-mono {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+/*
+  Report pages are printed for audit and tax filing. Force a light, ink-friendly
+  rendering and stop tables from splitting a row across two sheets.
+*/
+@media print {
+    :root,
+    .dark {
+        --background: #fff;
+        --foreground: #000;
+        --card: #fff;
+        --card-foreground: #000;
+        --muted: #f5f5f5;
+        --muted-foreground: #404040;
+        --border: #d4d4d4;
+    }
+
+    @page {
+        margin: 16mm;
+    }
+
+    body {
+        background: #fff;
+    }
+
+    /*
+      Application chrome is screen-only; a printed report is just the document.
+      The sidebar root is the only element carrying all three data attributes.
+    */
+    [data-state][data-variant][data-side],
+    [data-sidebar='sidebar'],
+    [data-sidebar='rail'] {
+        display: none !important;
+    }
+
+    .group\/sidebar-wrapper,
+    .group\/sidebar-wrapper > * {
+        margin: 0 !important;
+        min-height: 0 !important;
+        box-shadow: none !important;
+    }
+
+    /* Wide tables must reflow onto paper rather than clip at the viewport edge. */
+    .overflow-x-auto,
+    .overflow-y-auto,
+    .overflow-hidden {
+        overflow: visible !important;
+    }
+
+    table {
+        min-width: 0 !important;
+        width: 100% !important;
+        font-size: 10pt;
+    }
+
+    thead {
+        display: table-header-group;
+    }
+
+    tr,
+    img,
+    svg {
+        break-inside: avoid;
+    }
+
+    h1,
+    h2,
+    h3 {
+        break-after: avoid;
+    }
 }

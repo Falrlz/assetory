@@ -1,7 +1,7 @@
 import AppLogoIcon from '@/components/app-logo-icon';
+import AppearanceToggleDropdown from '@/components/appearance-dropdown';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/welcome/container';
-import AppearanceToggleDropdown from '@/components/appearance-dropdown';
 import type { SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 
@@ -43,7 +43,7 @@ export function SiteHeader() {
 
                     <div className="flex items-center gap-2">
                         <AppearanceToggleDropdown />
-                        
+
                         {auth.user ? (
                             <Button asChild>
                                 <Link href={route('dashboard')}>Dashboard</Link>

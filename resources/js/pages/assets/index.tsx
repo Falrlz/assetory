@@ -1,12 +1,17 @@
+import { Field, FilterBar, PageHeader, PageShell, SectionHeading } from '@/components/page-header';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Table, TableBody, TableCell, TableContainer, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { Calculator, Calendar, ClipboardList, Coins, FileText, Plus, Search, TrendingDown, X } from 'lucide-react';
+import { Calculator, Calendar, ClipboardList, Coins, FileText, type LucideIcon, Plus, Search, TrendingDown, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -36,6 +41,21 @@ const PERIODE_BULAN: Record<string, number> = {
     periode_4: 240,
 };
 
+const BULAN_OPTIONS = [
+    ['01', 'Januari'],
+    ['02', 'Februari'],
+    ['03', 'Maret'],
+    ['04', 'April'],
+    ['05', 'Mei'],
+    ['06', 'Juni'],
+    ['07', 'Juli'],
+    ['08', 'Agustus'],
+    ['09', 'September'],
+    ['10', 'Oktober'],
+    ['11', 'November'],
+    ['12', 'Desember'],
+];
+
 interface ScheduleRow {
     bulanKe: number;
     periode: string;
@@ -43,6 +63,32 @@ interface ScheduleRow {
     akumulasiPenyusutan: number;
     nilaiBuku: number;
     isTerlewati: boolean;
+}
+
+/** Summary tile above the asset table; mirrors the dashboard KPI proportions. */
+function StatCard({
+    label,
+    value,
+    caption,
+    icon: Icon,
+    valueClassName,
+}: {
+    label: string;
+    value: string;
+    caption: string;
+    icon: LucideIcon;
+    valueClassName?: string;
+}) {
+    return (
+        <div className="bg-card rounded-xl border p-5 shadow-xs">
+            <div className="flex items-center justify-between gap-3">
+                <h2 className="text-muted-foreground text-xs font-medium">{label}</h2>
+                <Icon className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
+            </div>
+            <p className={cn('text-foreground mt-3 font-mono text-2xl font-bold tracking-tight tabular-nums', valueClassName)}>{value}</p>
+            <p className="text-muted-foreground mt-1.5 text-xs">{caption}</p>
+        </div>
+    );
 }
 
 export default function Index({ assets, assetJournals = [], coas = [] }: AssetsProps) {
@@ -74,13 +120,23 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
 
         const debitCoa = transactionCoas.find((coa) => {
             if (coa.kode_akun.startsWith('01.3000.01')) {
-                if (data.jenis === 'inventaris' && (coa.kode_akun === '01.3000.01.04' || coa.nama_akun.toLowerCase().includes('peralatan') || coa.nama_akun.toLowerCase().includes('inventaris'))) {
+                if (
+                    data.jenis === 'inventaris' &&
+                    (coa.kode_akun === '01.3000.01.04' ||
+                        coa.nama_akun.toLowerCase().includes('peralatan') ||
+                        coa.nama_akun.toLowerCase().includes('inventaris'))
+                ) {
                     return true;
                 }
                 if (data.jenis === 'kendaraan' && (coa.kode_akun === '01.3000.01.03' || coa.nama_akun.toLowerCase().includes('kendaraan'))) {
                     return true;
                 }
-                if (data.jenis === 'gedung' && (coa.kode_akun === '01.3000.01.02' || coa.nama_akun.toLowerCase().includes('gedung') || coa.nama_akun.toLowerCase().includes('bangunan'))) {
+                if (
+                    data.jenis === 'gedung' &&
+                    (coa.kode_akun === '01.3000.01.02' ||
+                        coa.nama_akun.toLowerCase().includes('gedung') ||
+                        coa.nama_akun.toLowerCase().includes('bangunan'))
+                ) {
                     return true;
                 }
             }
@@ -95,9 +151,9 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
             // Only set default Kredit if not already selected
             if (!nextData.coa_kredit_id) {
                 const defaultKreditCode = '01.1000.01.02';
-                let kreditCoa = transactionCoas.find(c => c.kode_akun === defaultKreditCode);
+                let kreditCoa = transactionCoas.find((c) => c.kode_akun === defaultKreditCode);
                 if (!kreditCoa) {
-                    kreditCoa = transactionCoas.find(c => c.kode_akun.startsWith('01.1000.'));
+                    kreditCoa = transactionCoas.find((c) => c.kode_akun.startsWith('01.1000.'));
                 }
                 if (kreditCoa) {
                     nextData.coa_kredit_id = kreditCoa.id.toString();
@@ -184,13 +240,23 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
     // Filter Debit COAs based on selected Asset Type
     const displayDebitCoas = transactionCoas.filter((coa) => {
         if (coa.kode_akun.startsWith('01.3000.01')) {
-            if (data.jenis === 'inventaris' && (coa.kode_akun === '01.3000.01.04' || coa.nama_akun.toLowerCase().includes('peralatan') || coa.nama_akun.toLowerCase().includes('inventaris'))) {
+            if (
+                data.jenis === 'inventaris' &&
+                (coa.kode_akun === '01.3000.01.04' ||
+                    coa.nama_akun.toLowerCase().includes('peralatan') ||
+                    coa.nama_akun.toLowerCase().includes('inventaris'))
+            ) {
                 return true;
             }
             if (data.jenis === 'kendaraan' && (coa.kode_akun === '01.3000.01.03' || coa.nama_akun.toLowerCase().includes('kendaraan'))) {
                 return true;
             }
-            if (data.jenis === 'gedung' && (coa.kode_akun === '01.3000.01.02' || coa.nama_akun.toLowerCase().includes('gedung') || coa.nama_akun.toLowerCase().includes('bangunan'))) {
+            if (
+                data.jenis === 'gedung' &&
+                (coa.kode_akun === '01.3000.01.02' ||
+                    coa.nama_akun.toLowerCase().includes('gedung') ||
+                    coa.nama_akun.toLowerCase().includes('bangunan'))
+            ) {
                 return true;
             }
         }
@@ -306,97 +372,70 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manajemen Aset & Penyusutan" />
 
-            <div className="flex h-full min-w-0 flex-1 flex-col gap-6 p-6">
-                {/* Header */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Daftar Aset</h1>
-                        <p className="text-muted-foreground text-sm">Kelola aset Anda dan pantau depresiasi otomatis dengan metode garis lurus.</p>
-                    </div>
-                    <Button onClick={() => setIsOpen(true)} className="w-full sm:w-auto">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Tambah Aset
-                    </Button>
-                </div>
+            <PageShell>
+                <PageHeader
+                    title="Daftar Aset"
+                    description="Kelola aset Anda dan pantau depresiasi otomatis dengan metode garis lurus."
+                    actions={
+                        <Button onClick={() => setIsOpen(true)}>
+                            <Plus />
+                            Tambah Aset
+                        </Button>
+                    }
+                />
 
                 {/* Summary Cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="bg-card rounded-xl border p-6 shadow-xs">
-                        <div className="flex items-center justify-between space-y-0 pb-2">
-                            <h3 className="text-sm font-medium">Total Aset</h3>
-                            <ClipboardList className="text-muted-foreground h-4 w-4" />
-                        </div>
-                        <div className="text-2xl font-bold">{totalAssets}</div>
-                        <p className="text-muted-foreground text-xs">Jumlah aset terdaftar</p>
-                    </div>
-
-                    <div className="bg-card rounded-xl border p-6 shadow-xs">
-                        <div className="flex items-center justify-between space-y-0 pb-2">
-                            <h3 className="text-sm font-medium">Total Nilai Perolehan</h3>
-                            <Coins className="text-muted-foreground h-4 w-4" />
-                        </div>
-                        <div className="text-2xl font-bold">{formatRupiah(totalHargaPerolehan)}</div>
-                        <p className="text-muted-foreground text-xs">Kapitalisasi aset awal</p>
-                    </div>
-
-                    <div className="bg-card rounded-xl border p-6 shadow-xs">
-                        <div className="flex items-center justify-between space-y-0 pb-2">
-                            <h3 className="text-sm font-medium">Akumulasi Depresiasi</h3>
-                            <TrendingDown className="text-muted-foreground h-4 w-4" />
-                        </div>
-                        <div className="text-2xl font-bold text-red-600 dark:text-red-400">{formatRupiah(totalAkumulasiPenyusutan)}</div>
-                        <p className="text-muted-foreground text-xs">Total nilai penyusutan berjalan</p>
-                    </div>
-
-                    <div className="bg-card rounded-xl border p-6 shadow-xs">
-                        <div className="flex items-center justify-between space-y-0 pb-2">
-                            <h3 className="text-sm font-medium">Total Nilai Buku</h3>
-                            <Calculator className="text-muted-foreground h-4 w-4" />
-                        </div>
-                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">{formatRupiah(totalNilaiBuku)}</div>
-                        <p className="text-muted-foreground text-xs">Sisa nilai ekonomis saat ini</p>
-                    </div>
+                    <StatCard label="Total Aset" value={String(totalAssets)} caption="Jumlah aset terdaftar" icon={ClipboardList} />
+                    <StatCard label="Total Nilai Perolehan" value={formatRupiah(totalHargaPerolehan)} caption="Kapitalisasi aset awal" icon={Coins} />
+                    <StatCard
+                        label="Akumulasi Depresiasi"
+                        value={formatRupiah(totalAkumulasiPenyusutan)}
+                        caption="Total nilai penyusutan berjalan"
+                        icon={TrendingDown}
+                        valueClassName="text-rose-600 dark:text-rose-400"
+                    />
+                    <StatCard
+                        label="Total Nilai Buku"
+                        value={formatRupiah(totalNilaiBuku)}
+                        caption="Sisa nilai ekonomis saat ini"
+                        icon={Calculator}
+                        valueClassName="text-emerald-600 dark:text-emerald-400"
+                    />
                 </div>
 
-                {/* Filter Controls (Placed Below Cards, Above Table) */}
-                <div className="bg-card grid grid-cols-1 items-end gap-4 rounded-xl border p-4 sm:grid-cols-2 md:grid-cols-5">
-                    {/* Searching */}
-                    <div className="relative grid flex-1 gap-1.5">
+                {/* Filter Controls */}
+                <FilterBar className="sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+                    <Field>
                         <Label htmlFor="search">Cari Nama Aset</Label>
                         <div className="relative">
-                            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+                            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                             <Input
                                 id="search"
+                                inputSize="sm"
                                 placeholder="Ketik nama aset..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-9 pl-9"
+                                className="pl-9"
                             />
                         </div>
-                    </div>
+                    </Field>
 
-                    {/* Filter Jenis */}
-                    <div className="grid gap-1.5">
+                    <Field>
                         <Label htmlFor="jenis_filter">Jenis Aset</Label>
-                        <select
-                            id="jenis_filter"
-                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
-                            value={filterJenis}
-                            onChange={(e) => setFilterJenis(e.target.value)}
-                        >
+                        <NativeSelect id="jenis_filter" selectSize="sm" value={filterJenis} onChange={(e) => setFilterJenis(e.target.value)}>
                             <option value="all">Semua Jenis</option>
                             <option value="inventaris">Inventaris</option>
                             <option value="kendaraan">Kendaraan</option>
                             <option value="gedung">Gedung</option>
-                        </select>
-                    </div>
+                        </NativeSelect>
+                    </Field>
 
-                    {/* Filter Tahun */}
-                    <div className="grid gap-1.5">
+                    <Field>
                         <Label htmlFor="tahun_filter">Tahun Perolehan</Label>
-                        <select
+                        <NativeSelect
                             id="tahun_filter"
-                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                            selectSize="sm"
                             value={filterTahun}
                             onChange={(e) => {
                                 setFilterTahun(e.target.value);
@@ -409,15 +448,14 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                     {yr}
                                 </option>
                             ))}
-                        </select>
-                    </div>
+                        </NativeSelect>
+                    </Field>
 
-                    {/* Filter Bulan */}
-                    <div className="grid gap-1.5">
+                    <Field>
                         <Label htmlFor="bulan_filter">Bulan Perolehan</Label>
-                        <select
+                        <NativeSelect
                             id="bulan_filter"
-                            className="border-input bg-background ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus:ring-2 focus:outline-hidden"
+                            selectSize="sm"
                             value={filterBulan}
                             onChange={(e) => {
                                 setFilterBulan(e.target.value);
@@ -425,225 +463,230 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                             }}
                         >
                             <option value="all">Semua Bulan</option>
-                            <option value="01">Januari</option>
-                            <option value="02">Februari</option>
-                            <option value="03">Maret</option>
-                            <option value="04">April</option>
-                            <option value="05">Mei</option>
-                            <option value="06">Juni</option>
-                            <option value="07">Juli</option>
-                            <option value="08">Agustus</option>
-                            <option value="09">September</option>
-                            <option value="10">Oktober</option>
-                            <option value="11">November</option>
-                            <option value="12">Desember</option>
-                        </select>
-                    </div>
+                            {BULAN_OPTIONS.map(([value, label]) => (
+                                <option key={value} value={value}>
+                                    {label}
+                                </option>
+                            ))}
+                        </NativeSelect>
+                    </Field>
 
-                    {/* Filter Tanggal Spesifik & Reset */}
                     <div className="flex items-end gap-2">
-                        <div className="grid flex-grow gap-1.5">
+                        <Field className="min-w-0 flex-1">
                             <Label htmlFor="tanggal_filter">Tanggal Spesifik</Label>
-                            <Input
+                            <DatePicker
                                 id="tanggal_filter"
-                                type="date"
+                                size="sm"
                                 value={filterTanggal}
-                                onChange={(e) => {
-                                    setFilterTanggal(e.target.value);
-                                    if (e.target.value) {
+                                onChange={(val) => {
+                                    setFilterTanggal(val);
+                                    if (val) {
                                         setFilterTahun('all');
                                         setFilterBulan('all');
                                     }
                                 }}
-                                className="h-9"
                             />
-                        </div>
+                        </Field>
                         {isFilterActive && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-9 flex-shrink-0 px-3"
-                                onClick={handleResetFilters}
-                                title="Reset Filter"
-                            >
-                                <X className="h-4 w-4" />
+                            <Button type="button" variant="outline" size="icon-sm" onClick={handleResetFilters} title="Reset filter">
+                                <X />
+                                <span className="sr-only">Reset filter</span>
                             </Button>
                         )}
                     </div>
-                </div>
+                </FilterBar>
 
-                {/* Table Section */}
-                <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
-                    <div className="w-full overflow-x-auto">
-                        <table className="w-full min-w-[1000px] border-collapse text-left">
-                            <thead>
-                                <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
-                                    <th className="px-6 py-4">Nama Aset</th>
-                                    <th className="px-6 py-4">Jenis</th>
-                                    <th className="px-6 py-4">Kelompok Umur</th>
-                                    <th className="px-6 py-4">Tgl Perolehan</th>
-                                    <th className="px-6 py-4 text-center">Umur (Bulan)</th>
-                                    <th className="px-6 py-4 text-right">Harga Perolehan</th>
-                                    <th className="px-6 py-4 text-right">Nilai Residu</th>
-                                    <th className="px-6 py-4 text-right">Penyusutan/Bulan</th>
-                                    <th className="px-6 py-4 text-right">Akumulasi Penyusutan</th>
-                                    <th className="px-6 py-4 text-right">Nilai Buku</th>
-                                    <th className="px-6 py-4 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y text-sm">
-                                {filteredAssets.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={11} className="text-muted-foreground px-6 py-12 text-center">
-                                            Tidak ada aset yang cocok dengan filter atau pencarian Anda.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredAssets.map((asset) => (
-                                        <tr key={asset.id} className="hover:bg-muted/30 transition-colors">
-                                            <td className="text-foreground px-6 py-4 font-medium">{asset.nama}</td>
-                                            <td className="px-6 py-4">
-                                                <span className="bg-accent text-accent-foreground rounded-md px-2 py-1 text-xs font-semibold capitalize">
-                                                    {asset.jenis}
-                                                </span>
-                                            </td>
-                                            <td className="text-muted-foreground px-6 py-4">{PERIODE_LABELS[asset.periode]}</td>
-                                            <td className="text-muted-foreground px-6 py-4">
-                                                <div className="flex items-center gap-1.5">
-                                                    <Calendar className="h-3.5 w-3.5" />
-                                                    {formatDate(asset.tanggal_perolehan)}
-                                                </div>
-                                            </td>
-                                            <td className="text-foreground px-6 py-4 text-center font-mono">{PERIODE_BULAN[asset.periode]} Bulan</td>
-                                            <td className="px-6 py-4 text-right font-medium">{formatRupiah(asset.harga_perolehan)}</td>
-                                            <td className="text-muted-foreground px-6 py-4 text-right">{formatRupiah(asset.nilai_residu)}</td>
-                                            <td className="text-muted-foreground px-6 py-4 text-right">{formatRupiah(asset.penyusutan_bulanan)}</td>
-                                            <td className="px-6 py-4 text-right font-medium text-red-600 dark:text-red-400">
-                                                {formatRupiah(asset.akumulasi_penyusutan)}
-                                                <span className="text-muted-foreground block text-[10px]">
-                                                    ({asset.masa_penggunaan_bulan} bulan berjalan)
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right font-semibold text-green-600 dark:text-green-400">
-                                                {formatRupiah(asset.nilai_buku)}
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <Button variant="outline" size="sm" onClick={() => handleOpenSchedule(asset)}>
-                                                    <Calendar className="mr-1 h-3.5 w-3.5" />
-                                                    Jadwal
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                {/* Asset Table */}
+                <TableContainer>
+                    <Table minWidth="min-w-[1100px]">
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="min-w-[180px]">Nama Aset</TableHead>
+                                <TableHead align="center" className="w-32">
+                                    Jenis
+                                </TableHead>
+                                <TableHead className="w-44">Kelompok Umur</TableHead>
+                                <TableHead align="center" className="w-36">
+                                    Tgl Perolehan
+                                </TableHead>
+                                <TableHead align="center" className="w-28">
+                                    Umur
+                                </TableHead>
+                                <TableHead align="right" className="w-40">
+                                    Harga Perolehan
+                                </TableHead>
+                                <TableHead align="right" className="w-32">
+                                    Nilai Residu
+                                </TableHead>
+                                <TableHead align="right" className="w-40">
+                                    Penyusutan/Bulan
+                                </TableHead>
+                                <TableHead align="right" className="w-44">
+                                    Akumulasi Penyusutan
+                                </TableHead>
+                                <TableHead align="right" className="w-40">
+                                    Nilai Buku
+                                </TableHead>
+                                <TableHead align="center" className="w-28">
+                                    Aksi
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredAssets.length === 0 ? (
+                                <TableEmpty
+                                    colSpan={11}
+                                    icon={<Search className="text-muted-foreground/40 mb-1 size-10" />}
+                                    title="Tidak Ada Hasil Cocok"
+                                    description="Coba sesuaikan kata kunci pencarian atau bersihkan filter Anda."
+                                />
+                            ) : (
+                                filteredAssets.map((asset) => (
+                                    <TableRow key={asset.id}>
+                                        <TableCell className="text-foreground font-medium">{asset.nama}</TableCell>
+                                        <TableCell align="center">
+                                            <Badge variant="secondary" className="capitalize">
+                                                {asset.jenis}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">{PERIODE_LABELS[asset.periode]}</TableCell>
+                                        <TableCell align="center" className="text-muted-foreground font-mono tabular-nums">
+                                            {formatDate(asset.tanggal_perolehan)}
+                                        </TableCell>
+                                        <TableCell align="center" className="text-foreground font-mono tabular-nums">
+                                            {PERIODE_BULAN[asset.periode]} bln
+                                        </TableCell>
+                                        <TableCell numeric className="font-medium">
+                                            {formatRupiah(asset.harga_perolehan)}
+                                        </TableCell>
+                                        <TableCell numeric className="text-muted-foreground">
+                                            {formatRupiah(asset.nilai_residu)}
+                                        </TableCell>
+                                        <TableCell numeric className="text-muted-foreground">
+                                            {formatRupiah(asset.penyusutan_bulanan)}
+                                        </TableCell>
+                                        <TableCell numeric className="font-medium text-rose-600 dark:text-rose-400">
+                                            {formatRupiah(asset.akumulasi_penyusutan)}
+                                            <span className="text-muted-foreground block text-xs font-normal">
+                                                {asset.masa_penggunaan_bulan} bulan berjalan
+                                            </span>
+                                        </TableCell>
+                                        <TableCell numeric className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                            {formatRupiah(asset.nilai_buku)}
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <Button variant="outline" size="sm" onClick={() => handleOpenSchedule(asset)}>
+                                                <Calendar />
+                                                Jadwal
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
 
-                {/* Recent Asset Journals Section */}
-                <div className="mt-6 flex flex-col gap-2">
-                    <h2 className="text-foreground text-xl font-bold tracking-tight">Jurnal Terbentuk</h2>
-                    <p className="text-muted-foreground text-sm">
-                        Menampilkan hingga 10 transaksi perolehan dan depresiasi aset terbaru yang tercatat secara resmi di jurnal.
-                    </p>
-                </div>
+                {/* Asset Journals */}
+                <SectionHeading
+                    title="Jurnal Terbentuk"
+                    description="Menampilkan hingga 10 transaksi perolehan dan depresiasi aset terbaru yang tercatat secara resmi di jurnal."
+                />
 
                 {assetJournals.length === 0 ? (
-                    <div className="bg-card flex flex-col items-center justify-center rounded-xl border py-12 text-center">
-                        <FileText className="text-muted-foreground/40 mb-3 h-10 w-10" />
+                    <div className="bg-card flex flex-col items-center justify-center gap-1 rounded-xl border py-12 text-center shadow-xs">
+                        <FileText className="text-muted-foreground/40 mb-2 size-10" aria-hidden="true" />
                         <h3 className="text-base font-semibold">Belum Ada Jurnal Aset</h3>
-                        <p className="text-muted-foreground mt-1 max-w-sm text-sm">
+                        <p className="text-muted-foreground max-w-sm text-sm">
                             Jurnal akan otomatis terbentuk saat aset ditambahkan atau ketika Anda memposting penyusutan bulanan.
                         </p>
                     </div>
                 ) : (
-                    <div className="bg-card w-full overflow-hidden rounded-xl border shadow-xs">
-                        <div className="w-full overflow-x-auto">
-                            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
-                                <thead>
-                                    <tr className="bg-muted/40 text-muted-foreground border-b text-xs font-semibold tracking-wider uppercase">
-                                        <th className="w-[120px] px-6 py-3">Tanggal</th>
-                                        <th className="w-[160px] px-6 py-3">No. Referensi</th>
-                                        <th className="px-6 py-3">Keterangan</th>
-                                        <th className="w-[110px] px-6 py-3 text-center">No Arus Kas</th>
-                                        <th className="w-[120px] px-6 py-3">Kode Akun</th>
-                                        <th className="px-6 py-3">Nama Akun</th>
-                                        <th className="w-[140px] px-6 py-3 text-right">Debit</th>
-                                        <th className="w-[140px] px-6 py-3 text-right">Kredit</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y">
-                                    {assetJournals.flatMap((journal) =>
-                                        journal.items.map((item, index) => (
-                                            <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                                                {index === 0 ? (
-                                                    <>
-                                                        <td
-                                                            className="text-muted-foreground px-6 py-4 align-top font-medium"
-                                                            rowSpan={journal.items.length}
-                                                        >
-                                                            {formatDate(journal.tanggal)}
-                                                        </td>
-                                                        <td className="px-6 py-4 align-top" rowSpan={journal.items.length}>
-                                                            <span className="text-foreground mb-1 block font-mono font-bold">
-                                                                {journal.nomor_jurnal}
-                                                            </span>
-                                                            <span
-                                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${
-                                                                    journal.tipe_jurnal === 'penyusutan'
-                                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                                }`}
-                                                            >
-                                                                {journal.tipe_jurnal === 'penyusutan' ? 'Penyusutan' : 'Perolehan'}
-                                                            </span>
-                                                        </td>
-                                                        <td
-                                                            className="text-muted-foreground max-w-[200px] px-6 py-4 align-top text-xs break-words"
-                                                            rowSpan={journal.items.length}
-                                                        >
-                                                            {journal.keterangan}
-                                                        </td>
-                                                    </>
-                                                ) : null}
-                                                <td className="text-foreground px-6 py-3 text-center font-mono text-xs">
-                                                    {journal.kode_arus_kas || '-'}
-                                                </td>
-                                                <td className="text-muted-foreground px-6 py-3 font-mono text-xs">{item.coa?.kode_akun}</td>
-                                                <td
-                                                    className={`px-6 py-3 font-medium ${Number(item.kredit) > 0 ? 'text-muted-foreground pl-6' : 'text-foreground'}`}
-                                                >
-                                                    {item.coa?.nama_akun}
-                                                </td>
-                                                <td className="text-foreground px-6 py-3 text-right font-mono font-medium">
-                                                    {Number(item.debit) > 0 ? formatRupiah(item.debit) : '-'}
-                                                </td>
-                                                <td className="text-foreground px-6 py-3 text-right font-mono font-medium">
-                                                    {Number(item.kredit) > 0 ? formatRupiah(item.kredit) : '-'}
-                                                </td>
-                                            </tr>
-                                        )),
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <TableContainer>
+                        <Table minWidth="min-w-[1000px]">
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead align="center" className="w-32">
+                                        Tanggal
+                                    </TableHead>
+                                    <TableHead className="w-44">No. Referensi</TableHead>
+                                    <TableHead className="min-w-[200px]">Rincian Transaksi</TableHead>
+                                    <TableHead align="center" className="w-28">
+                                        No Arus Kas
+                                    </TableHead>
+                                    <TableHead className="w-36">Kode Akun</TableHead>
+                                    <TableHead className="min-w-[180px]">Nama Akun</TableHead>
+                                    <TableHead align="right" className="w-40">
+                                        Debit
+                                    </TableHead>
+                                    <TableHead align="right" className="w-40">
+                                        Kredit
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {assetJournals.flatMap((journal) => {
+                                    const items = journal.items ?? [];
+
+                                    return items.map((item, index) => (
+                                        <TableRow key={item.id}>
+                                            {index === 0 ? (
+                                                <>
+                                                    <TableCell
+                                                        align="center"
+                                                        className="text-muted-foreground align-top font-mono font-medium tabular-nums"
+                                                        rowSpan={items.length}
+                                                    >
+                                                        {formatDate(journal.tanggal)}
+                                                    </TableCell>
+                                                    <TableCell className="space-y-1.5 align-top" rowSpan={items.length}>
+                                                        <span className="text-foreground block font-mono text-xs font-bold">
+                                                            {journal.nomor_jurnal}
+                                                        </span>
+                                                        <Badge variant={journal.tipe_jurnal === 'penyusutan' ? 'warning' : 'info'}>
+                                                            {journal.tipe_jurnal === 'penyusutan' ? 'Penyusutan' : 'Perolehan'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground align-top break-words" rowSpan={items.length}>
+                                                        {journal.keterangan}
+                                                    </TableCell>
+                                                </>
+                                            ) : null}
+                                            <TableCell align="center" className="text-foreground font-mono text-xs">
+                                                {journal.kode_arus_kas || '-'}
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground font-mono text-xs">{item.coa?.kode_akun}</TableCell>
+                                            <TableCell
+                                                className={Number(item.kredit) > 0 ? 'text-muted-foreground pl-8' : 'text-foreground font-medium'}
+                                            >
+                                                {item.coa?.nama_akun}
+                                            </TableCell>
+                                            <TableCell numeric className="text-foreground font-medium">
+                                                {Number(item.debit) > 0 ? formatRupiah(item.debit) : '-'}
+                                            </TableCell>
+                                            <TableCell numeric className="text-foreground font-medium">
+                                                {Number(item.kredit) > 0 ? formatRupiah(item.kredit) : '-'}
+                                            </TableCell>
+                                        </TableRow>
+                                    ));
+                                })}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
                 )}
-            </div>
+            </PageShell>
 
             {/* Create Asset Dialog */}
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent className="sm:max-w-[600px]">
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit} className="grid gap-6">
                         <DialogHeader>
                             <DialogTitle>Tambah Aset Baru</DialogTitle>
                             <DialogDescription>Masukkan rincian data aset. Perhitungan penyusutan akan dilakukan secara otomatis.</DialogDescription>
                         </DialogHeader>
 
-                        <div className="grid gap-4 py-4">
-                            {/* Nama */}
-                            <div className="grid gap-2">
+                        <div className="grid gap-4">
+                            <Field>
                                 <Label htmlFor="nama">Nama Aset</Label>
                                 <Input
                                     id="nama"
@@ -652,59 +695,45 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                     onChange={(e) => setData('nama', e.target.value)}
                                     required
                                 />
-                                {errors.nama && <span className="text-xs text-red-500">{errors.nama}</span>}
-                            </div>
+                                {errors.nama && <p className="text-destructive text-xs font-medium">{errors.nama}</p>}
+                            </Field>
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                {/* Jenis */}
-                                <div className="grid gap-2">
+                                <Field>
                                     <Label htmlFor="jenis">Jenis Aset</Label>
-                                    <select
-                                        id="jenis"
-                                        className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
-                                        value={data.jenis}
-                                        onChange={(e) => setData('jenis', e.target.value)}
-                                    >
+                                    <NativeSelect id="jenis" value={data.jenis} onChange={(e) => setData('jenis', e.target.value)}>
                                         <option value="inventaris">Inventaris</option>
                                         <option value="kendaraan">Kendaraan</option>
                                         <option value="gedung">Gedung</option>
-                                    </select>
-                                    {errors.jenis && <span className="text-xs text-red-500">{errors.jenis}</span>}
-                                </div>
+                                    </NativeSelect>
+                                    {errors.jenis && <p className="text-destructive text-xs font-medium">{errors.jenis}</p>}
+                                </Field>
 
-                                {/* Periode / Kelompok Umur */}
-                                <div className="grid gap-2">
+                                <Field>
                                     <Label htmlFor="periode">Kelompok Masa Manfaat</Label>
-                                    <select
-                                        id="periode"
-                                        className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
-                                        value={data.periode}
-                                        onChange={(e) => setData('periode', e.target.value)}
-                                    >
-                                        <option value="periode_1">Kelompok 1 (4 Tahun)</option>
-                                        <option value="periode_2">Kelompok 2 (8 Tahun)</option>
-                                        <option value="periode_3">Kelompok 3 (16 Tahun)</option>
-                                        <option value="periode_4">Kelompok 4 (20 Tahun)</option>
-                                    </select>
-                                    {errors.periode && <span className="text-xs text-red-500">{errors.periode}</span>}
-                                </div>
+                                    <NativeSelect id="periode" value={data.periode} onChange={(e) => setData('periode', e.target.value)}>
+                                        {Object.entries(PERIODE_LABELS).map(([value, label]) => (
+                                            <option key={value} value={value}>
+                                                {label}
+                                            </option>
+                                        ))}
+                                    </NativeSelect>
+                                    {errors.periode && <p className="text-destructive text-xs font-medium">{errors.periode}</p>}
+                                </Field>
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                {/* Tanggal Perolehan */}
-                                <div className="grid gap-2">
+                                <Field>
                                     <Label htmlFor="tanggal_perolehan">Tanggal Perolehan</Label>
                                     <DatePicker
                                         id="tanggal_perolehan"
                                         value={data.tanggal_perolehan}
                                         onChange={(val) => setData('tanggal_perolehan', val)}
-                                        className="w-full"
                                     />
-                                    {errors.tanggal_perolehan && <span className="text-xs text-red-500">{errors.tanggal_perolehan}</span>}
-                                </div>
+                                    {errors.tanggal_perolehan && <p className="text-destructive text-xs font-medium">{errors.tanggal_perolehan}</p>}
+                                </Field>
 
-                                {/* Harga Perolehan */}
-                                <div className="grid gap-2">
+                                <Field>
                                     <Label htmlFor="harga_perolehan">Harga Perolehan (Rp)</Label>
                                     <Input
                                         id="harga_perolehan"
@@ -715,82 +744,75 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                                         min="0"
                                         required
                                     />
-                                    {errors.harga_perolehan && <span className="text-xs text-red-500">{errors.harga_perolehan}</span>}
-                                </div>
+                                    {errors.harga_perolehan && <p className="text-destructive text-xs font-medium">{errors.harga_perolehan}</p>}
+                                </Field>
                             </div>
 
-                            <div className="border-t my-2 pt-4">
-                                <span className="text-sm font-semibold text-foreground block mb-3">Pengaturan Akuntansi & Jurnal</span>
-                                
-                                <div className="space-y-4">
-                                    {/* Akun Aset Tetap (Debit) */}
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="coa_debit_id">Akun Debit — Aset yang Dibeli</Label>
-                                        <select
-                                            id="coa_debit_id"
-                                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
-                                            value={data.coa_debit_id}
-                                            onChange={(e) => setData('coa_debit_id', e.target.value)}
-                                            required
-                                        >
-                                            <option value="">-- Pilih Akun Aset --</option>
-                                            {Object.entries(groupCoasByParent(displayDebitCoas)).map(([parentLabel, items]) => (
-                                                <optgroup key={parentLabel} label={parentLabel}>
-                                                    {items.map((coa) => (
-                                                        <option key={coa.id} value={coa.id}>
-                                                            [{coa.kode_akun}] {coa.nama_akun}
-                                                        </option>
-                                                    ))}
-                                                </optgroup>
-                                            ))}
-                                        </select>
-                                        {errors.coa_debit_id && <span className="text-xs text-red-500">{errors.coa_debit_id}</span>}
-                                    </div>
+                            <div className="space-y-4 border-t pt-4">
+                                <h3 className="text-foreground text-sm font-semibold">Pengaturan Akuntansi &amp; Jurnal</h3>
 
-                                    {/* Akun Pembayaran (Kredit) */}
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="coa_kredit_id">Akun Kredit — Sumber Pembayaran</Label>
-                                        <select
-                                            id="coa_kredit_id"
-                                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-hidden"
-                                            value={data.coa_kredit_id}
-                                            onChange={(e) => setData('coa_kredit_id', e.target.value)}
-                                            required
-                                        >
-                                            <option value="">-- Pilih Sumber Pembayaran --</option>
-                                            {Object.entries(groupCoasByParent(displayCreditCoas)).map(([parentLabel, items]) => (
-                                                <optgroup key={parentLabel} label={parentLabel}>
-                                                    {items.map((coa) => (
-                                                        <option key={coa.id} value={coa.id}>
-                                                            [{coa.kode_akun}] {coa.nama_akun}
-                                                        </option>
-                                                    ))}
-                                                </optgroup>
-                                            ))}
-                                        </select>
-                                        {errors.coa_kredit_id && <span className="text-xs text-red-500">{errors.coa_kredit_id}</span>}
-                                    </div>
+                                <Field>
+                                    <Label htmlFor="coa_debit_id">Akun Debit — Aset yang Dibeli</Label>
+                                    <NativeSelect
+                                        id="coa_debit_id"
+                                        value={data.coa_debit_id}
+                                        onChange={(e) => setData('coa_debit_id', e.target.value)}
+                                        required
+                                    >
+                                        <option value="">-- Pilih Akun Aset --</option>
+                                        {Object.entries(groupCoasByParent(displayDebitCoas)).map(([parentLabel, items]) => (
+                                            <optgroup key={parentLabel} label={parentLabel}>
+                                                {items.map((coa) => (
+                                                    <option key={coa.id} value={coa.id}>
+                                                        [{coa.kode_akun}] {coa.nama_akun}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
+                                    </NativeSelect>
+                                    {errors.coa_debit_id && <p className="text-destructive text-xs font-medium">{errors.coa_debit_id}</p>}
+                                </Field>
 
-                                    {/* Nilai Residu */}
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="nilai_residu">Nilai Residu (Rp)</Label>
-                                        <div className="flex items-center gap-3">
-                                            <Input
-                                                id="nilai_residu"
-                                                type="number"
-                                                value={data.nilai_residu}
-                                                readOnly
-                                                disabled
-                                                className="bg-muted text-muted-foreground select-none cursor-not-allowed w-32"
-                                                required
-                                            />
-                                            <span className="text-muted-foreground text-xs">
-                                                Nilai residu ditetapkan tetap Rp 1 untuk keperluan audit.
-                                            </span>
-                                        </div>
-                                        {errors.nilai_residu && <span className="text-xs text-red-500">{errors.nilai_residu}</span>}
+                                <Field>
+                                    <Label htmlFor="coa_kredit_id">Akun Kredit — Sumber Pembayaran</Label>
+                                    <NativeSelect
+                                        id="coa_kredit_id"
+                                        value={data.coa_kredit_id}
+                                        onChange={(e) => setData('coa_kredit_id', e.target.value)}
+                                        required
+                                    >
+                                        <option value="">-- Pilih Sumber Pembayaran --</option>
+                                        {Object.entries(groupCoasByParent(displayCreditCoas)).map(([parentLabel, items]) => (
+                                            <optgroup key={parentLabel} label={parentLabel}>
+                                                {items.map((coa) => (
+                                                    <option key={coa.id} value={coa.id}>
+                                                        [{coa.kode_akun}] {coa.nama_akun}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        ))}
+                                    </NativeSelect>
+                                    {errors.coa_kredit_id && <p className="text-destructive text-xs font-medium">{errors.coa_kredit_id}</p>}
+                                </Field>
+
+                                <Field>
+                                    <Label htmlFor="nilai_residu">Nilai Residu (Rp)</Label>
+                                    <div className="flex items-center gap-3">
+                                        <Input
+                                            id="nilai_residu"
+                                            type="number"
+                                            value={data.nilai_residu}
+                                            readOnly
+                                            disabled
+                                            className="bg-muted w-32 shrink-0 cursor-not-allowed font-mono select-none"
+                                            required
+                                        />
+                                        <p className="text-muted-foreground text-xs leading-relaxed">
+                                            Nilai residu ditetapkan tetap Rp 1 untuk keperluan audit.
+                                        </p>
                                     </div>
-                                </div>
+                                    {errors.nilai_residu && <p className="text-destructive text-xs font-medium">{errors.nilai_residu}</p>}
+                                </Field>
                             </div>
                         </div>
 
@@ -815,7 +837,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
 
             {/* Depreciation Schedule Dialog */}
             <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
-                <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-[720px]">
+                <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-[760px]">
                     <DialogHeader>
                         <DialogTitle>Jadwal Penyusutan Bulanan</DialogTitle>
                         <DialogDescription>
@@ -824,70 +846,73 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
                     </DialogHeader>
 
                     {selectedAsset && (
-                        <div className="mt-4 flex-1 overflow-y-auto pr-2">
-                            <div className="bg-muted/30 mb-4 grid grid-cols-2 gap-4 rounded-lg border p-3 text-sm">
-                                <div>
-                                    <p className="text-muted-foreground">
-                                        Harga Perolehan:{' '}
-                                        <span className="text-foreground font-semibold">{formatRupiah(selectedAsset.harga_perolehan)}</span>
-                                    </p>
-                                    <p className="text-muted-foreground">
-                                        Nilai Residu:{' '}
-                                        <span className="text-foreground font-semibold">{formatRupiah(selectedAsset.nilai_residu)}</span>
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground">
-                                        Kelompok Umur: <span className="text-foreground font-semibold">{PERIODE_LABELS[selectedAsset.periode]}</span>
-                                    </p>
-                                    <p className="text-muted-foreground">
-                                        Penyusutan Bulanan:{' '}
-                                        <span className="text-foreground font-semibold">{formatRupiah(selectedAsset.penyusutan_bulanan)}</span>
-                                    </p>
-                                </div>
-                            </div>
+                        <div className="flex min-h-0 flex-1 flex-col gap-4">
+                            <dl className="bg-muted/40 grid grid-cols-1 gap-x-6 gap-y-2 rounded-lg border p-4 text-sm sm:grid-cols-2">
+                                {[
+                                    ['Harga Perolehan', formatRupiah(selectedAsset.harga_perolehan)],
+                                    ['Nilai Residu', formatRupiah(selectedAsset.nilai_residu)],
+                                    ['Kelompok Umur', PERIODE_LABELS[selectedAsset.periode]],
+                                    ['Penyusutan Bulanan', formatRupiah(selectedAsset.penyusutan_bulanan)],
+                                ].map(([label, value]) => (
+                                    <div key={label} className="flex items-baseline justify-between gap-3">
+                                        <dt className="text-muted-foreground">{label}</dt>
+                                        <dd className="text-foreground font-semibold">{value}</dd>
+                                    </div>
+                                ))}
+                            </dl>
 
-                            <table className="w-full border-collapse text-left">
-                                <thead>
-                                    <tr className="bg-muted/40 text-muted-foreground bg-card sticky top-0 z-10 border-b text-xs font-semibold tracking-wider uppercase">
-                                        <th className="px-4 py-2 text-center">Bulan Ke</th>
-                                        <th className="px-4 py-2">Periode</th>
-                                        <th className="px-4 py-2 text-right">Penyusutan</th>
-                                        <th className="px-4 py-2 text-right">Akumulasi</th>
-                                        <th className="px-4 py-2 text-right">Nilai Buku</th>
-                                        <th className="px-4 py-2 text-center">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y text-xs">
-                                    {generateDepreciationSchedule(selectedAsset).map((row) => (
-                                        <tr
-                                            key={row.bulanKe}
-                                            className={`hover:bg-muted/20 transition-colors ${row.isTerlewati ? 'bg-muted/10 text-muted-foreground font-normal' : ''}`}
-                                        >
-                                            <td className="px-4 py-2 text-center font-medium">{row.bulanKe}</td>
-                                            <td className="px-4 py-2 font-medium">{row.periode}</td>
-                                            <td className="px-4 py-2 text-right">{formatRupiah(row.penyusutanBulanan)}</td>
-                                            <td className="px-4 py-2 text-right">{formatRupiah(row.akumulasiPenyusutan)}</td>
-                                            <td className="text-foreground px-4 py-2 text-right font-semibold">{formatRupiah(row.nilaiBuku)}</td>
-                                            <td className="px-4 py-2 text-center">
-                                                {row.isTerlewati ? (
-                                                    <span className="rounded bg-neutral-200 px-2 py-0.5 text-[10px] text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
-                                                        Terlewati
-                                                    </span>
-                                                ) : (
-                                                    <span className="rounded bg-blue-100 px-2 py-0.5 text-[10px] text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                                        Proyeksi
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <TableContainer className="min-h-0 flex-1">
+                                <Table wrapperClassName="max-h-[45vh] overflow-y-auto" minWidth="min-w-[620px]">
+                                    <TableHeader sticky>
+                                        <TableRow className="hover:bg-transparent">
+                                            <TableHead align="center" className="bg-muted w-24">
+                                                Bulan Ke
+                                            </TableHead>
+                                            <TableHead className="bg-muted min-w-[140px]">Periode</TableHead>
+                                            <TableHead align="right" className="bg-muted w-36">
+                                                Penyusutan
+                                            </TableHead>
+                                            <TableHead align="right" className="bg-muted w-36">
+                                                Akumulasi
+                                            </TableHead>
+                                            <TableHead align="right" className="bg-muted w-36">
+                                                Nilai Buku
+                                            </TableHead>
+                                            <TableHead align="center" className="bg-muted w-28">
+                                                Status
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {generateDepreciationSchedule(selectedAsset).map((row) => (
+                                            <TableRow key={row.bulanKe} className={row.isTerlewati ? 'bg-muted/20' : undefined}>
+                                                <TableCell align="center" className="font-mono tabular-nums">
+                                                    {row.bulanKe}
+                                                </TableCell>
+                                                <TableCell className="font-medium">{row.periode}</TableCell>
+                                                <TableCell numeric className="text-muted-foreground">
+                                                    {formatRupiah(row.penyusutanBulanan)}
+                                                </TableCell>
+                                                <TableCell numeric className="text-muted-foreground">
+                                                    {formatRupiah(row.akumulasiPenyusutan)}
+                                                </TableCell>
+                                                <TableCell numeric className="text-foreground font-semibold">
+                                                    {formatRupiah(row.nilaiBuku)}
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <Badge variant={row.isTerlewati ? 'muted' : 'info'}>
+                                                        {row.isTerlewati ? 'Terlewati' : 'Proyeksi'}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
                         </div>
                     )}
 
-                    <DialogFooter className="mt-4 border-t pt-4">
+                    <DialogFooter className="border-t pt-4">
                         <Button onClick={() => setIsScheduleOpen(false)}>Tutup</Button>
                     </DialogFooter>
                 </DialogContent>

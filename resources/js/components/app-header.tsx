@@ -11,7 +11,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import { LayoutGrid, Menu, Search } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 
@@ -44,7 +44,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                         <Sheet>
                             <SheetTrigger asChild>
                                 <Button variant="ghost" size="icon" className="mr-2 h-[34px] w-[34px]">
-                                    <Menu className="h-5 w-5" />
+                                    <Menu className="size-5" />
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="left" className="bg-sidebar flex h-full w-64 flex-col items-stretch justify-between">
@@ -57,7 +57,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                         <div className="flex flex-col space-y-4">
                                             {mainNavItems.map((item) => (
                                                 <Link key={item.title} href={item.url} className="flex items-center space-x-2 font-medium">
-                                                    {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
+                                                    {item.icon && <Icon iconNode={item.icon} className="size-4" />}
                                                     <span>{item.title}</span>
                                                 </Link>
                                             ))}
@@ -72,7 +72,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                                     rel="noopener noreferrer"
                                                     className="flex items-center space-x-2 font-medium"
                                                 >
-                                                    {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
+                                                    {item.icon && <Icon iconNode={item.icon} className="size-4" />}
                                                     <span>{item.title}</span>
                                                 </a>
                                             ))}
@@ -101,7 +101,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                                 'h-9 cursor-pointer px-3',
                                             )}
                                         >
-                                            {item.icon && <Icon iconNode={item.icon} className="mr-2 h-4 w-4" />}
+                                            {item.icon && <Icon iconNode={item.icon} className="size-4" />}
                                             {item.title}
                                         </Link>
                                         {page.url === item.url && (
@@ -115,7 +115,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
 
                     <div className="ml-auto flex items-center space-x-2">
                         <div className="relative flex items-center space-x-1">
-                            <Button variant="ghost" size="icon" className="group h-9 w-9 cursor-pointer">
+                            <Button variant="ghost" size="icon-sm" className="group cursor-pointer">
                                 <Search className="!size-5 opacity-80 group-hover:opacity-100" />
                             </Button>
                             <div className="hidden lg:flex">

@@ -1,34 +1,41 @@
-import { Button } from '@/components/ui/button';
+import { Field, PageShell } from '@/components/page-header';
+import {
+    AccountTable,
+    formatDateSlash,
+    ReportDocument,
+    ReportFilterCard,
+    ReportSection,
+    ReportToolbar,
+    TotalRow,
+    type ReportAccount,
+} from '@/components/reports/report-layout';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Printer, RotateCcw } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Neraca Keuangan',
+        title: 'Laporan Posisi Keuangan',
         href: '/reports/balance-sheet',
     },
 ];
 
-interface Account {
-    id: number;
-    kode_akun: string;
-    nama_akun: string;
-    kategori: string;
-    saldo: number;
-}
-
 interface BalanceSheetProps {
-    assets: Account[];
-    liabilities: Account[];
-    equity: Account[];
+    assets: ReportAccount[];
+    liabilities: ReportAccount[];
+    equity: ReportAccount[];
     totalAssets: number;
+    totalAssetsLastYear: number;
     totalLiabilities: number;
+    totalLiabilitiesLastYear: number;
     totalEquity: number;
+    totalEquityLastYear: number;
     totalLiabilitiesAndEquity: number;
+    totalLiabilitiesAndEquityLastYear: number;
     filters: {
         end_date: string;
     };
@@ -39,12 +46,19 @@ export default function BalanceSheet({
     liabilities,
     equity,
     totalAssets,
+    totalAssetsLastYear,
     totalLiabilities,
+    totalLiabilitiesLastYear,
     totalEquity,
+    totalEquityLastYear,
     totalLiabilitiesAndEquity,
+    totalLiabilitiesAndEquityLastYear,
     filters,
 }: BalanceSheetProps) {
     const [endDate, setEndDate] = useState(filters.end_date);
+
+    const currentYear = new Date(filters.end_date).getFullYear();
+    const lastYear = currentYear - 1;
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
@@ -67,194 +81,130 @@ export default function BalanceSheet({
         });
     };
 
-    const formatRupiah = (value: number) => {
-        return new Intl.NumberFormat('id-ID', {
+    const formatRupiah = (value: number) =>
+        new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
         }).format(value);
-    };
 
-    const formatAsDate = (dateString: string) => {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-    };
+    const currentImbalance = Math.abs(totalAssets - totalLiabilitiesAndEquity);
+    const lastYearImbalance = Math.abs(totalAssetsLastYear - totalLiabilitiesAndEquityLastYear);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Neraca Keuangan (Balance Sheet)" />
+            <Head title="Laporan Posisi Keuangan" />
 
-            <div className="flex h-full min-w-0 flex-1 flex-col gap-6 p-6 print:p-0">
-                {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Neraca Keuangan</h1>
-                        <p className="text-muted-foreground text-sm">
-                            Laporan Posisi Keuangan yang memuat Aset, Kewajiban, dan Ekuitas organisasi Anda.
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => window.print()} className="gap-2">
-                            <Printer className="h-4 w-4" />
-                            Cetak Laporan
-                        </Button>
-                    </div>
-                </div>
+            <PageShell className="print:p-0">
+                <ReportToolbar
+                    title="Laporan Posisi Keuangan"
+                    description="Laporan posisi keuangan yang memuat aset, kewajiban, dan ekuitas organisasi Anda."
+                />
 
-                {/* Filter Card */}
-                <div className="bg-card rounded-xl border p-4 print:hidden">
-                    <form onSubmit={handleFilter} className="flex flex-wrap items-end gap-4">
-                        <div className="grid gap-1.5">
-                            <label htmlFor="end_date" className="text-sm font-medium">
-                                Per Tanggal
-                            </label>
-                            <DatePicker
-                                id="end_date"
-                                value={endDate}
-                                onChange={setEndDate}
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <Button type="submit" size="sm" className="h-9">
-                                Terapkan Filter
-                            </Button>
-                            <Button type="button" variant="outline" size="sm" onClick={handleReset} className="h-9 gap-1.5">
-                                <RotateCcw className="h-3.5 w-3.5" />
-                                Reset
-                            </Button>
-                        </div>
-                    </form>
-                </div>
+                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset}>
+                    <Field className="w-48">
+                        <Label htmlFor="end_date">Per Tanggal</Label>
+                        <DatePicker id="end_date" value={endDate} onChange={setEndDate} />
+                    </Field>
+                </ReportFilterCard>
 
-                {/* Report Content */}
-                <div className="bg-card rounded-xl border p-6 md:p-8 print:border-none print:p-0 print:shadow-none">
-                    {/* Print Only Header */}
-                    <div className="mb-6 hidden text-center print:block">
-                        <h2 className="text-xl font-bold uppercase">Assetory</h2>
-                        <h1 className="text-2xl font-bold">Laporan Posisi Keuangan (Neraca)</h1>
-                        <p className="text-muted-foreground mt-1 text-sm">Per tanggal: {formatAsDate(filters.end_date)}</p>
-                        <hr className="my-4 border-gray-300" />
-                    </div>
-
-                    <div className="mb-8 hidden text-center md:block print:hidden">
-                        <h2 className="text-md text-muted-foreground font-semibold uppercase">Laporan Posisi Keuangan</h2>
-                        <h1 className="text-foreground mt-0.5 text-2xl font-bold">NERACA KEUANGAN</h1>
-                        <p className="text-muted-foreground mt-1 text-sm">Per tanggal {formatAsDate(filters.end_date)}</p>
-                    </div>
-
-                    {/* Dual Column Layout for Large Screens & Print */}
+                <ReportDocument title="Laporan Posisi Keuangan (Neraca)" period={`Per tanggal ${formatDateSlash(filters.end_date)}`}>
                     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
                         {/* ASSETS COLUMN */}
-                        <div className="space-y-6">
-                            <div className="border-b pb-2">
-                                <h3 className="text-primary text-lg font-bold uppercase">1. ASET</h3>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <h4 className="text-muted-foreground text-sm font-semibold">Aset Tetap & Aset Lancar</h4>
-                                    <table className="w-full text-sm">
-                                        <tbody>
-                                            {assets.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={2} className="text-muted-foreground py-2 text-center">
-                                                        Tidak ada saldo aset.
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                assets.map((item) => (
-                                                    <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
-                                                        <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
-                                                        <td className="py-2.5 font-medium">{item.nama_akun}</td>
-                                                        <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div className="bg-muted/30 border-border flex items-center justify-between rounded-lg border-t-2 p-3">
-                                <span className="text-sm font-bold uppercase">TOTAL ASET</span>
-                                <span className="text-primary font-mono text-base font-bold">{formatRupiah(totalAssets)}</span>
-                            </div>
+                        <div className="space-y-4">
+                            <ReportSection title="1. Aset" description="Aset lancar dan aset tetap">
+                                <AccountTable
+                                    accounts={assets}
+                                    currentYear={currentYear}
+                                    lastYear={lastYear}
+                                    emptyLabel="Tidak ada saldo aset."
+                                    format={formatRupiah}
+                                />
+                            </ReportSection>
+
+                            <TotalRow
+                                label="Total Aset"
+                                emphasis="strong"
+                                current={formatRupiah(totalAssets)}
+                                previous={formatRupiah(totalAssetsLastYear)}
+                                currentYear={currentYear}
+                                lastYear={lastYear}
+                            />
                         </div>
 
                         {/* LIABILITIES AND EQUITY COLUMN */}
                         <div className="space-y-6">
-                            {/* LIABILITIES */}
-                            <div className="space-y-4">
-                                <div className="border-b pb-2">
-                                    <h3 className="text-primary text-lg font-bold uppercase">2. KEWAJIBAN (UTANG)</h3>
-                                </div>
-                                <table className="w-full text-sm">
-                                    <tbody>
-                                        {liabilities.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={2} className="text-muted-foreground py-2 text-center">
-                                                    Tidak ada saldo kewajiban.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            liabilities.map((item) => (
-                                                <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
-                                                    <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
-                                                    <td className="py-2.5 font-medium">{item.nama_akun}</td>
-                                                    <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                                <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
-                                    <span className="text-xs font-semibold uppercase">Total Kewajiban</span>
-                                    <span className="font-mono text-sm font-bold">{formatRupiah(totalLiabilities)}</span>
-                                </div>
+                            <div className="space-y-3">
+                                <ReportSection title="2. Kewajiban (Utang)">
+                                    <AccountTable
+                                        accounts={liabilities}
+                                        currentYear={currentYear}
+                                        lastYear={lastYear}
+                                        emptyLabel="Tidak ada saldo kewajiban."
+                                        format={formatRupiah}
+                                    />
+                                </ReportSection>
+                                <TotalRow
+                                    label="Total Kewajiban"
+                                    current={formatRupiah(totalLiabilities)}
+                                    previous={formatRupiah(totalLiabilitiesLastYear)}
+                                    currentYear={currentYear}
+                                    lastYear={lastYear}
+                                />
                             </div>
 
-                            {/* EQUITY */}
-                            <div className="space-y-4 pt-2">
-                                <div className="border-b pb-2">
-                                    <h3 className="text-primary text-lg font-bold uppercase">3. EKUITAS (MODAL)</h3>
-                                </div>
-                                <table className="w-full text-sm">
-                                    <tbody>
-                                        {equity.map((item) => (
-                                            <tr key={item.id} className="border-border/40 hover:bg-muted/10 border-b last:border-0">
-                                                <td className="text-muted-foreground w-28 py-2.5 font-mono text-xs">{item.kode_akun}</td>
-                                                <td className="py-2.5 font-medium">{item.nama_akun}</td>
-                                                <td className="py-2.5 text-right font-mono font-medium">{formatRupiah(item.saldo)}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <div className="bg-muted/20 flex items-center justify-between rounded-lg border p-2.5">
-                                    <span className="text-xs font-semibold uppercase">Total Ekuitas</span>
-                                    <span className="font-mono text-sm font-bold">{formatRupiah(totalEquity)}</span>
-                                </div>
+                            <div className="space-y-3">
+                                <ReportSection title="3. Ekuitas (Modal)">
+                                    <AccountTable
+                                        accounts={equity}
+                                        currentYear={currentYear}
+                                        lastYear={lastYear}
+                                        emptyLabel="Tidak ada saldo ekuitas."
+                                        format={formatRupiah}
+                                    />
+                                </ReportSection>
+                                <TotalRow
+                                    label="Total Ekuitas"
+                                    current={formatRupiah(totalEquity)}
+                                    previous={formatRupiah(totalEquityLastYear)}
+                                    currentYear={currentYear}
+                                    lastYear={lastYear}
+                                />
                             </div>
 
-                            {/* LIABILITIES + EQUITY TOTAL */}
-                            <div className="bg-muted/30 border-border flex items-center justify-between rounded-lg border-t-2 p-3">
-                                <span className="text-sm font-bold uppercase">TOTAL KEWAJIBAN & EKUITAS</span>
-                                <span className="text-primary font-mono text-base font-bold">{formatRupiah(totalLiabilitiesAndEquity)}</span>
-                            </div>
+                            <TotalRow
+                                label="Total Kewajiban & Ekuitas"
+                                emphasis="strong"
+                                current={formatRupiah(totalLiabilitiesAndEquity)}
+                                previous={formatRupiah(totalLiabilitiesAndEquityLastYear)}
+                                currentYear={currentYear}
+                                lastYear={lastYear}
+                            />
                         </div>
                     </div>
 
                     {/* Balance Check */}
-                    {Math.abs(totalAssets - totalLiabilitiesAndEquity) > 0.01 && (
-                        <div className="bg-destructive/10 border-destructive/20 text-destructive mt-8 rounded-lg border p-4 text-center text-sm font-medium print:hidden">
-                            Peringatan: Posisi Neraca tidak seimbang! Selisih Aset vs (Kewajiban+Ekuitas) sebesar{' '}
-                            {formatRupiah(Math.abs(totalAssets - totalLiabilitiesAndEquity))}
+                    {(currentImbalance > 0.01 || lastYearImbalance > 0.01) && (
+                        <div className="bg-destructive/10 border-destructive/20 text-destructive mt-8 flex items-start gap-3 rounded-lg border p-4 text-sm font-medium print:hidden">
+                            <AlertCircle className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+                            <div className="space-y-1">
+                                <p>Peringatan: posisi laporan keuangan tidak seimbang.</p>
+                                {currentImbalance > 0.01 && (
+                                    <p>
+                                        Selisih {currentYear}: <span className="font-mono tabular-nums">{formatRupiah(currentImbalance)}</span>
+                                    </p>
+                                )}
+                                {lastYearImbalance > 0.01 && (
+                                    <p>
+                                        Selisih {lastYear}: <span className="font-mono tabular-nums">{formatRupiah(lastYearImbalance)}</span>
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     )}
-                </div>
-            </div>
+                </ReportDocument>
+            </PageShell>
         </AppLayout>
     );
 }

@@ -56,7 +56,7 @@ const mainNavItems: NavItem[] = [
         icon: BarChart3,
         items: [
             {
-                title: 'Neraca Keuangan',
+                title: 'Laporan Posisi Keuangan',
                 url: '/reports/balance-sheet',
             },
             {
