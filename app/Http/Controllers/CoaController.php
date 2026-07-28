@@ -89,6 +89,12 @@ class CoaController extends Controller
         /** @var Coa $coa */
         $coa = auth()->user()->coas()->findOrFail($id);
 
+        if ($coa->journalItems()->exists()) {
+            return redirect()->back()->withErrors([
+                'error' => 'Akun COA tidak dapat dihapus karena telah memiliki transaksi jurnal tercatat.',
+            ]);
+        }
+
         $coa->delete();
 
         return redirect()->back();

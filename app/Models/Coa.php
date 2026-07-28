@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Coa extends Model
 {
@@ -25,5 +26,13 @@ class Coa extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the journal items for the COA account.
+     */
+    public function journalItems(): HasMany
+    {
+        return $this->hasMany(JournalItem::class);
     }
 }
