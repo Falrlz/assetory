@@ -56,20 +56,20 @@ const mainNavItems: NavItem[] = [
         icon: BarChart3,
         items: [
             {
-                title: 'Posisi Keuangan',
-                url: '/reports/balance-sheet',
-            },
-            {
                 title: 'Laba dan Rugi',
                 url: '/reports/profit-loss',
             },
             {
-                title: 'Arus Kas',
-                url: '/reports/cash-flow',
-            },
-            {
                 title: 'Perubahan Ekuitas',
                 url: '/reports/equity-change',
+            },
+            {
+                title: 'Posisi Keuangan',
+                url: '/reports/balance-sheet',
+            },
+            {
+                title: 'Arus Kas',
+                url: '/reports/cash-flow',
             },
             {
                 title: 'CALK',
