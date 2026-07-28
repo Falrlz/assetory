@@ -27,15 +27,19 @@ interface ReportFilterCardProps {
     onSubmit: (e: React.FormEvent) => void;
     onReset: () => void;
     children: ReactNode;
+    submitLabel?: string;
+    disabled?: boolean;
 }
 
 /** Date-range controls plus the Apply/Reset pair, laid out identically everywhere. */
-export function ReportFilterCard({ onSubmit, onReset, children }: ReportFilterCardProps) {
+export function ReportFilterCard({ onSubmit, onReset, children, submitLabel = 'Tampilkan Laporan', disabled = false }: ReportFilterCardProps) {
     return (
         <form onSubmit={onSubmit} className="bg-card flex flex-wrap items-end gap-4 rounded-xl border p-4 shadow-xs print:hidden">
             {children}
             <div className="flex items-end gap-2">
-                <Button type="submit">Terapkan Filter</Button>
+                <Button type="submit" disabled={disabled}>
+                    {submitLabel}
+                </Button>
                 <Button type="button" variant="outline" onClick={onReset}>
                     <RotateCcw />
                     Reset

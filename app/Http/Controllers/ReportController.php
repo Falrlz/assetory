@@ -136,8 +136,37 @@ class ReportController extends Controller
     public function balanceSheet(Request $request): Response
     {
         $user = $request->user();
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
-        $prevEndDate = Carbon::parse($endDate)->subYear()->toDateString();
+
+        $request->validate([
+            'year' => 'nullable|numeric|digits:4',
+        ]);
+
+        $yearInput = $request->input('year');
+
+        if (!$yearInput) {
+            return Inertia::render('reports/balance-sheet', [
+                'assets' => [],
+                'liabilities' => [],
+                'equity' => [],
+                'totalAssets' => 0,
+                'totalAssetsLastYear' => 0,
+                'totalLiabilities' => 0,
+                'totalLiabilitiesLastYear' => 0,
+                'totalEquity' => 0,
+                'totalEquityLastYear' => 0,
+                'totalLiabilitiesAndEquity' => 0,
+                'totalLiabilitiesAndEquityLastYear' => 0,
+                'hasAppliedFilter' => false,
+                'filters' => [
+                    'year' => '',
+                ],
+            ]);
+        }
+
+        $year = (int) $yearInput;
+        $endDate = "{$year}-12-31";
+        $prevYear = $year - 1;
+        $prevEndDate = "{$prevYear}-12-31";
 
         // Get all accounts
         $allCoas = $user->coas()
@@ -225,7 +254,9 @@ class ReportController extends Controller
             'totalEquityLastYear' => $totalEquityLastYear,
             'totalLiabilitiesAndEquity' => $totalLiabilities + $totalEquity,
             'totalLiabilitiesAndEquityLastYear' => $totalLiabilitiesLastYear + $totalEquityLastYear,
+            'hasAppliedFilter' => true,
             'filters' => [
+                'year' => (string) $year,
                 'end_date' => $endDate,
             ],
         ]);
@@ -239,21 +270,36 @@ class ReportController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'year' => 'nullable|numeric|digits:4',
         ]);
 
-        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->toDateString());
+        $yearInput = $request->input('year');
 
-        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
-            throw ValidationException::withMessages([
-                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+        // If no year filter parameters are sent, return initial empty state (Lazy Loading)
+        if (!$yearInput) {
+            return Inertia::render('reports/profit-loss', [
+                'revenues' => [],
+                'expenses' => [],
+                'totalRevenues' => 0,
+                'totalRevenuesLastYear' => 0,
+                'totalExpenses' => 0,
+                'totalExpensesLastYear' => 0,
+                'netProfit' => 0,
+                'netProfitLastYear' => 0,
+                'hasAppliedFilter' => false,
+                'filters' => [
+                    'year' => '',
+                ],
             ]);
         }
 
-        $prevStartDate = Carbon::parse($startDate)->subYear()->toDateString();
-        $prevEndDate = Carbon::parse($endDate)->subYear()->toDateString();
+        $year = (int) $yearInput;
+        $startDate = "{$year}-01-01";
+        $endDate = "{$year}-12-31";
+
+        $prevYear = $year - 1;
+        $prevStartDate = "{$prevYear}-01-01";
+        $prevEndDate = "{$prevYear}-12-31";
 
         // Get accounts
         $allCoas = $user->coas()
@@ -326,7 +372,9 @@ class ReportController extends Controller
             'totalExpensesLastYear' => $totalExpensesLastYear,
             'netProfit' => $netProfit,
             'netProfitLastYear' => $netProfitLastYear,
+            'hasAppliedFilter' => true,
             'filters' => [
+                'year' => (string) $year,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],
@@ -341,21 +389,54 @@ class ReportController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'year' => 'nullable|numeric|digits:4',
         ]);
 
-        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->toDateString());
+        $yearInput = $request->input('year');
 
-        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
-            throw ValidationException::withMessages([
-                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+        if (!$yearInput) {
+            return Inertia::render('reports/cash-flow', [
+                'operatingItems' => [],
+                'investingItems' => [],
+                'financingItems' => [],
+                'totalOperating' => 0,
+                'totalOperatingLastYear' => 0,
+                'totalOperatingIn' => 0,
+                'totalOperatingOut' => 0,
+                'totalOperatingInLastYear' => 0,
+                'totalOperatingOutLastYear' => 0,
+                'totalInvesting' => 0,
+                'totalInvestingLastYear' => 0,
+                'totalInvestingIn' => 0,
+                'totalInvestingOut' => 0,
+                'totalInvestingInLastYear' => 0,
+                'totalInvestingOutLastYear' => 0,
+                'totalFinancing' => 0,
+                'totalFinancingLastYear' => 0,
+                'totalFinancingIn' => 0,
+                'totalFinancingOut' => 0,
+                'totalFinancingInLastYear' => 0,
+                'totalFinancingOutLastYear' => 0,
+                'beginningCash' => 0,
+                'beginningCashLastYear' => 0,
+                'endingCash' => 0,
+                'endingCashLastYear' => 0,
+                'netChange' => 0,
+                'netChangeLastYear' => 0,
+                'hasAppliedFilter' => false,
+                'filters' => [
+                    'year' => '',
+                ],
             ]);
         }
 
-        $prevStartDate = Carbon::parse($startDate)->subYear()->toDateString();
-        $prevEndDate = Carbon::parse($endDate)->subYear()->toDateString();
+        $year = (int) $yearInput;
+        $startDate = "{$year}-01-01";
+        $endDate = "{$year}-12-31";
+
+        $prevYear = $year - 1;
+        $prevStartDate = "{$prevYear}-01-01";
+        $prevEndDate = "{$prevYear}-12-31";
 
         // Retrieve cash flow items matching cash accounts (excluding setup beginning balance)
         $cashItems = DB::table('journal_items')
@@ -525,7 +606,9 @@ class ReportController extends Controller
             'endingCashLastYear' => (float) $endingCashLastYear,
             'netChange' => $netChange,
             'netChangeLastYear' => $netChangeLastYear,
+            'hasAppliedFilter' => true,
             'filters' => [
+                'year' => (string) $year,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],
@@ -540,18 +623,28 @@ class ReportController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'year' => 'nullable|numeric|digits:4',
         ]);
 
-        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->toDateString());
+        $yearInput = $request->input('year');
 
-        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
-            throw ValidationException::withMessages([
-                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+        if (!$yearInput) {
+            return Inertia::render('reports/equity-change', [
+                'equityItems' => [],
+                'totalAwal' => 0,
+                'totalTambahan' => 0,
+                'totalLabaNet' => 0,
+                'totalAkhir' => 0,
+                'hasAppliedFilter' => false,
+                'filters' => [
+                    'year' => '',
+                ],
             ]);
         }
+
+        $year = (int) $yearInput;
+        $startDate = "{$year}-01-01";
+        $endDate = "{$year}-12-31";
 
         // Get equity accounts (Prefix 03 or kategori ekuitas)
         $equityCoas = $user->coas()
@@ -683,18 +776,31 @@ class ReportController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'year' => 'nullable|numeric|digits:4',
         ]);
 
-        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->toDateString());
+        $yearInput = $request->input('year');
 
-        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
-            throw ValidationException::withMessages([
-                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+        if (!$yearInput) {
+            return Inertia::render('reports/calk', [
+                'assets' => [],
+                'cashBreakdown' => [],
+                'liabilitiesBreakdown' => [],
+                'equityBreakdown' => [],
+                'totalAssetsVal' => 0,
+                'totalCash' => 0,
+                'totalLiabilities' => 0,
+                'totalEquity' => 0,
+                'hasAppliedFilter' => false,
+                'filters' => [
+                    'year' => '',
+                ],
             ]);
         }
+
+        $year = (int) $yearInput;
+        $startDate = "{$year}-01-01";
+        $endDate = "{$year}-12-31";
 
         // 1. Get detailed Assets Schedule
         $assets = $user->assets()

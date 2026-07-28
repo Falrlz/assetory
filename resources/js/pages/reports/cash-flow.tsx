@@ -1,7 +1,6 @@
 import { Field, PageShell } from '@/components/page-header';
-import { formatDateRange, ReportDocument, ReportFilterCard, ReportSignatures, ReportToolbar } from '@/components/reports/report-layout';
+import { ReportDocument, ReportFilterCard, ReportSignatures, ReportToolbar } from '@/components/reports/report-layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -54,9 +53,11 @@ interface CashFlowProps {
     endingCashLastYear: number;
     netChange: number;
     netChangeLastYear: number;
+    hasAppliedFilter?: boolean;
     filters: {
-        start_date: string;
-        end_date: string;
+        year?: string;
+        start_date?: string;
+        end_date?: string;
     };
 }
 
@@ -85,21 +86,24 @@ export default function CashFlow({
     endingCashLastYear,
     netChange,
     netChangeLastYear,
+    hasAppliedFilter = false,
     filters,
 }: CashFlowProps) {
     const { errors } = usePage().props;
-    const [startDate, setStartDate] = useState(filters.start_date);
-    const [endDate, setEndDate] = useState(filters.end_date);
+    const [selectedYear, setSelectedYear] = useState<string>(filters.year || '');
     const [localError, setLocalError] = useState<string | null>(null);
+
+    const currentYearNum = selectedYear ? parseInt(selectedYear, 10) : new Date().getFullYear();
+    const lastYearNum = currentYearNum - 1;
+
+    const currentCalendarYear = new Date().getFullYear();
+    const availableYears = Array.from({ length: 7 }, (_, i) => (currentCalendarYear - 5 + i).toString());
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const startYear = new Date(startDate).getFullYear();
-        const endYear = new Date(endDate).getFullYear();
-
-        if (startYear !== endYear) {
-            setLocalError('Rentang tanggal tidak boleh melewati dua tahun yang berbeda.');
+        if (!selectedYear) {
+            setLocalError('Silakan pilih Tahun Buku laporan terlebih dahulu.');
             return;
         }
 
@@ -107,8 +111,7 @@ export default function CashFlow({
         router.get(
             route('reports.cash-flow'),
             {
-                start_date: startDate,
-                end_date: endDate,
+                year: selectedYear,
             },
             {
                 preserveState: true,
@@ -118,15 +121,8 @@ export default function CashFlow({
 
     const handleReset = () => {
         setLocalError(null);
-        const year = new Date().getFullYear();
-        const start = `${year}-01-01`;
-        const end = new Date().toISOString().split('T')[0];
-        setStartDate(start);
-        setEndDate(end);
-        router.get(route('reports.cash-flow'), {
-            start_date: start,
-            end_date: end,
-        });
+        setSelectedYear('');
+        router.get(route('reports.cash-flow'), {});
     };
 
     const formatRupiah = (value: number) =>
@@ -139,9 +135,6 @@ export default function CashFlow({
 
     /** Negative cash flows print in parentheses, per accounting convention. */
     const formatParenthesis = (value: number) => (value < 0 ? `(${formatRupiah(Math.abs(value))})` : formatRupiah(value));
-
-    const currentYear = new Date(filters.end_date).getFullYear();
-    const lastYear = currentYear - 1;
 
     const activities = [
         {
@@ -186,111 +179,132 @@ export default function CashFlow({
                     description="Ringkasan pergerakan kas masuk dan keluar berdasarkan aktivitas operasional, investasi, dan pendanaan."
                 />
 
-                {(localError || (errors && errors.start_date)) && (
+                {(localError || (errors && errors.year)) && (
                     <Alert variant="destructive" className="print:hidden">
                         <AlertCircle className="size-4" />
                         <AlertTitle>Kesalahan</AlertTitle>
-                        <AlertDescription>{localError || (errors.start_date as string)}</AlertDescription>
+                        <AlertDescription>{localError || (errors.year as string)}</AlertDescription>
                     </Alert>
                 )}
 
-                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset}>
-                    <Field className="w-48">
-                        <Label htmlFor="start_date">Tanggal Mulai</Label>
-                        <DatePicker id="start_date" value={startDate} onChange={setStartDate} />
-                    </Field>
-                    <Field className="w-48">
-                        <Label htmlFor="end_date">Tanggal Selesai</Label>
-                        <DatePicker id="end_date" value={endDate} onChange={setEndDate} />
+                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset} disabled={!selectedYear}>
+                    <Field className="w-56">
+                        <Label htmlFor="year">Pilih Tahun Buku</Label>
+                        <select
+                            id="year"
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(e.target.value)}
+                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                        >
+                            <option value="">-- Pilih Tahun --</option>
+                            {availableYears.map((y) => (
+                                <option key={y} value={y}>
+                                    Tahun Buku {y}
+                                </option>
+                            ))}
+                        </select>
                     </Field>
                 </ReportFilterCard>
 
-                <ReportDocument
-                    className="mx-auto w-full max-w-4xl print:max-w-none"
-                    title="Laporan Arus Kas"
-                    period={`Periode ${formatDateRange(filters.start_date, filters.end_date)}`}
-                >
-                    <Table minWidth="min-w-[620px]">
-                        <TableHeader>
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead>Uraian</TableHead>
-                                <TableHead align="right" className="w-44">
-                                    {currentYear}
-                                </TableHead>
-                                <TableHead align="right" className="w-44">
-                                    {lastYear}
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {activities.map((activity) => (
-                                <Fragment key={activity.title}>
-                                    <TableRow className="bg-muted/40 hover:bg-muted/40">
-                                        <TableCell colSpan={3} className="text-foreground text-xs font-bold tracking-wide uppercase">
-                                            {activity.title}
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell className="pl-6 sm:pl-8">Penerimaan Kas</TableCell>
-                                        <TableCell numeric>{formatRupiah(activity.cashIn)}</TableCell>
-                                        <TableCell numeric className="text-muted-foreground">
-                                            {formatRupiah(activity.cashInLastYear)}
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell className="pl-6 sm:pl-8">Pengeluaran Kas</TableCell>
-                                        <TableCell numeric className="text-rose-600 dark:text-rose-400">
-                                            {activity.cashOut > 0 ? `(${formatRupiah(activity.cashOut)})` : formatRupiah(0)}
-                                        </TableCell>
-                                        <TableCell numeric className="text-rose-500/80">
-                                            {activity.cashOutLastYear > 0 ? `(${formatRupiah(activity.cashOutLastYear)})` : formatRupiah(0)}
-                                        </TableCell>
-                                    </TableRow>
-                                    <TableRow className="bg-muted/20 hover:bg-muted/20 font-semibold">
-                                        <TableCell className="text-foreground pl-6 sm:pl-8">{activity.netLabel}</TableCell>
-                                        <TableCell numeric className="font-semibold">
-                                            {formatParenthesis(activity.net)}
-                                        </TableCell>
-                                        <TableCell numeric className="text-muted-foreground font-semibold">
-                                            {formatParenthesis(activity.netLastYear)}
-                                        </TableCell>
-                                    </TableRow>
-                                </Fragment>
-                            ))}
+                {!hasAppliedFilter ? (
+                    <div className="bg-card flex flex-col items-center justify-center rounded-xl border p-12 text-center shadow-xs">
+                        <div className="bg-muted flex size-12 items-center justify-center rounded-full">
+                            <AlertCircle className="text-muted-foreground size-6" />
+                        </div>
+                        <h3 className="text-foreground mt-4 text-base font-semibold">Silakan Pilih Tahun Buku Laporan</h3>
+                        <p className="text-muted-foreground mt-1.5 max-w-sm text-xs">
+                            Pilih <span className="font-semibold">Tahun Buku</span> di atas, lalu klik tombol{' '}
+                            <span className="font-semibold">"Tampilkan Laporan"</span> untuk memuat Arus Kas.
+                        </p>
+                    </div>
+                ) : (
+                    <ReportDocument
+                        className="mx-auto w-full max-w-4xl print:max-w-none"
+                        title="Laporan Arus Kas"
+                        period={`Tahun Buku ${selectedYear} (1 Jan ${selectedYear} - 31 Des ${selectedYear})`}
+                    >
+                        <Table minWidth="min-w-[620px]">
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead>Uraian</TableHead>
+                                    <TableHead align="right" className="w-44">
+                                        {currentYear}
+                                    </TableHead>
+                                    <TableHead align="right" className="w-44">
+                                        {lastYear}
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {activities.map((activity) => (
+                                    <Fragment key={activity.title}>
+                                        <TableRow className="bg-muted/40 hover:bg-muted/40">
+                                            <TableCell colSpan={3} className="text-foreground text-xs font-bold tracking-wide uppercase">
+                                                {activity.title}
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell className="pl-6 sm:pl-8">Penerimaan Kas</TableCell>
+                                            <TableCell numeric>{formatRupiah(activity.cashIn)}</TableCell>
+                                            <TableCell numeric className="text-muted-foreground">
+                                                {formatRupiah(activity.cashInLastYear)}
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell className="pl-6 sm:pl-8">Pengeluaran Kas</TableCell>
+                                            <TableCell numeric className="text-rose-600 dark:text-rose-400">
+                                                {activity.cashOut > 0 ? `(${formatRupiah(activity.cashOut)})` : formatRupiah(0)}
+                                            </TableCell>
+                                            <TableCell numeric className="text-rose-500/80">
+                                                {activity.cashOutLastYear > 0 ? `(${formatRupiah(activity.cashOutLastYear)})` : formatRupiah(0)}
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow className="bg-muted/20 hover:bg-muted/20 font-semibold">
+                                            <TableCell className="text-foreground pl-6 sm:pl-8">{activity.netLabel}</TableCell>
+                                            <TableCell numeric className="font-semibold">
+                                                {formatParenthesis(activity.net)}
+                                            </TableCell>
+                                            <TableCell numeric className="text-muted-foreground font-semibold">
+                                                {formatParenthesis(activity.netLastYear)}
+                                            </TableCell>
+                                        </TableRow>
+                                    </Fragment>
+                                ))}
 
-                            {/* Final Cash Balance summary */}
-                            <TableRow className="border-t-2 font-semibold">
-                                <TableCell className="text-foreground">Kenaikan (Penurunan) Bersih Kas</TableCell>
-                                <TableCell numeric className="font-semibold">
-                                    {formatParenthesis(netChange)}
-                                </TableCell>
-                                <TableCell numeric className="text-muted-foreground font-semibold">
-                                    {formatParenthesis(netChangeLastYear)}
-                                </TableCell>
-                            </TableRow>
-                            <TableRow className="font-semibold">
-                                <TableCell className="text-foreground">Saldo Kas Awal Periode</TableCell>
-                                <TableCell numeric className="font-semibold">
-                                    {formatRupiah(beginningCash)}
-                                </TableCell>
-                                <TableCell numeric className="text-muted-foreground font-semibold">
-                                    {formatRupiah(beginningCashLastYear)}
-                                </TableCell>
-                            </TableRow>
-                            <TableRow className="bg-muted/40 hover:bg-muted/40 border-t-2 font-bold">
-                                <TableCell className="text-foreground uppercase">Saldo Kas Akhir Periode</TableCell>
-                                <TableCell numeric className="text-base font-bold text-emerald-600 dark:text-emerald-400">
-                                    {formatRupiah(endingCash)}
-                                </TableCell>
-                                <TableCell numeric className="text-base font-bold text-emerald-500/80">
-                                    {formatRupiah(endingCashLastYear)}
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                {/* Final Cash Balance summary */}
+                                <TableRow className="border-t-2 font-semibold">
+                                    <TableCell className="text-foreground">Kenaikan (Penurunan) Bersih Kas</TableCell>
+                                    <TableCell numeric className="font-semibold">
+                                        {formatParenthesis(netChange)}
+                                    </TableCell>
+                                    <TableCell numeric className="text-muted-foreground font-semibold">
+                                        {formatParenthesis(netChangeLastYear)}
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow className="font-semibold">
+                                    <TableCell className="text-foreground">Saldo Kas Awal Periode</TableCell>
+                                    <TableCell numeric className="font-semibold">
+                                        {formatRupiah(beginningCash)}
+                                    </TableCell>
+                                    <TableCell numeric className="text-muted-foreground font-semibold">
+                                        {formatRupiah(beginningCashLastYear)}
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow className="bg-muted/40 hover:bg-muted/40 border-t-2 font-bold">
+                                    <TableCell className="text-foreground uppercase">Saldo Kas Akhir Periode</TableCell>
+                                    <TableCell numeric className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                                        {formatRupiah(endingCash)}
+                                    </TableCell>
+                                    <TableCell numeric className="text-base font-bold text-emerald-500/80">
+                                        {formatRupiah(endingCashLastYear)}
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
 
-                    <ReportSignatures />
-                </ReportDocument>
+                        <ReportSignatures />
+                    </ReportDocument>
+                )}
             </PageShell>
         </AppLayout>
     );
