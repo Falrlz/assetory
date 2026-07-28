@@ -52,9 +52,26 @@ class BeginningBalanceController extends Controller
             return $coa;
         });
 
+        // Check if opening balance journal exists or if user has active general journals
+        $hasActiveTransactions = $user->journals()
+            ->where('jenis_transaksi', '!=', 'saldo_awal')
+            ->exists();
+
+        $isSaved = $openingJournal !== null;
+        $isLocked = $isSaved || $hasActiveTransactions;
+
+        $lockReason = '';
+        if ($isSaved) {
+            $lockReason = 'Saldo awal telah disimpan dan dikunci.';
+        } elseif ($hasActiveTransactions) {
+            $lockReason = 'Saldo awal dikunci karena telah terdapat transaksi jurnal aktif.';
+        }
+
         return Inertia::render('beginning-balances/index', [
             'coas' => $coas,
             'openingDate' => $openingJournal ? $openingJournal->tanggal->toDateString() : date('Y').'-01-01',
+            'isLocked' => $isLocked,
+            'lockReason' => $lockReason,
         ]);
     }
 
