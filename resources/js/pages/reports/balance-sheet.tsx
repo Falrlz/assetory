@@ -110,8 +110,8 @@ export default function BalanceSheet({
                 </ReportFilterCard>
 
                 <ReportDocument title="Laporan Posisi Keuangan (Neraca)" period={`Per tanggal ${formatDateSlash(filters.end_date)}`}>
-                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
-                        {/* ASSETS COLUMN */}
+                    <div className="flex flex-col space-y-8">
+                        {/* 1. ASSETS SECTION */}
                         <div className="space-y-4">
                             <ReportSection title="1. Aset" description="Aset lancar dan aset tetap">
                                 <AccountTable
@@ -133,46 +133,48 @@ export default function BalanceSheet({
                             />
                         </div>
 
-                        {/* LIABILITIES AND EQUITY COLUMN */}
-                        <div className="space-y-6">
-                            <div className="space-y-3">
-                                <ReportSection title="2. Kewajiban (Utang)">
-                                    <AccountTable
-                                        accounts={liabilities}
-                                        currentYear={currentYear}
-                                        lastYear={lastYear}
-                                        emptyLabel="Tidak ada saldo kewajiban."
-                                        format={formatRupiah}
-                                    />
-                                </ReportSection>
-                                <TotalRow
-                                    label="Total Kewajiban"
-                                    current={formatRupiah(totalLiabilities)}
-                                    previous={formatRupiah(totalLiabilitiesLastYear)}
+                        {/* 2. LIABILITIES SECTION */}
+                        <div className="space-y-4">
+                            <ReportSection title="2. Kewajiban (Utang)" description="Kewajiban jangka pendek dan jangka panjang">
+                                <AccountTable
+                                    accounts={liabilities}
                                     currentYear={currentYear}
                                     lastYear={lastYear}
+                                    emptyLabel="Tidak ada saldo kewajiban."
+                                    format={formatRupiah}
                                 />
-                            </div>
+                            </ReportSection>
+                            <TotalRow
+                                label="Total Kewajiban"
+                                current={formatRupiah(totalLiabilities)}
+                                previous={formatRupiah(totalLiabilitiesLastYear)}
+                                currentYear={currentYear}
+                                lastYear={lastYear}
+                            />
+                        </div>
 
-                            <div className="space-y-3">
-                                <ReportSection title="3. Ekuitas (Modal)">
-                                    <AccountTable
-                                        accounts={equity}
-                                        currentYear={currentYear}
-                                        lastYear={lastYear}
-                                        emptyLabel="Tidak ada saldo ekuitas."
-                                        format={formatRupiah}
-                                    />
-                                </ReportSection>
-                                <TotalRow
-                                    label="Total Ekuitas"
-                                    current={formatRupiah(totalEquity)}
-                                    previous={formatRupiah(totalEquityLastYear)}
+                        {/* 3. EQUITY SECTION */}
+                        <div className="space-y-4">
+                            <ReportSection title="3. Ekuitas (Modal)" description="Modal disetor dan saldo laba ditahan">
+                                <AccountTable
+                                    accounts={equity}
                                     currentYear={currentYear}
                                     lastYear={lastYear}
+                                    emptyLabel="Tidak ada saldo ekuitas."
+                                    format={formatRupiah}
                                 />
-                            </div>
+                            </ReportSection>
+                            <TotalRow
+                                label="Total Ekuitas"
+                                current={formatRupiah(totalEquity)}
+                                previous={formatRupiah(totalEquityLastYear)}
+                                currentYear={currentYear}
+                                lastYear={lastYear}
+                            />
+                        </div>
 
+                        {/* 4. TOTAL LIABILITIES AND EQUITY */}
+                        <div className="border-t border-zinc-200 pt-2 dark:border-zinc-800">
                             <TotalRow
                                 label="Total Kewajiban & Ekuitas"
                                 emphasis="strong"
