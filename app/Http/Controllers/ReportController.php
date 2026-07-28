@@ -180,24 +180,24 @@ class ReportController extends Controller
                 return $coa;
             });
 
-        // Filter and group by category
-        $assets = $allCoas->filter(fn ($coa) => $coa->kategori === 'aset' && count(explode('.', $coa->kode_akun)) === 4)->values();
-        $liabilities = $allCoas->filter(fn ($coa) => $coa->kategori === 'kewajiban' && count(explode('.', $coa->kode_akun)) === 4)->values();
-        $equity = $allCoas->filter(fn ($coa) => $coa->kategori === 'ekuitas' && count(explode('.', $coa->kode_akun)) === 4)->values();
+        // Filter and group by Prefix Kode COA (01: Aset, 02: Kewajiban, 03: Ekuitas, 04: Pendapatan, 05: Beban)
+        $assets = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '01.') || $coa->kategori === 'aset') && count(explode('.', $coa->kode_akun)) === 4)->values();
+        $liabilities = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '02.') || $coa->kategori === 'kewajiban') && count(explode('.', $coa->kode_akun)) === 4)->values();
+        $equity = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '03.') || $coa->kategori === 'ekuitas') && count(explode('.', $coa->kode_akun)) === 4)->values();
 
-        // Calculate Net Income (Laba Rugi Tahun Berjalan) to add to Equity automatically
-        $revenues = $allCoas->filter(fn ($coa) => $coa->kategori === 'pendapatan' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
-        $expenses = $allCoas->filter(fn ($coa) => $coa->kategori === 'beban' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
+        // Calculate Net Income (Laba Rugi Tahun Berjalan) from Prefix 04 (Pendapatan) & 05 (Beban)
+        $revenues = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '04.') || $coa->kategori === 'pendapatan') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
+        $expenses = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '05.') || $coa->kategori === 'beban') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
         $currentEarnings = $revenues - $expenses;
 
-        $revenuesLastYear = $allCoas->filter(fn ($coa) => $coa->kategori === 'pendapatan' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo_last_year');
-        $expensesLastYear = $allCoas->filter(fn ($coa) => $coa->kategori === 'beban' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo_last_year');
+        $revenuesLastYear = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '04.') || $coa->kategori === 'pendapatan') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo_last_year');
+        $expensesLastYear = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '05.') || $coa->kategori === 'beban') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo_last_year');
         $currentEarningsLastYear = $revenuesLastYear - $expensesLastYear;
 
         // Add current earnings to Equity list
         $equity->push((object) [
             'id' => 99999,
-            'kode_akun' => '3.9999.99.99',
+            'kode_akun' => '03.9999.99.99',
             'nama_akun' => 'Laba (Rugi) Tahun Berjalan',
             'kategori' => 'ekuitas',
             'saldo' => $currentEarnings,
@@ -304,8 +304,9 @@ class ReportController extends Controller
                 return $coa;
             });
 
-        $revenues = $allCoas->filter(fn ($coa) => $coa->kategori === 'pendapatan' && count(explode('.', $coa->kode_akun)) === 4)->values();
-        $expenses = $allCoas->filter(fn ($coa) => $coa->kategori === 'beban' && count(explode('.', $coa->kode_akun)) === 4)->values();
+        // Filter Revenues (Prefix 04) and Expenses (Prefix 05)
+        $revenues = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '04.') || $coa->kategori === 'pendapatan') && count(explode('.', $coa->kode_akun)) === 4)->values();
+        $expenses = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '05.') || $coa->kategori === 'beban') && count(explode('.', $coa->kode_akun)) === 4)->values();
 
         $totalRevenues = $revenues->sum('saldo');
         $totalRevenuesLastYear = $revenues->sum('saldo_last_year');
@@ -552,9 +553,12 @@ class ReportController extends Controller
             ]);
         }
 
-        // Get equity accounts (Level 4, i.e. 4 segments separated by dots)
+        // Get equity accounts (Prefix 03 or kategori ekuitas)
         $equityCoas = $user->coas()
-            ->where('kategori', 'ekuitas')
+            ->where(function ($query) {
+                $query->where('kode_akun', 'LIKE', '03.%')
+                    ->orWhere('kategori', 'ekuitas');
+            })
             ->orderBy('kode_akun')
             ->get()
             ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4)
@@ -595,8 +599,8 @@ class ReportController extends Controller
                 return $coa;
             });
 
-        $totalRevenues = $allCoasForPL->filter(fn ($coa) => $coa->kategori === 'pendapatan' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
-        $totalExpenses = $allCoasForPL->filter(fn ($coa) => $coa->kategori === 'beban' && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
+        $totalRevenues = $allCoasForPL->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '04.') || $coa->kategori === 'pendapatan') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
+        $totalExpenses = $allCoasForPL->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '05.') || $coa->kategori === 'beban') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
         $netProfit = $totalRevenues - $totalExpenses;
 
         // Process each equity account
