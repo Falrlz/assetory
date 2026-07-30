@@ -73,7 +73,6 @@ export function FinancialTrendChart({ data = [] }: FinancialTrendChartProps) {
     const chartH = height - paddingY * 2;
 
     const maxVal = Math.max(...data.map((d) => Math.max(d.income, d.expense, Math.abs(d.profit))), 100000);
-    const minVal = 0;
 
     // Map data to SVG coordinates
     const stepX = data.length > 1 ? chartW / (data.length - 1) : 0;

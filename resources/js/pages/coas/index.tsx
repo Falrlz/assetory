@@ -10,7 +10,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Coa } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Edit, Plus, Search, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -305,7 +305,7 @@ export default function Index({ coas }: CoasProps) {
                 setDeleteModalOpen(false);
                 setCoaToDelete(null);
             },
-            onError: (errs) => {
+            onError: () => {
                 setDeleteModalOpen(false);
             },
         });

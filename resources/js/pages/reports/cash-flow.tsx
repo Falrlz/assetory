@@ -93,9 +93,6 @@ export default function CashFlow({
     const [selectedYear, setSelectedYear] = useState<string>(filters.year || '');
     const [localError, setLocalError] = useState<string | null>(null);
 
-    const currentYearNum = selectedYear ? parseInt(selectedYear, 10) : new Date().getFullYear();
-    const lastYearNum = currentYearNum - 1;
-
     const currentCalendarYear = new Date().getFullYear();
     const availableYears = Array.from({ length: 7 }, (_, i) => (currentCalendarYear - 5 + i).toString());
 
