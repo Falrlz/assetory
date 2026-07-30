@@ -143,7 +143,7 @@ class ReportController extends Controller
 
         $yearInput = $request->input('year');
 
-        if (!$yearInput) {
+        if (! $yearInput) {
             return Inertia::render('reports/balance-sheet', [
                 'assets' => [],
                 'liabilities' => [],
@@ -276,7 +276,7 @@ class ReportController extends Controller
         $yearInput = $request->input('year');
 
         // If no year filter parameters are sent, return initial empty state (Lazy Loading)
-        if (!$yearInput) {
+        if (! $yearInput) {
             return Inertia::render('reports/profit-loss', [
                 'revenues' => [],
                 'expenses' => [],
@@ -394,7 +394,7 @@ class ReportController extends Controller
 
         $yearInput = $request->input('year');
 
-        if (!$yearInput) {
+        if (! $yearInput) {
             return Inertia::render('reports/cash-flow', [
                 'operatingItems' => [],
                 'investingItems' => [],
@@ -628,7 +628,7 @@ class ReportController extends Controller
 
         $yearInput = $request->input('year');
 
-        if (!$yearInput) {
+        if (! $yearInput) {
             return Inertia::render('reports/equity-change', [
                 'equityItems' => [],
                 'totalAwal' => 0,
@@ -781,7 +781,7 @@ class ReportController extends Controller
 
         $yearInput = $request->input('year');
 
-        if (!$yearInput) {
+        if (! $yearInput) {
             return Inertia::render('reports/calk', [
                 'assets' => [],
                 'cashBreakdown' => [],

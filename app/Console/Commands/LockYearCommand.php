@@ -29,7 +29,7 @@ class LockYearCommand extends Command
     {
         // Jika opsi --year diisi, gunakan itu. Jika tidak, gunakan tahun kemarin.
         $targetYear = $this->option('year') ?: Carbon::now()->subYear()->year;
-        
+
         $lockDate = "{$targetYear}-12-31";
 
         User::query()->update(['lock_date' => $lockDate]);

@@ -10,7 +10,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Coa } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Edit, Plus, Search, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -53,38 +53,79 @@ export default function Index({ coas }: CoasProps) {
     const [laporanFilter, setLaporanFilter] = useState('all');
 
     // Split coas into Parent and Transaction (Child) accounts
-    const parentCoas = coas.filter((c) => c.kode_akun.split('.').length < 4);
-    const transactionCoas = coas.filter((c) => c.kode_akun.split('.').length === 4);
+    const parentCoas = useMemo(() => coas.filter((c) => c.kode_akun.split('.').length < 4), [coas]);
+    const transactionCoas = useMemo(() => coas.filter((c) => c.kode_akun.split('.').length === 4), [coas]);
 
     // Hierarchy parents for cascading filter
-    const level1Parents = parentCoas.filter((p) => p.kode_akun.split('.').length === 1);
-    const level2Options =
-        level1Filter !== 'all'
-            ? parentCoas.filter((p) => p.kode_akun.split('.').length === 2 && p.kode_akun.startsWith(level1Filter + '.'))
-            : parentCoas.filter((p) => p.kode_akun.split('.').length === 2);
-    const level3Options =
-        level2Filter !== 'all'
-            ? parentCoas.filter((p) => p.kode_akun.split('.').length === 3 && p.kode_akun.startsWith(level2Filter + '.'))
-            : level1Filter !== 'all'
-              ? parentCoas.filter((p) => p.kode_akun.split('.').length === 3 && p.kode_akun.startsWith(level1Filter + '.'))
-              : parentCoas.filter((p) => p.kode_akun.split('.').length === 3);
+    const level1Parents = useMemo(() => parentCoas.filter((p) => p.kode_akun.split('.').length === 1), [parentCoas]);
+    const level2Options = useMemo(
+        () =>
+            level1Filter !== 'all'
+                ? parentCoas.filter((p) => p.kode_akun.split('.').length === 2 && p.kode_akun.startsWith(level1Filter + '.'))
+                : parentCoas.filter((p) => p.kode_akun.split('.').length === 2),
+        [level1Filter, parentCoas],
+    );
+    const level3Options = useMemo(
+        () =>
+            level2Filter !== 'all'
+                ? parentCoas.filter((p) => p.kode_akun.split('.').length === 3 && p.kode_akun.startsWith(level2Filter + '.'))
+                : level1Filter !== 'all'
+                    ? parentCoas.filter((p) => p.kode_akun.split('.').length === 3 && p.kode_akun.startsWith(level1Filter + '.'))
+                    : parentCoas.filter((p) => p.kode_akun.split('.').length === 3),
+        [level1Filter, level2Filter, parentCoas],
+    );
 
     // Modal cascading state
     const [modalLevel1, setModalLevel1] = useState('');
     const [modalLevel2, setModalLevel2] = useState('');
     const [modalLevel3, setModalLevel3] = useState('');
+    const [sequenceSuffix, setSequenceSuffix] = useState('01');
 
-    const modalLevel2Options = modalLevel1
-        ? parentCoas.filter((p) => p.kode_akun.split('.').length === 2 && p.kode_akun.startsWith(modalLevel1 + '.'))
-        : [];
-    const modalLevel3Options = modalLevel2
-        ? parentCoas.filter((p) => p.kode_akun.split('.').length === 3 && p.kode_akun.startsWith(modalLevel2 + '.'))
-        : [];
+    const modalLevel2Options = useMemo(
+        () => (modalLevel1 ? parentCoas.filter((p) => p.kode_akun.split('.').length === 2 && p.kode_akun.startsWith(modalLevel1 + '.')) : []),
+        [modalLevel1, parentCoas],
+    );
+    const modalLevel3Options = useMemo(
+        () => (modalLevel2 ? parentCoas.filter((p) => p.kode_akun.split('.').length === 3 && p.kode_akun.startsWith(modalLevel2 + '.')) : []),
+        [modalLevel2, parentCoas],
+    );
 
     const resetModalLevels = () => {
         setModalLevel1('');
         setModalLevel2('');
         setModalLevel3('');
+        setSequenceSuffix('');
+    };
+
+    const handleOpenCreate = () => {
+        reset();
+        resetModalLevels();
+        setIsOpen(true);
+    };
+
+    const handleModalLevel1Change = (val: string) => {
+        setModalLevel1(val);
+        setModalLevel2('');
+        setModalLevel3('');
+        setSequenceSuffix('');
+        setData((prev) => ({ ...prev, kode_akun: '' }));
+    };
+
+    const handleModalLevel2Change = (val: string) => {
+        setModalLevel2(val);
+        setModalLevel3('');
+        setSequenceSuffix('');
+        setData((prev) => ({ ...prev, kode_akun: '' }));
+    };
+
+    const handleModalLevel3Change = (val: string) => {
+        setModalLevel3(val);
+        if (val) {
+            applyLevel3Data(val);
+        } else {
+            setSequenceSuffix('');
+            setData((prev) => ({ ...prev, kode_akun: '' }));
+        }
     };
 
     const generateNextKodeAkun = useCallback(
@@ -153,6 +194,36 @@ export default function Index({ coas }: CoasProps) {
         jenis_laporan: 'LPK' as Coa['jenis_laporan'],
     });
 
+    const fullKodeAkun = useMemo(
+        () => (modalLevel3 ? `${modalLevel3}.${sequenceSuffix.padStart(2, '0')}` : data.kode_akun),
+        [modalLevel3, sequenceSuffix, data.kode_akun],
+    );
+
+    const displayPrefix = useMemo(() => {
+        if (modalLevel3) {
+            return `${modalLevel3}.`;
+        }
+        if (modalLevel2) {
+            return `${modalLevel2}.XX.`;
+        }
+        if (modalLevel1) {
+            return `${modalLevel1}.XXXX.XX.`;
+        }
+        return 'XX.XXXX.XX.';
+    }, [modalLevel1, modalLevel2, modalLevel3]);
+
+    const isDuplicateKode = useMemo(
+        () => Boolean(fullKodeAkun && fullKodeAkun.split('.').length === 4 && coas.some((c) => c.kode_akun === fullKodeAkun)),
+        [coas, fullKodeAkun],
+    );
+
+    const handleSequenceSuffixChange = (val: string) => {
+        const cleaned = val.replace(/\D/g, '').slice(0, 2);
+        setSequenceSuffix(cleaned);
+        const fullCode = modalLevel3 ? `${modalLevel3}.${cleaned}` : cleaned;
+        setData((prev) => ({ ...prev, kode_akun: fullCode }));
+    };
+
     // Edit Form
     const editForm = useForm({
         kode_akun: '',
@@ -162,12 +233,14 @@ export default function Index({ coas }: CoasProps) {
         jenis_laporan: 'LPK' as Coa['jenis_laporan'],
     });
 
-    // Auto-update code and fields when modal Level 3 is selected
-    useEffect(() => {
-        if (isOpen && modalLevel3) {
-            const parent = parentCoas.find((p) => p.kode_akun === modalLevel3);
+    const applyLevel3Data = useCallback(
+        (l3Code: string) => {
+            if (!l3Code) return;
+            const parent = parentCoas.find((p) => p.kode_akun === l3Code);
             if (parent) {
-                const nextCode = generateNextKodeAkun(modalLevel3);
+                const nextCode = generateNextKodeAkun(l3Code);
+                const lastSeq = nextCode.split('.').pop() || '01';
+                setSequenceSuffix(lastSeq);
                 setData((prev) => ({
                     ...prev,
                     kode_akun: nextCode,
@@ -176,11 +249,9 @@ export default function Index({ coas }: CoasProps) {
                     jenis_laporan: parent.jenis_laporan,
                 }));
             }
-        }
-        if (isOpen && !modalLevel3) {
-            setData((prev) => ({ ...prev, kode_akun: '', kategori: 'aset', saldo_normal: 'debit', jenis_laporan: 'LPK' }));
-        }
-    }, [modalLevel3, isOpen, generateNextKodeAkun, parentCoas, setData]);
+        },
+        [generateNextKodeAkun, parentCoas, setData],
+    );
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -234,7 +305,7 @@ export default function Index({ coas }: CoasProps) {
                 setDeleteModalOpen(false);
                 setCoaToDelete(null);
             },
-            onError: (errs) => {
+            onError: () => {
                 setDeleteModalOpen(false);
             },
         });
@@ -249,7 +320,7 @@ export default function Index({ coas }: CoasProps) {
                     title="Chart of Accounts (COA)"
                     description="Kelola daftar akun untuk mencatat transaksi keuangan organisasi Anda secara terstruktur."
                     actions={
-                        <Button onClick={() => setIsOpen(true)}>
+                        <Button onClick={handleOpenCreate}>
                             <Plus />
                             Tambah Akun
                         </Button>
@@ -351,11 +422,7 @@ export default function Index({ coas }: CoasProps) {
                         </NativeSelect>
                     </Field>
 
-                    <div className="flex items-center justify-between gap-3 border-t pt-3 sm:col-span-2 lg:col-span-3 2xl:col-span-6">
-                        <p className="text-muted-foreground text-sm">
-                            Menampilkan <span className="text-foreground font-semibold tabular-nums">{filteredCoas.length}</span> dari{' '}
-                            <span className="text-foreground font-semibold tabular-nums">{transactionCoas.length}</span> akun transaksi
-                        </p>
+                    <div className="flex items-center justify-between gap-3 self-end py-0.5 sm:col-span-1 lg:col-span-2 2xl:col-span-5">
                         <Button
                             type="button"
                             variant="ghost"
@@ -367,6 +434,10 @@ export default function Index({ coas }: CoasProps) {
                             <X />
                             Reset Filter
                         </Button>
+                        <p className="text-muted-foreground text-sm">
+                            Menampilkan <span className="text-foreground font-semibold tabular-nums">{filteredCoas.length}</span> dari{' '}
+                            <span className="text-foreground font-semibold tabular-nums">{transactionCoas.length}</span> akun transaksi
+                        </p>
                     </div>
                 </FilterBar>
 
@@ -381,7 +452,7 @@ export default function Index({ coas }: CoasProps) {
                                 <TableHead align="center" className="w-36">
                                     Saldo Normal
                                 </TableHead>
-                                <TableHead className="w-56">Jenis Laporan</TableHead>
+                                <TableHead className="w-36">Jenis Laporan</TableHead>
                                 <TableHead align="center" className="w-28">
                                     Aksi
                                 </TableHead>
@@ -404,7 +475,7 @@ export default function Index({ coas }: CoasProps) {
                                         <TableCell align="center">
                                             <Badge variant={coa.saldo_normal === 'debit' ? 'info' : 'accent'}>{SALDO_LABELS[coa.saldo_normal]}</Badge>
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">{JENIS_LAPORAN_LABELS[coa.jenis_laporan] || '-'}</TableCell>
+                                        <TableCell className="text-muted-foreground font-medium">{coa.jenis_laporan}</TableCell>
                                         <TableCell align="center">
                                             <div className="flex items-center justify-center gap-1">
                                                 <Button
@@ -502,11 +573,7 @@ export default function Index({ coas }: CoasProps) {
                                 <NativeSelect
                                     id="modal_level1"
                                     value={modalLevel1}
-                                    onChange={(e) => {
-                                        setModalLevel1(e.target.value);
-                                        setModalLevel2('');
-                                        setModalLevel3('');
-                                    }}
+                                    onChange={(e) => handleModalLevel1Change(e.target.value)}
                                 >
                                     <option value="">-- Pilih Kelompok Utama --</option>
                                     {level1Parents.map((p) => (
@@ -525,10 +592,7 @@ export default function Index({ coas }: CoasProps) {
                                     id="modal_level2"
                                     value={modalLevel2}
                                     disabled={!modalLevel1}
-                                    onChange={(e) => {
-                                        setModalLevel2(e.target.value);
-                                        setModalLevel3('');
-                                    }}
+                                    onChange={(e) => handleModalLevel2Change(e.target.value)}
                                 >
                                     <option value="">-- Pilih Sub Kelompok --</option>
                                     {modalLevel2Options.map((p) => (
@@ -547,7 +611,7 @@ export default function Index({ coas }: CoasProps) {
                                     id="modal_level3"
                                     value={modalLevel3}
                                     disabled={!modalLevel2}
-                                    onChange={(e) => setModalLevel3(e.target.value)}
+                                    onChange={(e) => handleModalLevel3Change(e.target.value)}
                                 >
                                     <option value="">-- Pilih Sub-Sub Kelompok --</option>
                                     {modalLevel3Options.map((p) => (
@@ -575,36 +639,42 @@ export default function Index({ coas }: CoasProps) {
                             )}
 
                             <Field>
-                                <Label htmlFor="nama_akun" className={!modalLevel3 ? 'text-muted-foreground' : ''}>
-                                    Nama Akun
+                                <Label htmlFor="nama_akun">
+                                    Nama Akun <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="nama_akun"
                                     placeholder="Contoh: Kas Baru, Beban Operasi Lain"
                                     value={data.nama_akun}
                                     onChange={(e) => setData('nama_akun', e.target.value)}
-                                    disabled={!modalLevel3}
+                                    autoFocus
                                     required
                                 />
                                 {errors.nama_akun && <p className="text-destructive text-xs font-medium">{errors.nama_akun}</p>}
                             </Field>
 
-                            <Field>
-                                <Label htmlFor="kode_akun" className={!modalLevel3 ? 'text-muted-foreground' : ''}>
-                                    Kode Akun
+                             <Field>
+                                <Label htmlFor="kode_sequence">
+                                    Kode Akun <span className="text-destructive">*</span>
                                 </Label>
-                                <Input
-                                    id="kode_akun"
-                                    placeholder="Contoh: 01.1000.01.01"
-                                    value={data.kode_akun}
-                                    onChange={(e) => setData('kode_akun', e.target.value)}
-                                    disabled={!modalLevel3}
-                                    className="font-mono"
-                                    required
-                                />
-                                {data.kode_akun && !/^\d{2}\.\d{4}\.\d{2}\.\d{2}$/.test(data.kode_akun) && (
-                                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                                        Format: XX.XXXX.XX.XX (contoh: 01.1000.01.01)
+                                <div className="flex items-center overflow-hidden rounded-lg border bg-background font-mono text-sm focus-within:ring-2 focus-within:ring-ring">
+                                    <span className="bg-muted text-muted-foreground select-none px-3 py-2 border-r font-semibold">
+                                        {displayPrefix}
+                                    </span>
+                                    <Input
+                                        id="kode_sequence"
+                                        maxLength={2}
+                                        placeholder="XX"
+                                        value={sequenceSuffix}
+                                        onChange={(e) => handleSequenceSuffixChange(e.target.value)}
+                                        disabled={!modalLevel3}
+                                        className="border-0 font-mono focus-visible:ring-0 shadow-none disabled:bg-transparent disabled:opacity-50"
+                                        required
+                                    />
+                                </div>
+                                {isDuplicateKode && (
+                                    <p className="text-destructive text-xs font-semibold">
+                                        ⚠️ Kode akun <span className="font-mono">{fullKodeAkun}</span> sudah terdaftar. Silakan gunakan nomor urut lain.
                                     </p>
                                 )}
                                 {errors.kode_akun && <p className="text-destructive text-xs font-medium">{errors.kode_akun}</p>}
@@ -623,7 +693,10 @@ export default function Index({ coas }: CoasProps) {
                             >
                                 Batal
                             </Button>
-                            <Button type="submit" disabled={processing || !modalLevel3}>
+                            <Button
+                                type="submit"
+                                disabled={processing || !data.nama_akun || sequenceSuffix.length !== 2 || isDuplicateKode || !modalLevel3}
+                            >
                                 Simpan Akun
                             </Button>
                         </DialogFooter>

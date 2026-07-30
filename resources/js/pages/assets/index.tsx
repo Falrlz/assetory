@@ -161,7 +161,7 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
             }
             return nextData;
         });
-    }, [data.jenis, isOpen]);
+    }, [data.jenis, isOpen, setData, transactionCoas]);
 
     const formatRupiah = (value: number | string) => {
         const num = typeof value === 'string' ? parseFloat(value) : value;

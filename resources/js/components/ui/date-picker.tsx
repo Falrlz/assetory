@@ -29,23 +29,22 @@ export function DatePicker({
     const [isOpen, setIsOpen] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
 
-    // Timezone-safe parsing of YYYY-MM-DD string
-    let currentYear = new Date().getFullYear();
-    let currentMonth = new Date().getMonth();
-    let currentDay = new Date().getDate();
-
-    if (value) {
-        const parts = value.split('-');
-        if (parts.length === 3) {
-            currentYear = parseInt(parts[0], 10);
-            currentMonth = parseInt(parts[1], 10) - 1; // 0-indexed
-            currentDay = parseInt(parts[2], 10);
-        }
-    }
-
     // View state of the calendar (which month/year the user is looking at)
-    const [viewYear, setViewYear] = useState(currentYear);
-    const [viewMonth, setViewMonth] = useState(currentMonth); // 0-indexed
+    const [viewYear, setViewYear] = useState(() => {
+        if (value) {
+            const parts = value.split('-');
+            if (parts.length === 3) return parseInt(parts[0], 10);
+        }
+        return new Date().getFullYear();
+    });
+
+    const [viewMonth, setViewMonth] = useState(() => {
+        if (value) {
+            const parts = value.split('-');
+            if (parts.length === 3) return parseInt(parts[1], 10) - 1;
+        }
+        return new Date().getMonth();
+    });
 
     // Update view state when prop value changes (timezone-safely)
     useEffect(() => {
@@ -72,6 +71,20 @@ export function DatePicker({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Timezone-safe parsing of YYYY-MM-DD string for selected day calculations
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
+    let currentDay = new Date().getDate();
+
+    if (value) {
+        const parts = value.split('-');
+        if (parts.length === 3) {
+            currentYear = parseInt(parts[0], 10);
+            currentMonth = parseInt(parts[1], 10) - 1; // 0-indexed
+            currentDay = parseInt(parts[2], 10);
+        }
+    }
 
     // Format YYYY-MM-DD to DD/MM/YYYY for the button label
     const formatLabel = (dateStr: string) => {
