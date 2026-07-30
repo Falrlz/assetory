@@ -1,7 +1,6 @@
 import { Field, PageShell } from '@/components/page-header';
-import { formatDateRange, ReportDocument, ReportFilterCard, ReportSignatures, ReportToolbar } from '@/components/reports/report-layout';
+import { ReportDocument, ReportFilterCard, ReportSignatures, ReportToolbar } from '@/components/reports/report-layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableEmpty, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -32,26 +31,33 @@ interface EquityChangeProps {
     totalTambahan: number;
     totalLabaNet: number;
     totalAkhir: number;
+    hasAppliedFilter?: boolean;
     filters: {
-        start_date: string;
-        end_date: string;
+        year?: string;
     };
 }
 
-export default function EquityChange({ equityItems, totalAwal, totalTambahan, totalLabaNet, totalAkhir, filters }: EquityChangeProps) {
+export default function EquityChange({
+    equityItems,
+    totalAwal,
+    totalTambahan,
+    totalLabaNet,
+    totalAkhir,
+    hasAppliedFilter = false,
+    filters,
+}: EquityChangeProps) {
     const { errors } = usePage().props;
-    const [startDate, setStartDate] = useState(filters.start_date);
-    const [endDate, setEndDate] = useState(filters.end_date);
+    const [selectedYear, setSelectedYear] = useState<string>(filters.year || '');
     const [localError, setLocalError] = useState<string | null>(null);
+
+    const currentCalendarYear = new Date().getFullYear();
+    const availableYears = Array.from({ length: 7 }, (_, i) => (currentCalendarYear - 5 + i).toString());
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const startYear = new Date(startDate).getFullYear();
-        const endYear = new Date(endDate).getFullYear();
-
-        if (startYear !== endYear) {
-            setLocalError('Rentang tanggal tidak boleh melewati dua tahun yang berbeda.');
+        if (!selectedYear) {
+            setLocalError('Silakan pilih Tahun Buku laporan terlebih dahulu.');
             return;
         }
 
@@ -59,8 +65,7 @@ export default function EquityChange({ equityItems, totalAwal, totalTambahan, to
         router.get(
             route('reports.equity-change'),
             {
-                start_date: startDate,
-                end_date: endDate,
+                year: selectedYear,
             },
             {
                 preserveState: true,
@@ -70,15 +75,8 @@ export default function EquityChange({ equityItems, totalAwal, totalTambahan, to
 
     const handleReset = () => {
         setLocalError(null);
-        const currentYear = new Date().getFullYear();
-        const start = `${currentYear}-01-01`;
-        const end = new Date().toISOString().split('T')[0];
-        setStartDate(start);
-        setEndDate(end);
-        router.get(route('reports.equity-change'), {
-            start_date: start,
-            end_date: end,
-        });
+        setSelectedYear('');
+        router.get(route('reports.equity-change'), {});
     };
 
     const formatRupiah = (value: number) =>
@@ -103,92 +101,116 @@ export default function EquityChange({ equityItems, totalAwal, totalTambahan, to
             <PageShell className="print:p-0">
                 <ReportToolbar
                     title="Laporan Perubahan Ekuitas"
-                    description="Menampilkan riwayat perubahan struktur modal pemilik selama satu periode akuntansi."
+                    description="Menampilkan riwayat perubahan struktur modal pemilik selama satu Tahun Buku."
                 />
 
-                {(errors.start_date || errors.end_date || localError) && (
+                {(errors.year || localError) && (
                     <Alert variant="destructive" className="print:hidden">
                         <AlertCircle className="size-4" />
                         <AlertTitle>Kesalahan Validasi</AlertTitle>
-                        <AlertDescription>{errors.start_date || errors.end_date || localError}</AlertDescription>
+                        <AlertDescription>{(errors.year as string) || localError}</AlertDescription>
                     </Alert>
                 )}
 
-                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset}>
-                    <Field className="w-48">
-                        <Label htmlFor="start_date">Tanggal Mulai</Label>
-                        <DatePicker id="start_date" value={startDate} onChange={setStartDate} />
-                    </Field>
-                    <Field className="w-48">
-                        <Label htmlFor="end_date">Tanggal Selesai</Label>
-                        <DatePicker id="end_date" value={endDate} onChange={setEndDate} />
+                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset} disabled={!selectedYear}>
+                    <Field className="w-56">
+                        <Label htmlFor="year">Pilih Tahun Buku</Label>
+                        <select
+                            id="year"
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(e.target.value)}
+                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                        >
+                            <option value="">-- Pilih Tahun --</option>
+                            {availableYears.map((y) => (
+                                <option key={y} value={y}>
+                                    Tahun Buku {y}
+                                </option>
+                            ))}
+                        </select>
                     </Field>
                 </ReportFilterCard>
 
-                <ReportDocument title="Laporan Perubahan Ekuitas" period={`Periode ${formatDateRange(filters.start_date, filters.end_date)}`}>
-                    <Table minWidth="min-w-[900px]">
-                        <TableHeader>
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="min-w-[220px]">Akun Ekuitas</TableHead>
-                                <TableHead align="right" className="w-44">
-                                    Saldo Awal
-                                </TableHead>
-                                <TableHead align="right" className="w-44">
-                                    Setoran Modal
-                                </TableHead>
-                                <TableHead align="right" className="w-44">
-                                    Laba Bersih
-                                </TableHead>
-                                <TableHead align="right" className="w-44">
-                                    Saldo Akhir
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {equityItems.length === 0 ? (
-                                <TableEmpty colSpan={5} description="Tidak ada riwayat transaksi ekuitas pada periode ini." />
-                            ) : (
-                                equityItems.map((item) => (
-                                    <TableRow key={item.kode_akun}>
-                                        <TableCell>
-                                            <span className="text-foreground block font-medium">{item.nama_akun}</span>
-                                            <span className="text-muted-foreground block font-mono text-xs">{item.kode_akun}</span>
-                                        </TableCell>
-                                        <TableCell numeric className="text-foreground">
-                                            {formatRupiah(item.saldo_awal)}
-                                        </TableCell>
-                                        <TableCell numeric className="text-emerald-600 dark:text-emerald-400">
-                                            {formatSigned(item.tambahan)}
-                                        </TableCell>
-                                        <TableCell numeric className="text-emerald-600 dark:text-emerald-400">
-                                            {formatSigned(item.laba_net)}
-                                        </TableCell>
-                                        <TableCell numeric className="text-foreground font-semibold">
-                                            {formatRupiah(item.saldo_akhir)}
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                        <TableFooter>
-                            <TableRow className="hover:bg-transparent">
-                                <TableCell className="uppercase">Total Ekuitas</TableCell>
-                                <TableCell numeric>{formatRupiah(totalAwal)}</TableCell>
-                                <TableCell numeric className="text-emerald-600 dark:text-emerald-400">
-                                    {formatSigned(totalTambahan)}
-                                </TableCell>
-                                <TableCell numeric className="text-emerald-600 dark:text-emerald-400">
-                                    {formatSigned(totalLabaNet)}
-                                </TableCell>
-                                <TableCell numeric className="text-base">
-                                    {formatRupiah(totalAkhir)}
-                                </TableCell>
-                            </TableRow>
-                        </TableFooter>
-                    </Table>
+                {!hasAppliedFilter ? (
+                    <div className="bg-card flex flex-col items-center justify-center rounded-xl border p-12 text-center shadow-xs">
+                        <div className="bg-muted flex size-12 items-center justify-center rounded-full">
+                            <AlertCircle className="text-muted-foreground size-6" />
+                        </div>
+                        <h3 className="text-foreground mt-4 text-base font-semibold">Silakan Pilih Tahun Buku Laporan</h3>
+                        <p className="text-muted-foreground mt-1.5 max-w-sm text-xs">
+                            Pilih <span className="font-semibold">Tahun Buku</span> di atas, lalu klik tombol{' '}
+                            <span className="font-semibold">"Tampilkan Laporan"</span> untuk memuat Perubahan Ekuitas.
+                        </p>
+                    </div>
+                ) : (
+                    <ReportDocument
+                        title="Laporan Perubahan Ekuitas"
+                        period={`Tahun Buku ${selectedYear} (1 Jan ${selectedYear} - 31 Des ${selectedYear})`}
+                    >
+                        <Table minWidth="min-w-[900px]">
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="min-w-[220px]">Akun Ekuitas</TableHead>
+                                    <TableHead align="right" className="w-44">
+                                        Saldo Awal
+                                    </TableHead>
+                                    <TableHead align="right" className="w-44">
+                                        Setoran Modal
+                                    </TableHead>
+                                    <TableHead align="right" className="w-44">
+                                        Laba Bersih
+                                    </TableHead>
+                                    <TableHead align="right" className="w-44">
+                                        Saldo Akhir
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {equityItems.length === 0 ? (
+                                    <TableEmpty colSpan={5} description="Tidak ada riwayat transaksi ekuitas pada tahun ini." />
+                                ) : (
+                                    equityItems.map((item) => (
+                                        <TableRow key={item.kode_akun}>
+                                            <TableCell>
+                                                <span className="text-foreground block font-medium">{item.nama_akun}</span>
+                                                <span className="text-muted-foreground block font-mono text-xs">{item.kode_akun}</span>
+                                            </TableCell>
+                                            <TableCell numeric className="text-foreground">
+                                                {formatRupiah(item.saldo_awal)}
+                                            </TableCell>
+                                            <TableCell numeric className="text-emerald-600 dark:text-emerald-400">
+                                                {formatSigned(item.tambahan)}
+                                            </TableCell>
+                                            <TableCell numeric className="text-emerald-600 dark:text-emerald-400">
+                                                {formatSigned(item.laba_net)}
+                                            </TableCell>
+                                            <TableCell numeric className="text-foreground font-semibold">
+                                                {formatRupiah(item.saldo_akhir)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                            <TableFooter>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableCell className="uppercase">Total Ekuitas</TableCell>
+                                    <TableCell numeric>{formatRupiah(totalAwal)}</TableCell>
+                                    <TableCell numeric className="text-emerald-600 dark:text-emerald-400">
+                                        {formatSigned(totalTambahan)}
+                                    </TableCell>
+                                    <TableCell numeric className="text-emerald-600 dark:text-emerald-400">
+                                        {formatSigned(totalLabaNet)}
+                                    </TableCell>
+                                    <TableCell numeric className="font-bold">
+                                        {formatRupiah(totalAkhir)}
+                                    </TableCell>
+                                </TableRow>
+                            </TableFooter>
+                        </Table>
 
-                    <ReportSignatures />
-                </ReportDocument>
+                        <ReportSignatures />
+                    </ReportDocument>
+                )}
             </PageShell>
         </AppLayout>
     );

@@ -9,40 +9,36 @@ beforeEach(function () {
     $this->user = User::factory()->create();
 });
 
-test('equity change report allows same year date range', function () {
+test('equity change report allows valid year parameter', function () {
     $this->actingAs($this->user)
         ->get(route('reports.equity-change', [
-            'start_date' => '2026-01-01',
-            'end_date' => '2026-12-31',
+            'year' => '2026',
         ]))
         ->assertOk();
 });
 
-test('equity change report rejects cross year date range', function () {
+test('equity change report validates year parameter', function () {
     $this->actingAs($this->user)
         ->get(route('reports.equity-change', [
-            'start_date' => '2026-11-01',
-            'end_date' => '2027-02-01',
+            'year' => 'invalid-year',
         ]))
-        ->assertSessionHasErrors(['start_date']);
+        ->assertSessionHasErrors(['year']);
 });
 
-test('calk report allows same year date range', function () {
+test('calk report allows valid year parameter', function () {
     $this->actingAs($this->user)
         ->get(route('reports.calk', [
-            'start_date' => '2026-01-01',
-            'end_date' => '2026-12-31',
+            'year' => '2026',
         ]))
         ->assertOk();
 });
 
-test('calk report rejects cross year date range', function () {
+test('calk report validates year parameter', function () {
     $this->actingAs($this->user)
         ->get(route('reports.calk', [
-            'start_date' => '2026-11-01',
-            'end_date' => '2027-02-01',
+            'year' => 'invalid-year',
         ]))
-        ->assertSessionHasErrors(['start_date']);
+        ->assertSessionHasErrors(['year']);
 });
 
 test('can save calk notes successfully', function () {

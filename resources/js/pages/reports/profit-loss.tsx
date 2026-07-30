@@ -1,7 +1,6 @@
 import { Field, PageShell } from '@/components/page-header';
 import {
     AccountTable,
-    formatDateRange,
     ReportDocument,
     ReportFilterCard,
     ReportSection,
@@ -10,7 +9,6 @@ import {
     type ReportAccount,
 } from '@/components/reports/report-layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -34,9 +32,11 @@ interface ProfitLossProps {
     totalExpensesLastYear: number;
     netProfit: number;
     netProfitLastYear: number;
+    hasAppliedFilter?: boolean;
     filters: {
-        start_date: string;
-        end_date: string;
+        year?: string;
+        start_date?: string;
+        end_date?: string;
     };
 }
 
@@ -49,24 +49,25 @@ export default function ProfitLoss({
     totalExpensesLastYear,
     netProfit,
     netProfitLastYear,
+    hasAppliedFilter = false,
     filters,
 }: ProfitLossProps) {
     const { errors } = usePage().props;
-    const [startDate, setStartDate] = useState(filters.start_date);
-    const [endDate, setEndDate] = useState(filters.end_date);
+    const [selectedYear, setSelectedYear] = useState<string>(filters.year || '');
     const [localError, setLocalError] = useState<string | null>(null);
 
-    const currentYear = new Date(filters.end_date).getFullYear();
-    const lastYear = currentYear - 1;
+    const currentYearNum = selectedYear ? parseInt(selectedYear, 10) : new Date().getFullYear();
+    const lastYearNum = currentYearNum - 1;
+
+    // Generate option years (e.g. 5 years back to next year)
+    const currentCalendarYear = new Date().getFullYear();
+    const availableYears = Array.from({ length: 7 }, (_, i) => (currentCalendarYear - 5 + i).toString());
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const startYear = new Date(startDate).getFullYear();
-        const endYear = new Date(endDate).getFullYear();
-
-        if (startYear !== endYear) {
-            setLocalError('Rentang tanggal tidak boleh melewati dua tahun yang berbeda.');
+        if (!selectedYear) {
+            setLocalError('Silakan pilih Tahun Buku laporan terlebih dahulu.');
             return;
         }
 
@@ -74,8 +75,7 @@ export default function ProfitLoss({
         router.get(
             route('reports.profit-loss'),
             {
-                start_date: startDate,
-                end_date: endDate,
+                year: selectedYear,
             },
             {
                 preserveState: true,
@@ -85,15 +85,8 @@ export default function ProfitLoss({
 
     const handleReset = () => {
         setLocalError(null);
-        const year = new Date().getFullYear();
-        const start = `${year}-01-01`;
-        const end = new Date().toISOString().split('T')[0];
-        setStartDate(start);
-        setEndDate(end);
-        router.get(route('reports.profit-loss'), {
-            start_date: start,
-            end_date: end,
-        });
+        setSelectedYear('');
+        router.get(route('reports.profit-loss'), {});
     };
 
     const formatRupiah = (value: number) =>
@@ -113,94 +106,115 @@ export default function ProfitLoss({
             <PageShell className="print:p-0">
                 <ReportToolbar
                     title="Laporan Laba Rugi"
-                    description="Ringkasan pendapatan dan beban untuk mengukur keuntungan atau kerugian dalam periode tertentu."
+                    description="Ringkasan pendapatan dan beban untuk mengukur keuntungan atau kerugian dalam satu Tahun Buku."
                 />
 
-                {(localError || (errors && errors.start_date)) && (
+                {(localError || (errors && errors.year)) && (
                     <Alert variant="destructive" className="print:hidden">
                         <AlertCircle className="size-4" />
                         <AlertTitle>Kesalahan</AlertTitle>
-                        <AlertDescription>{localError || (errors.start_date as string)}</AlertDescription>
+                        <AlertDescription>{localError || (errors.year as string)}</AlertDescription>
                     </Alert>
                 )}
 
-                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset}>
-                    <Field className="w-48">
-                        <Label htmlFor="start_date">Tanggal Mulai</Label>
-                        <DatePicker id="start_date" value={startDate} onChange={setStartDate} />
-                    </Field>
-                    <Field className="w-48">
-                        <Label htmlFor="end_date">Tanggal Selesai</Label>
-                        <DatePicker id="end_date" value={endDate} onChange={setEndDate} />
+                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset} disabled={!selectedYear}>
+                    <Field className="w-56">
+                        <Label htmlFor="year">Pilih Tahun Buku</Label>
+                        <select
+                            id="year"
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(e.target.value)}
+                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                        >
+                            <option value="">-- Pilih Tahun --</option>
+                            {availableYears.map((y) => (
+                                <option key={y} value={y}>
+                                    Tahun Buku {y}
+                                </option>
+                            ))}
+                        </select>
                     </Field>
                 </ReportFilterCard>
 
-                <ReportDocument
-                    className="mx-auto w-full max-w-4xl print:max-w-none"
-                    title="Laporan Laba Rugi"
-                    period={`Periode ${formatDateRange(filters.start_date, filters.end_date)}`}
-                >
-                    <div className="space-y-8">
-                        <div className="space-y-3">
-                            <ReportSection title="Pendapatan">
-                                <AccountTable
-                                    accounts={revenues}
-                                    currentYear={currentYear}
-                                    lastYear={lastYear}
-                                    emptyLabel="Tidak ada pendapatan tercatat."
-                                    format={formatRupiah}
-                                />
-                            </ReportSection>
-                            <TotalRow
-                                label="Total Pendapatan"
-                                current={formatRupiah(totalRevenues)}
-                                previous={formatRupiah(totalRevenuesLastYear)}
-                                currentYear={currentYear}
-                                lastYear={lastYear}
-                            />
+                {!hasAppliedFilter ? (
+                    <div className="bg-card flex flex-col items-center justify-center rounded-xl border p-12 text-center shadow-xs">
+                        <div className="bg-muted flex size-12 items-center justify-center rounded-full">
+                            <AlertCircle className="text-muted-foreground size-6" />
                         </div>
-
-                        <div className="space-y-3">
-                            <ReportSection title="Beban Operasional & Penyusutan">
-                                <AccountTable
-                                    accounts={expenses}
-                                    currentYear={currentYear}
-                                    lastYear={lastYear}
-                                    emptyLabel="Tidak ada beban tercatat."
-                                    format={formatRupiah}
-                                />
-                            </ReportSection>
-                            <TotalRow
-                                label="Total Beban"
-                                current={formatRupiah(totalExpenses)}
-                                previous={formatRupiah(totalExpensesLastYear)}
-                                currentYear={currentYear}
-                                lastYear={lastYear}
-                            />
-                        </div>
-
-                        <TotalRow
-                            label={isProfit ? 'Laba Bersih (Net Income)' : 'Rugi Bersih (Net Loss)'}
-                            emphasis="strong"
-                            icon={
-                                isProfit ? (
-                                    <TrendingUp className="size-5" aria-hidden="true" />
-                                ) : (
-                                    <TrendingDown className="size-5" aria-hidden="true" />
-                                )
-                            }
-                            className={
-                                isProfit
-                                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                                    : 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400'
-                            }
-                            current={formatRupiah(netProfit)}
-                            previous={formatRupiah(netProfitLastYear)}
-                            currentYear={currentYear}
-                            lastYear={lastYear}
-                        />
+                        <h3 className="text-foreground mt-4 text-base font-semibold">Silakan Pilih Tahun Buku Laporan</h3>
+                        <p className="text-muted-foreground mt-1.5 max-w-sm text-xs">
+                            Pilih <span className="font-semibold">Tahun Buku</span> di atas, lalu klik tombol{' '}
+                            <span className="font-semibold">"Tampilkan Laporan"</span> untuk memuat data Laba Rugi.
+                        </p>
                     </div>
-                </ReportDocument>
+                ) : (
+                    <ReportDocument
+                        className="mx-auto w-full max-w-4xl print:max-w-none"
+                        title="Laporan Laba Rugi"
+                        period={`Tahun Buku ${selectedYear} (1 Jan ${selectedYear} - 31 Des ${selectedYear})`}
+                    >
+                        <div className="space-y-8">
+                            <div className="space-y-3">
+                                <ReportSection title="Pendapatan">
+                                    <AccountTable
+                                        accounts={revenues}
+                                        currentYear={currentYearNum}
+                                        lastYear={lastYearNum}
+                                        emptyLabel="Tidak ada pendapatan tercatat pada tahun ini."
+                                        format={formatRupiah}
+                                    />
+                                </ReportSection>
+                                <TotalRow
+                                    label="Total Pendapatan"
+                                    current={formatRupiah(totalRevenues)}
+                                    previous={formatRupiah(totalRevenuesLastYear)}
+                                    currentYear={currentYearNum}
+                                    lastYear={lastYearNum}
+                                />
+                            </div>
+
+                            <div className="space-y-3">
+                                <ReportSection title="Beban Operasional & Penyusutan">
+                                    <AccountTable
+                                        accounts={expenses}
+                                        currentYear={currentYearNum}
+                                        lastYear={lastYearNum}
+                                        emptyLabel="Tidak ada beban tercatat pada tahun ini."
+                                        format={formatRupiah}
+                                    />
+                                </ReportSection>
+                                <TotalRow
+                                    label="Total Beban"
+                                    current={formatRupiah(totalExpenses)}
+                                    previous={formatRupiah(totalExpensesLastYear)}
+                                    currentYear={currentYearNum}
+                                    lastYear={lastYearNum}
+                                />
+                            </div>
+
+                            <TotalRow
+                                label={isProfit ? 'Laba Bersih (Net Income)' : 'Rugi Bersih (Net Loss)'}
+                                emphasis="strong"
+                                icon={
+                                    isProfit ? (
+                                        <TrendingUp className="size-5" aria-hidden="true" />
+                                    ) : (
+                                        <TrendingDown className="size-5" aria-hidden="true" />
+                                    )
+                                }
+                                className={
+                                    isProfit
+                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                        : 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400'
+                                }
+                                current={formatRupiah(netProfit)}
+                                previous={formatRupiah(netProfitLastYear)}
+                                currentYear={currentYearNum}
+                                lastYear={lastYearNum}
+                            />
+                        </div>
+                    </ReportDocument>
+                )}
             </PageShell>
         </AppLayout>
     );

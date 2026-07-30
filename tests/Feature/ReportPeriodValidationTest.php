@@ -27,38 +27,34 @@ test('trial balance report allows same year date range', function () {
         ->assertOk();
 });
 
-test('profit and loss report rejects cross year date range', function () {
+test('profit and loss report validates year parameter', function () {
     $this->actingAs($this->user)
         ->get(route('reports.profit-loss', [
-            'start_date' => '2026-11-01',
-            'end_date' => '2027-02-01',
+            'year' => 'invalid-year',
         ]))
-        ->assertSessionHasErrors(['start_date']);
+        ->assertSessionHasErrors(['year']);
 });
 
-test('profit and loss report allows same year date range', function () {
+test('profit and loss report allows valid year parameter', function () {
     $this->actingAs($this->user)
         ->get(route('reports.profit-loss', [
-            'start_date' => '2026-01-01',
-            'end_date' => '2026-12-31',
+            'year' => '2026',
         ]))
         ->assertOk();
 });
 
-test('cash flow report rejects cross year date range', function () {
+test('cash flow report validates year parameter', function () {
     $this->actingAs($this->user)
         ->get(route('reports.cash-flow', [
-            'start_date' => '2026-11-01',
-            'end_date' => '2027-02-01',
+            'year' => 'invalid-year',
         ]))
-        ->assertSessionHasErrors(['start_date']);
+        ->assertSessionHasErrors(['year']);
 });
 
-test('cash flow report allows same year date range', function () {
+test('cash flow report allows valid year parameter', function () {
     $this->actingAs($this->user)
         ->get(route('reports.cash-flow', [
-            'start_date' => '2026-01-01',
-            'end_date' => '2026-12-31',
+            'year' => '2026',
         ]))
         ->assertOk();
 });

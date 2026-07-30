@@ -11,7 +11,7 @@ import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type Coa } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, RefreshCw, Save, Scale, Search } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Save, Scale, Search } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,6 +24,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface BeginningBalanceProps {
     coas: (Coa & { debit: number; kredit: number })[];
     openingDate: string;
+    isLocked?: boolean;
+    lockReason?: string;
 }
 
 const CATEGORY_TONES: Record<string, BadgeProps['variant']> = {
@@ -42,7 +44,7 @@ const CATEGORY_LABELS: Record<string, string> = {
     beban: 'Beban',
 };
 
-export default function BeginningBalances({ coas, openingDate }: BeginningBalanceProps) {
+export default function BeginningBalances({ coas, openingDate, isLocked = false, lockReason = '' }: BeginningBalanceProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -84,20 +86,6 @@ export default function BeginningBalances({ coas, openingDate }: BeginningBalanc
                 ...(field === 'kredit' && numericValue > 0 ? { debit: 0 } : {}),
             };
             setData('balances', newBalances);
-        }
-    };
-
-    // Reset all inputs to 0
-    const handleResetAll = () => {
-        if (window.confirm('Apakah Anda yakin ingin mengosongkan semua saldo awal?')) {
-            setData(
-                'balances',
-                data.balances.map((item) => ({
-                    ...item,
-                    debit: 0,
-                    kredit: 0,
-                })),
-            );
         }
     };
 
@@ -160,8 +148,11 @@ export default function BeginningBalances({ coas, openingDate }: BeginningBalanc
                         <CardContent className="space-y-5">
                             <div className="grid gap-4 md:grid-cols-3">
                                 <Field>
-                                    <Label htmlFor="tanggal">Pilih Tanggal</Label>
-                                    <DatePicker id="tanggal" value={data.tanggal} onChange={(val) => setData('tanggal', val)} />
+                                    <Label htmlFor="tanggal">Pilih Tanggal Saldo Awal (Cut-Off)</Label>
+                                    <DatePicker id="tanggal" value={data.tanggal} onChange={(val) => setData('tanggal', val)} disabled={isLocked} />
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        {isLocked ? lockReason : 'Tanggal diset untuk awal periode pembukuan.'}
+                                    </p>
                                     {errors.tanggal && <p className="text-destructive text-xs font-medium">{errors.tanggal}</p>}
                                 </Field>
 
@@ -299,7 +290,7 @@ export default function BeginningBalances({ coas, openingDate }: BeginningBalanc
                                                                 aria-label={`Saldo debit ${coa.nama_akun}`}
                                                                 value={currentVal.debit || ''}
                                                                 onChange={(e) => handleBalanceChange(coa.id, 'debit', e.target.value)}
-                                                                disabled={currentVal.kredit > 0}
+                                                                disabled={isLocked || currentVal.kredit > 0}
                                                                 placeholder="0"
                                                                 className="disabled:bg-muted/50 pl-9 text-right font-mono tabular-nums"
                                                                 min="0"
@@ -319,7 +310,7 @@ export default function BeginningBalances({ coas, openingDate }: BeginningBalanc
                                                                 aria-label={`Saldo kredit ${coa.nama_akun}`}
                                                                 value={currentVal.kredit || ''}
                                                                 onChange={(e) => handleBalanceChange(coa.id, 'kredit', e.target.value)}
-                                                                disabled={currentVal.debit > 0}
+                                                                disabled={isLocked || currentVal.debit > 0}
                                                                 placeholder="0"
                                                                 className="disabled:bg-muted/50 pl-9 text-right font-mono tabular-nums"
                                                                 min="0"
@@ -335,20 +326,10 @@ export default function BeginningBalances({ coas, openingDate }: BeginningBalanc
                             </Table>
 
                             {/* Footer Actions */}
-                            <div className="bg-muted/20 flex flex-wrap items-center justify-between gap-3 border-t p-5">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={handleResetAll}
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                >
-                                    <RefreshCw />
-                                    Kosongkan Saldo
-                                </Button>
-
-                                <Button type="submit" disabled={processing || (!isBalanced && hasAnyBalance)}>
+                            <div className="bg-muted/20 flex flex-wrap items-center justify-end gap-3 border-t p-5">
+                                <Button type="submit" disabled={isLocked || processing || (!isBalanced && hasAnyBalance)}>
                                     <Save />
-                                    Simpan Saldo Awal
+                                    {isLocked ? 'Saldo Awal Terkunci' : 'Simpan Saldo Awal'}
                                 </Button>
                             </div>
                         </CardContent>

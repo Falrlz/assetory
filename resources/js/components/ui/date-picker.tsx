@@ -13,6 +13,7 @@ interface DatePickerProps {
     size?: ControlSize;
     minYear?: number;
     maxYear?: number;
+    disabled?: boolean;
 }
 
 export function DatePicker({
@@ -23,6 +24,7 @@ export function DatePicker({
     size = 'default',
     minYear = new Date().getFullYear() - 10,
     maxYear = new Date().getFullYear() + 5,
+    disabled = false,
 }: DatePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
@@ -176,11 +178,13 @@ export function DatePicker({
             <button
                 id={id}
                 type="button"
-                onClick={() => setIsOpen(!isOpen)}
+                disabled={disabled}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={cn(
                     controlBaseClass,
                     controlSizeClass[size],
-                    'hover:bg-muted/50 items-center justify-start gap-2 text-left font-normal transition-colors',
+                    'items-center justify-start gap-2 text-left font-normal transition-colors',
+                    disabled ? 'cursor-not-allowed opacity-50 bg-muted/60' : 'hover:bg-muted/50',
                     className,
                 )}
             >

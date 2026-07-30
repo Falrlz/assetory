@@ -218,10 +218,26 @@ export default function Index({ coas }: CoasProps) {
         });
     };
 
-    const handleDelete = (id: number) => {
-        if (confirm('Apakah Anda yakin ingin menghapus akun ini?')) {
-            editForm.delete(route('coas.destroy', id));
-        }
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [coaToDelete, setCoaToDelete] = useState<Coa | null>(null);
+
+    const confirmDelete = (coa: Coa) => {
+        setCoaToDelete(coa);
+        setDeleteModalOpen(true);
+    };
+
+    const handleExecuteDelete = () => {
+        if (!coaToDelete) return;
+
+        editForm.delete(route('coas.destroy', coaToDelete.id), {
+            onSuccess: () => {
+                setDeleteModalOpen(false);
+                setCoaToDelete(null);
+            },
+            onError: (errs) => {
+                setDeleteModalOpen(false);
+            },
+        });
     };
 
     return (
@@ -405,7 +421,7 @@ export default function Index({ coas }: CoasProps) {
                                                     variant="ghost"
                                                     size="icon-xs"
                                                     className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                                    onClick={() => handleDelete(coa.id)}
+                                                    onClick={() => confirmDelete(coa)}
                                                     title="Hapus akun"
                                                 >
                                                     <Trash2 />
@@ -420,6 +436,45 @@ export default function Index({ coas }: CoasProps) {
                     </Table>
                 </TableContainer>
             </PageShell>
+
+            {/* Error Message Alert jika ada kesalahan hapus COA */}
+            {editForm.errors.error && (
+                <div className="fixed right-4 bottom-4 z-50 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-lg dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+                    <span className="font-medium">{editForm.errors.error}</span>
+                    <Button variant="ghost" size="icon-xs" onClick={() => editForm.clearErrors('error')}>
+                        <X className="size-4" />
+                    </Button>
+                </div>
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+                <DialogContent className="sm:max-w-[420px]">
+                    <DialogHeader>
+                        <DialogTitle>Konfirmasi Hapus Akun</DialogTitle>
+                        <DialogDescription>
+                            Apakah Anda yakin ingin menghapus akun <span className="text-foreground font-semibold">{coaToDelete?.nama_akun}</span> (
+                            {coaToDelete?.kode_akun})? Tindakan ini tidak dapat dibatalkan.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setDeleteModalOpen(false);
+                                setCoaToDelete(null);
+                            }}
+                        >
+                            Batal
+                        </Button>
+                        <Button type="button" variant="destructive" disabled={editForm.processing} onClick={handleExecuteDelete}>
+                            {editForm.processing ? 'Menghapus...' : 'Ya, Hapus Akun'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Create COA Dialog */}
             <Dialog
