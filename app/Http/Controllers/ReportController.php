@@ -223,15 +223,22 @@ class ReportController extends Controller
         $expensesLastYear = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '05.') || $coa->kategori === 'beban') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo_last_year');
         $currentEarningsLastYear = $revenuesLastYear - $expensesLastYear;
 
-        // Add current earnings to Equity list
-        $equity->push((object) [
-            'id' => 99999,
-            'kode_akun' => '03.9999.99.99',
-            'nama_akun' => 'Laba (Rugi) Tahun Berjalan',
-            'kategori' => 'ekuitas',
-            'saldo' => $currentEarnings,
-            'saldo_last_year' => $currentEarningsLastYear,
-        ]);
+        // Assign current earnings to existing Laba Rugi Tahun Berjalan account or push virtual account
+        $currentEarningsCoa = $equity->first(fn ($coa) => $coa->kode_akun === '03.2000.03.01' || str_contains(strtolower($coa->nama_akun), 'laba rugi tahun berjalan'));
+
+        if ($currentEarningsCoa) {
+            $currentEarningsCoa->saldo = $currentEarnings;
+            $currentEarningsCoa->saldo_last_year = $currentEarningsLastYear;
+        } else {
+            $equity->push((object) [
+                'id' => 99999,
+                'kode_akun' => '03.9999.99.99',
+                'nama_akun' => 'Laba (Rugi) Tahun Berjalan',
+                'kategori' => 'ekuitas',
+                'saldo' => $currentEarnings,
+                'saldo_last_year' => $currentEarningsLastYear,
+            ]);
+        }
 
         $totalAssets = $assets->sum('saldo');
         $totalAssetsLastYear = $assets->sum('saldo_last_year');
@@ -761,7 +768,9 @@ class ReportController extends Controller
             'totalTambahan' => $totalTambahan,
             'totalLabaNet' => $totalLabaNet,
             'totalAkhir' => $totalAkhir,
+            'hasAppliedFilter' => true,
             'filters' => [
+                'year' => (string) $year,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],

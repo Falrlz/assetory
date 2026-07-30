@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { type Asset, type BreadcrumbItem, type Coa, type Journal } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Calculator, Calendar, ClipboardList, Coins, FileText, type LucideIcon, Plus, Search, TrendingDown, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -113,6 +113,10 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
         coa_debit_id: '',
         coa_kredit_id: '',
     });
+
+    // Split coas into Parent and Transaction (Child) accounts
+    const parentCoas = useMemo(() => coas.filter((c) => c.kode_akun.split('.').length < 4), [coas]);
+    const transactionCoas = useMemo(() => coas.filter((c) => c.kode_akun.split('.').length === 4), [coas]);
 
     // Auto-select Debit & Kredit based on jenis
     useEffect(() => {
@@ -232,10 +236,6 @@ export default function Index({ assets, assetJournals = [], coas = [] }: AssetsP
     const totalHargaPerolehan = filteredAssets.reduce((sum, asset) => sum + parseFloat(asset.harga_perolehan as string), 0);
     const totalAkumulasiPenyusutan = filteredAssets.reduce((sum, asset) => sum + asset.akumulasi_penyusutan, 0);
     const totalNilaiBuku = filteredAssets.reduce((sum, asset) => sum + asset.nilai_buku, 0);
-
-    // Split coas into Parent and Transaction (Child) accounts
-    const parentCoas = coas.filter((c) => c.kode_akun.split('.').length < 4);
-    const transactionCoas = coas.filter((c) => c.kode_akun.split('.').length === 4);
 
     // Filter Debit COAs based on selected Asset Type
     const displayDebitCoas = transactionCoas.filter((coa) => {
