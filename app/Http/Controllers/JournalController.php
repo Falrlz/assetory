@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Asset;
 use App\Models\Coa;
 use App\Models\Journal;
 use App\Models\JournalItem;
@@ -15,30 +14,33 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Mengelola jurnal umum, buku besar, pembalikan, dan posting penyusutan.
+ */
 class JournalController extends Controller
 {
     public function __construct(protected DepreciationService $depreciationService) {}
 
     /**
-     * Display a listing of journals, ledger, and depreciation postings.
+     * Menampilkan jurnal, buku besar, aset, dan status posting penyusutan.
      */
     public function index(Request $request): Response
     {
         $user = $request->user();
 
-        // 1. Jurnal Umum List (with items, coa & asset, reversedBy & reversesJournal)
+        // 1. Daftar jurnal lengkap dengan akun, aset, dan hubungan jurnal pembalik.
         $journals = $user->journals()
             ->with(['items.coa', 'asset', 'reversedBy', 'reversesJournal'])
             ->orderBy('tanggal', 'desc')
             ->orderBy('id', 'desc')
             ->get();
 
-        // 2. COA list for dropdowns & forms
+        // 2. Daftar COA untuk pilihan akun pada formulir.
         $coas = $user->coas()
             ->orderBy('kode_akun')
             ->get();
 
-        // 3. Ledger (Buku Besar) query (Odoo style: all accounts in period)
+        // 3. Buku besar menampilkan seluruh akun transaksi yang aktif dalam periode.
         $request->validate([
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
@@ -53,7 +55,7 @@ class JournalController extends Controller
             ]);
         }
 
-        // Get only transaction COAs (Level 4, matching dotted pattern 'XX.XXXX.XX.XX')
+        // Kode dengan empat segmen merupakan akun level 4 yang dapat menerima transaksi.
         $transactionCoas = $user->coas()
             ->orderBy('kode_akun')
             ->get()
@@ -69,7 +71,7 @@ class JournalController extends Controller
             $coaId = $coa->id;
             $saldoNormal = $coa->saldo_normal;
 
-            // Calculate Saldo Awal (before start_date or setup beginning balance)
+            // Saldo awal mencakup transaksi sebelum periode dan jurnal saldo awal.
             $openingSums = DB::table('journal_items')
                 ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                 ->where('journals.user_id', $user->id)
@@ -89,7 +91,7 @@ class JournalController extends Controller
                 $saldoAwal = $kreditSumBefore - $debitSumBefore;
             }
 
-            // Get journal items for this COA in the date range (excluding setup beginning balance)
+            // Ambil mutasi akun dalam periode tanpa menghitung ulang jurnal saldo awal.
             $items = JournalItem::where('coa_id', $coaId)
                 ->whereHas('journal', function ($query) use ($user) {
                     $query->where('user_id', $user->id)
@@ -102,7 +104,7 @@ class JournalController extends Controller
                 ->orderBy('journals.id', 'asc')
                 ->get();
 
-            // Compute running balance starting from Saldo Awal, total debit, total credit
+            // Hitung saldo berjalan sesuai sisi saldo normal akun.
             $balance = $saldoAwal;
             $totalDebit = 0.00;
             $totalKredit = 0.00;
@@ -126,7 +128,7 @@ class JournalController extends Controller
 
             $saldoAkhir = $balance;
 
-            // Only list accounts with either non-zero opening balance or active transactions (Odoo style)
+            // Sembunyikan akun tanpa saldo awal dan tanpa transaksi agar laporan tetap ringkas.
             if ($saldoAwal != 0 || $mappedItems->count() > 0) {
                 $ledgerData[] = [
                     'coa' => $coa,
@@ -142,7 +144,7 @@ class JournalController extends Controller
             }
         }
 
-        // 4. Monthly Depreciation Posting state
+        // 4. Bulan yang sudah memiliki jurnal penyusutan tidak dapat diposting ulang.
         $postedMonths = $user->journals()
             ->where('tipe_jurnal', 'penyusutan')
             ->pluck('tanggal')
@@ -175,7 +177,7 @@ class JournalController extends Controller
     }
 
     /**
-     * Store a newly created manual journal.
+     * Memvalidasi dan menyimpan jurnal manual yang seimbang.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -200,12 +202,12 @@ class JournalController extends Controller
             ]);
         }
 
-        // Authorization and balance checks
+        // Pastikan akun dimiliki pengguna dan seluruh baris membentuk jurnal yang seimbang.
         $totalDebit = 0.00;
         $totalKredit = 0.00;
 
         foreach ($validated['items'] as $index => $item) {
-            // Verify COA belongs to user
+            // Validasi basis data saja belum menjamin akun tersebut milik pengguna ini.
             $coa = $user->coas()->find($item['coa_id']);
             if (! $coa) {
                 throw ValidationException::withMessages([
@@ -280,7 +282,7 @@ class JournalController extends Controller
     }
 
     /**
-     * Remove the specified journal.
+     * Menghapus jurnal yang tidak terkunci dan tidak terlibat pembalikan.
      */
     public function destroy(int $id): RedirectResponse
     {
@@ -306,7 +308,7 @@ class JournalController extends Controller
     }
 
     /**
-     * Reverse the specified journal.
+     * Membuat jurnal pembalik dengan posisi debit dan kredit yang ditukar.
      */
     public function reverse(int $id): RedirectResponse
     {
@@ -363,7 +365,7 @@ class JournalController extends Controller
     }
 
     /**
-     * Post monthly depreciation journals for all active assets.
+     * Memposting jurnal penyusutan bulanan untuk seluruh aset aktif pengguna.
      */
     public function postDepreciation(Request $request): RedirectResponse
     {

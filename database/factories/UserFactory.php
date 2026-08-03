@@ -12,13 +12,11 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
+    /** Kata sandi terenkripsi yang digunakan ulang selama proses factory berjalan. */
     protected static ?string $password;
 
     /**
-     * Define the model's default state.
+     * Menentukan data pengguna bawaan untuk kebutuhan pengujian dan seeding.
      *
      * @return array<string, mixed>
      */
@@ -33,9 +31,7 @@ class UserFactory extends Factory
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
+    /** Menandai alamat email pengguna sebagai belum terverifikasi. */
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [

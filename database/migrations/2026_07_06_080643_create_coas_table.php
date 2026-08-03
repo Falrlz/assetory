@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    /** Membuat bagan akun yang terpisah untuk setiap pengguna. */
     public function up(): void
     {
         Schema::create('coas', function (Blueprint $blueprint) {
@@ -21,14 +19,12 @@ return new class extends Migration
             $blueprint->enum('jenis_laporan', ['LPK', 'LR'])->nullable();
             $blueprint->timestamps();
 
-            // Kode akun harus unik per masing-masing pengguna
+            // Pengguna berbeda boleh memakai kode akun yang sama.
             $blueprint->unique(['user_id', 'kode_akun']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    /** Menghapus tabel bagan akun. */
     public function down(): void
     {
         Schema::dropIfExists('coas');

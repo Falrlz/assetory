@@ -13,7 +13,7 @@ use Inertia\Response;
 class ConfirmablePasswordController extends Controller
 {
     /**
-     * Show the confirm password page.
+     * Menampilkan halaman konfirmasi kata sandi.
      */
     public function show(): Response
     {
@@ -21,7 +21,7 @@ class ConfirmablePasswordController extends Controller
     }
 
     /**
-     * Confirm the user's password.
+     * Memastikan kata sandi pengguna benar sebelum tindakan sensitif dilanjutkan.
      */
     public function store(Request $request): RedirectResponse
     {

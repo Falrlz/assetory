@@ -96,6 +96,9 @@ export default function CashFlow({
     const currentCalendarYear = new Date().getFullYear();
     const availableYears = Array.from({ length: 7 }, (_, i) => (currentCalendarYear - 5 + i).toString());
 
+    const currentYear = selectedYear || currentCalendarYear.toString();
+    const lastYear = (parseInt(currentYear, 10) - 1).toString();
+
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
 

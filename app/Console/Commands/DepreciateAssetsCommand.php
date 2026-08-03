@@ -7,24 +7,27 @@ use App\Services\DepreciationService;
 use Illuminate\Console\Command;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Memproses jurnal penyusutan bulanan secara massal melalui Artisan.
+ */
 class DepreciateAssetsCommand extends Command
 {
     /**
-     * The name and signature of the console command.
+     * Nama, argumen, dan opsi perintah console.
      *
      * @var string
      */
     protected $signature = 'asset:depreciate {--month= : Bulan target YYYY-MM}';
 
     /**
-     * The console command description.
+     * Deskripsi perintah yang ditampilkan pada daftar Artisan.
      *
      * @var string
      */
     protected $description = 'Proses jurnal depresiasi bulanan secara massal untuk seluruh pengguna.';
 
     /**
-     * Create a new command instance.
+     * Membuat perintah dengan layanan penyusutan yang dibutuhkan.
      */
     public function __construct(protected DepreciationService $depreciationService)
     {
@@ -32,7 +35,10 @@ class DepreciateAssetsCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * Menjalankan penyusutan bulanan untuk setiap pengguna.
+     *
+     * Kesalahan validasi dianggap sebagai proses yang dilewati, sedangkan
+     * kesalahan lain dicatat sebagai kegagalan tanpa menghentikan pengguna berikutnya.
      */
     public function handle(): int
     {

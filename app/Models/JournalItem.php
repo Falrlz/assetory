@@ -10,6 +10,11 @@ class JournalItem extends Model
 {
     use HasFactory;
 
+    /**
+     * Atribut baris jurnal yang boleh diisi secara massal.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'journal_id',
         'coa_id',
@@ -18,7 +23,7 @@ class JournalItem extends Model
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Menentukan nilai debit dan kredit sebagai desimal dua angka.
      *
      * @return array<string, string>
      */
@@ -31,7 +36,7 @@ class JournalItem extends Model
     }
 
     /**
-     * Get the journal that owns the item.
+     * Mendapatkan jurnal induk dari baris ini.
      */
     public function journal(): BelongsTo
     {
@@ -39,7 +44,7 @@ class JournalItem extends Model
     }
 
     /**
-     * Get the chart of account (COA) for the item.
+     * Mendapatkan akun COA yang digunakan oleh baris jurnal ini.
      */
     public function coa(): BelongsTo
     {

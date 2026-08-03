@@ -8,9 +8,7 @@ use Illuminate\Database\Seeder;
 
 class CoaSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
+    /** Mengimpor bagan akun standar dari CSV untuk setiap pengguna. */
     public function run(): void
     {
         $users = User::all();
@@ -25,17 +23,17 @@ class CoaSeeder extends Seeder
         }
 
         $file = fopen($csvPath, 'r');
-        $header = fgetcsv($file); // skip header line
+        $header = fgetcsv($file); // Lewati baris judul CSV.
 
         $parentMappings = [
-            // Level 1 (Category Groups)
+            // Tingkat 1: kelompok kategori utama.
             '01' => 'Aset',
             '02' => 'Kewajiban',
             '03' => 'Ekuitas',
             '04' => 'Pendapatan',
             '05' => 'Beban',
 
-            // Level 2 (Sub-Category Groups)
+            // Tingkat 2: kelompok subkategori.
             '01.1000' => 'Kas & Setara Kas',
             '01.2000' => 'Piutang & Aset Lancar Lainnya',
             '01.3000' => 'Aset Tetap & Depresiasi',
@@ -50,7 +48,7 @@ class CoaSeeder extends Seeder
             '05.2000' => 'Beban Operasional Umum',
             '05.3000' => 'Beban Lain-Lain & Pajak',
 
-            // Level 3 (Sub-Sub-Category Groups)
+            // Tingkat 3: kelompok akun sebelum akun transaksi.
             '01.1000.01' => 'Kas Tunai',
             '01.1000.02' => 'Kas di Bank',
             '01.2000.01' => 'Piutang & Cadangan',
@@ -93,14 +91,14 @@ class CoaSeeder extends Seeder
                 continue;
             }
 
-            // CSV columns: "id_acount","id_perusahaan","code_acount","nama_acount","jenis_laporan","saldo_normal"
-            // Example: "174","1","01.1000.01.01","Kas Kecil","LPK","D"
+            // Susunan CSV: id akun, perusahaan, kode, nama, jenis laporan, dan saldo normal.
+            // Contoh: "174","1","01.1000.01.01","Kas Kecil","LPK","D".
             $code = $row[2];
             $name = $row[3];
-            $jenisLaporan = $row[4]; // LPK or LR
+            $jenisLaporan = $row[4]; // LPK atau LR.
             $normalBalance = strtolower($row[5]) === 'k' ? 'kredit' : 'debit';
 
-            // Map prefix to category
+            // Dua digit awal kode menentukan kategori akuntansi akun.
             $prefix = substr($code, 0, 2);
             $category = match ($prefix) {
                 '01' => 'aset',
@@ -111,7 +109,7 @@ class CoaSeeder extends Seeder
                 default => 'aset',
             };
 
-            // Seed Parent levels (1-segment, 2-segment, 3-segment)
+            // Bentuk akun induk tingkat 1–3 sebelum menambahkan akun transaksi.
             $parts = explode('.', $code);
             for ($i = 1; $i < count($parts); $i++) {
                 $parentCode = implode('.', array_slice($parts, 0, $i));

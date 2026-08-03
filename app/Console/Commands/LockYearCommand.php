@@ -6,28 +6,31 @@ use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
+/**
+ * Mengunci periode pembukuan seluruh pengguna pada akhir tahun buku.
+ */
 class LockYearCommand extends Command
 {
     /**
-     * The name and signature of the console command.
+     * Nama, argumen, dan opsi perintah console.
      *
      * @var string
      */
     protected $signature = 'app:lock-year {--year= : Tahun buku yang akan dikunci (YYYY)}';
 
     /**
-     * The console command description.
+     * Deskripsi perintah yang ditampilkan pada daftar Artisan.
      *
      * @var string
      */
     protected $description = 'Secara otomatis mengunci pembukuan per 31 Desember untuk tahun buku sebelumnya.';
 
     /**
-     * Execute the console command.
+     * Mengunci pembukuan seluruh pengguna pada akhir tahun yang ditentukan.
      */
     public function handle(): int
     {
-        // Jika opsi --year diisi, gunakan itu. Jika tidak, gunakan tahun kemarin.
+        // Tanpa opsi --year, tahun buku sebelumnya menjadi target bawaan.
         $targetYear = $this->option('year') ?: Carbon::now()->subYear()->year;
 
         $lockDate = "{$targetYear}-12-31";

@@ -17,7 +17,7 @@ use Inertia\Response;
 class RegisteredUserController extends Controller
 {
     /**
-     * Show the registration page.
+     * Menampilkan halaman pendaftaran pengguna.
      */
     public function create(): Response
     {
@@ -25,7 +25,7 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
+     * Memvalidasi pendaftaran, membuat pengguna, lalu langsung memasukkannya.
      *
      * @throws ValidationException
      */

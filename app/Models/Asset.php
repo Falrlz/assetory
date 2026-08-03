@@ -14,7 +14,7 @@ class Asset extends Model
     use HasFactory;
 
     /**
-     * Opsi pemetaan periode (Kelompok Pajak) ke umur ekonomis (Tahun).
+     * Pemetaan kelompok pajak aset ke umur ekonomis dalam tahun.
      */
     public const PERIODE_TAHUN = [
         'periode_1' => 4,
@@ -24,7 +24,7 @@ class Asset extends Model
     ];
 
     /**
-     * Attributes that are mass assignable.
+     * Atribut aset yang boleh diisi secara massal.
      *
      * @var list<string>
      */
@@ -40,7 +40,7 @@ class Asset extends Model
     ];
 
     /**
-     * Attributes appended to the model's array form.
+     * Atribut hasil perhitungan yang otomatis disertakan dalam bentuk array dan JSON.
      *
      * @var list<string>
      */
@@ -53,7 +53,7 @@ class Asset extends Model
     ];
 
     /**
-     * Define casts for the database columns.
+     * Menentukan tipe data atribut yang dibaca dari dan ditulis ke database.
      *
      * @return array<string, string>
      */
@@ -67,7 +67,7 @@ class Asset extends Model
     }
 
     /**
-     * Relationship to the User model.
+     * Mendapatkan pengguna pemilik aset.
      */
     public function user(): BelongsTo
     {
@@ -75,7 +75,7 @@ class Asset extends Model
     }
 
     /**
-     * Relationship to the COA model for Debit (Asset Account).
+     * Mendapatkan akun debit yang mencatat penambahan aset.
      */
     public function coaDebit(): BelongsTo
     {
@@ -83,7 +83,7 @@ class Asset extends Model
     }
 
     /**
-     * Relationship to the COA model for Credit (Payment Account).
+     * Mendapatkan akun kredit yang menjadi sumber pembayaran aset.
      */
     public function coaKredit(): BelongsTo
     {
@@ -91,7 +91,7 @@ class Asset extends Model
     }
 
     /**
-     * Hitung penyusutan per tahun.
+     * Menghitung penyusutan per tahun dengan metode garis lurus.
      */
     public function getPenyusutanTahunanAttribute(): float
     {
@@ -102,7 +102,7 @@ class Asset extends Model
     }
 
     /**
-     * Hitung penyusutan per bulan.
+     * Menghitung penyusutan per bulan dengan metode garis lurus.
      */
     public function getPenyusutanBulananAttribute(): float
     {
@@ -114,7 +114,7 @@ class Asset extends Model
     }
 
     /**
-     * Hitung masa penggunaan berjalan dalam satuan bulan.
+     * Menghitung masa penggunaan berjalan dalam bulan tanpa melampaui umur ekonomis.
      */
     public function getMasaPenggunaanBulanAttribute(): int
     {
@@ -138,7 +138,7 @@ class Asset extends Model
     }
 
     /**
-     * Hitung akumulasi penyusutan hingga saat ini.
+     * Menghitung akumulasi penyusutan hingga bulan berjalan.
      */
     public function getAkumulasiPenyusutanAttribute(): float
     {
@@ -146,7 +146,7 @@ class Asset extends Model
     }
 
     /**
-     * Hitung nilai buku saat ini (Book Value).
+     * Menghitung nilai buku aset saat ini.
      */
     public function getNilaiBukuAttribute(): float
     {

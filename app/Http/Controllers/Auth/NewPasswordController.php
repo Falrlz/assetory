@@ -17,7 +17,7 @@ use Inertia\Response;
 class NewPasswordController extends Controller
 {
     /**
-     * Show the password reset page.
+     * Menampilkan halaman pengaturan kata sandi baru dari tautan reset.
      */
     public function create(Request $request): Response
     {
@@ -28,7 +28,7 @@ class NewPasswordController extends Controller
     }
 
     /**
-     * Handle an incoming new password request.
+     * Memvalidasi token dan menyimpan kata sandi baru pengguna.
      *
      * @throws ValidationException
      */
@@ -40,9 +40,8 @@ class NewPasswordController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
+        // Broker kata sandi memvalidasi token reset sebelum memperbarui pengguna
+        // dan mengirimkan peristiwa bahwa kata sandi telah berhasil direset.
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user) use ($request) {
@@ -55,9 +54,8 @@ class NewPasswordController extends Controller
             }
         );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
+        // Jika reset berhasil, pengguna diarahkan ke halaman masuk. Status selain
+        // berhasil dikembalikan sebagai kesalahan validasi pada alamat email.
         if ($status == Password::PasswordReset) {
             return to_route('login')->with('status', __($status));
         }

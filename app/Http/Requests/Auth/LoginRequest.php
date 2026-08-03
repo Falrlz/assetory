@@ -10,10 +10,13 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Memvalidasi dan mengautentikasi permintaan login pengguna.
+ */
 class LoginRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Menentukan apakah permintaan login boleh diproses.
      */
     public function authorize(): bool
     {
@@ -21,7 +24,7 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Mendapatkan aturan validasi untuk kredensial login.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -34,7 +37,10 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Mencoba mengautentikasi kredensial dari permintaan.
+     *
+     * Percobaan yang gagal dicatat oleh rate limiter untuk mengurangi risiko
+     * serangan brute force, sedangkan penghitung dihapus setelah login berhasil.
      *
      * @throws ValidationException
      */
@@ -54,7 +60,7 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Ensure the login request is not rate limited.
+     * Memastikan jumlah percobaan login belum melewati batas yang diizinkan.
      *
      * @throws ValidationException
      */
@@ -77,7 +83,7 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Get the rate limiting throttle key for the request.
+     * Membuat kunci pembatasan berdasarkan kombinasi email dan alamat IP.
      */
     public function throttleKey(): string
     {

@@ -6,7 +6,9 @@ use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// Seluruh pengaturan bersifat pribadi sehingga hanya dapat diakses pengguna yang sudah masuk.
 Route::middleware('auth')->group(function () {
+    // Arahkan halaman utama pengaturan ke halaman profil sebagai halaman bawaan.
     Route::redirect('settings', 'settings/profile');
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');

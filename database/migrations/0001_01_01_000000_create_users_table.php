@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    /** Membuat tabel pengguna, token reset kata sandi, dan sesi autentikasi. */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -37,9 +35,7 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    /** Menghapus seluruh tabel autentikasi yang dibuat oleh migration ini. */
     public function down(): void
     {
         Schema::dropIfExists('users');

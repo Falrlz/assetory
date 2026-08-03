@@ -2,28 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Asset;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Menyusun ringkasan aset dan keuangan untuk halaman dasbor pengguna.
+ */
 class DashboardController extends Controller
 {
+    /**
+     * Menampilkan metrik utama, tren bulanan, jurnal terbaru, dan rincian aset.
+     */
     public function index(Request $request): Response
     {
         /** @var User $user */
         $user = auth()->user();
 
-        // 1. Assets Summary
+        // 1. Ringkasan nilai perolehan, penyusutan, dan nilai buku aset.
         $assets = $user->assets()->get();
         $totalAssetAcquisitionCost = $assets->sum('harga_perolehan');
         $totalAccumulatedDepreciation = $assets->sum('akumulasi_penyusutan');
         $totalNetBookValue = $assets->sum('nilai_buku');
         $totalAssetCount = $assets->count();
 
-        // 2. Cash & Setara Kas Balance
+        // 2. Saldo kas dan setara kas dihitung berdasarkan saldo normal debit.
         $cashCoaIds = $user->coas()
             ->where('kategori', 'aset')
             ->where(function ($query) {
@@ -42,7 +47,7 @@ class DashboardController extends Controller
 
         $totalCashAndBank = round((float) ($cashSums->balance ?? 0), 2);
 
-        // 3. Current Month Profit & Loss (Laba / Rugi Bulan Ini)
+        // 3. Laba atau rugi bulan berjalan berasal dari pendapatan dikurangi beban.
         $startOfMonth = now()->startOfMonth()->toDateString();
         $endOfMonth = now()->endOfMonth()->toDateString();
 
@@ -67,7 +72,7 @@ class DashboardController extends Controller
 
         $monthlyNetProfit = round((float) $monthlyIncome - (float) $monthlyExpense, 2);
 
-        // 4. Monthly Trend (6 Months Income vs Expense)
+        // 4. Tren pendapatan dan beban selama enam bulan, termasuk bulan berjalan.
         $monthlyTrend = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
@@ -99,7 +104,7 @@ class DashboardController extends Controller
             ];
         }
 
-        // 5. Recent Journals (5 Latest)
+        // 5. Lima jurnal terbaru beserta jumlah baris dan total debitnya.
         $recentJournals = $user->journals()
             ->with(['items.coa'])
             ->orderBy('tanggal', 'desc')
@@ -120,7 +125,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        // 6. Asset Categories Breakdown
+        // 6. Rincian aset berdasarkan jenis untuk kebutuhan visualisasi dasbor.
         $assetBreakdown = $assets->groupBy('jenis')->map(function ($group, $key) {
             return [
                 'name' => ucfirst($key ?: 'Lainnya'),

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Asset;
 use App\Models\Journal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,10 +11,13 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Menangani penayangan aset dan pencatatan perolehan aset beserta jurnalnya.
+ */
 class AssetController extends Controller
 {
     /**
-     * Display a listing of the user's assets.
+     * Menampilkan aset, jurnal aset terbaru, dan daftar akun milik pengguna.
      */
     public function index(Request $request): Response
     {
@@ -42,7 +44,7 @@ class AssetController extends Controller
     }
 
     /**
-     * Store a newly created asset in storage.
+     * Menyimpan aset baru dan membuat jurnal perolehannya secara otomatis.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -78,7 +80,7 @@ class AssetController extends Controller
 
         $asset = $request->user()->assets()->create($validated);
 
-        // Otomatisasi Jurnal Perolehan Aset
+        // Catat perolehan aset sebagai transaksi investasi yang merujuk ke aset baru.
         $journal = $request->user()->journals()->create([
             'tanggal' => $asset->tanggal_perolehan,
             'nomor_jurnal' => Journal::generateNumber($request->user(), 'JU-A'),
@@ -90,14 +92,14 @@ class AssetController extends Controller
             'ref_id' => $asset->id,
         ]);
 
-        // Debit: Akun Aset Tetap terpilih
+        // Debit menambah akun aset tetap yang dipilih pengguna.
         $journal->items()->create([
             'coa_id' => $asset->coa_debit_id,
             'debit' => $asset->harga_perolehan,
             'kredit' => 0,
         ]);
 
-        // Kredit: Akun Pembayaran terpilih
+        // Kredit mengurangi akun pembayaran atau mencatat sumber pendanaan yang dipilih.
         $journal->items()->create([
             'coa_id' => $asset->coa_kredit_id,
             'debit' => 0,
