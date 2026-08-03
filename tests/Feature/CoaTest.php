@@ -25,9 +25,10 @@ test('authenticated users can visit the coa page and see default accounts', func
 
     get(route('coas.index'))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('coas/index')
-            ->has('coas', 125)
+        ->assertInertia(
+            fn($page) => $page
+                ->component('coas/index')
+                ->has('coas', 124)
         );
 });
 

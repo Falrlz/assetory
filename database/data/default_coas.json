@@ -1,0 +1,870 @@
+[
+  {
+    "kode_akun": "01",
+    "nama_akun": "Aset",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02",
+    "nama_akun": "Kewajiban",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03",
+    "nama_akun": "Ekuitas",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "04",
+    "nama_akun": "Pendapatan",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05",
+    "nama_akun": "Beban",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "01.1000",
+    "nama_akun": "Kas & Setara Kas",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000",
+    "nama_akun": "Piutang & Aset Lancar Lainnya",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000",
+    "nama_akun": "Aset Tetap & Depresiasi",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.1000",
+    "nama_akun": "Kewajiban Lancar",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.2000",
+    "nama_akun": "Kewajiban Jangka Panjang",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.1000",
+    "nama_akun": "Modal Disetor",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.2000",
+    "nama_akun": "Cadangan & Saldo Laba",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "04.1000",
+    "nama_akun": "Pendapatan Jasa",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.2000",
+    "nama_akun": "Pendapatan Operasional Lainnya",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.3000",
+    "nama_akun": "Pendapatan Non-Operasional",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.1000",
+    "nama_akun": "Beban Karyawan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000",
+    "nama_akun": "Beban Operasional Umum",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000",
+    "nama_akun": "Beban Lain-Lain & Pajak",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "01.1000.01",
+    "nama_akun": "Kas Tunai",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.1000.02",
+    "nama_akun": "Kas di Bank",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.01",
+    "nama_akun": "Piutang & Cadangan",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.02",
+    "nama_akun": "Perlengkapan & Inventaris Lancar",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.03",
+    "nama_akun": "Piutang Lain-Lain",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.04",
+    "nama_akun": "Uang Muka & Biaya Dibayar Dimuka",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.05",
+    "nama_akun": "Uang Muka Pajak",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.06",
+    "nama_akun": "Aset Lancar Lain-Lain",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.07",
+    "nama_akun": "Aset Tidak Berwujud & Amortisasi",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000.01",
+    "nama_akun": "Aset Tetap",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000.02",
+    "nama_akun": "Akumulasi Penyusutan Aset",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.1000.01",
+    "nama_akun": "Utang Lancar / Usaha",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.1000.02",
+    "nama_akun": "Utang Pajak",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.1000.03",
+    "nama_akun": "Pendapatan Diterima Dimuka",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.2000.01",
+    "nama_akun": "Utang Bank Jangka Panjang",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.2000.02",
+    "nama_akun": "Utang Sewa",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.2000.03",
+    "nama_akun": "Kewajiban Jangka Panjang Lainnya",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.1000.01",
+    "nama_akun": "Modal Disetor",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.2000.01",
+    "nama_akun": "Cadangan Modal",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.2000.02",
+    "nama_akun": "Saldo Laba",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.2000.03",
+    "nama_akun": "Laba Rugi Tahun Berjalan",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "04.1000.01",
+    "nama_akun": "Operasional Jasa",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.2000.01",
+    "nama_akun": "Operasional Lainnya",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.3000.01",
+    "nama_akun": "Non-Operasional / Lainnya",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.1000.01",
+    "nama_akun": "Gaji & Karyawan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01",
+    "nama_akun": "Operasional Umum (Listrik, Wifi, Air, BBM)",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.02",
+    "nama_akun": "Pemeliharaan & Perbaikan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.03",
+    "nama_akun": "Penyusutan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000.01",
+    "nama_akun": "Pajak PPh 21",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000.02",
+    "nama_akun": "Pajak PPh 23",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000.03",
+    "nama_akun": "Taksiran Pajak Penghasilan & Lainnya",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000.04",
+    "nama_akun": "Kerugian Piutang Tak Tertagih",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "01.1000.01.01",
+    "nama_akun": "Kas Kecil",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.1000.01.02",
+    "nama_akun": "Kas Besar",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.1000.02.01",
+    "nama_akun": "PT Bank Rakyat Indonesia (Persero) Tbk",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.1000.02.02",
+    "nama_akun": "PT Bank Negara Indonesia (Persero) Tbk",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.1000.02.03",
+    "nama_akun": "PT Bank Mandiri (Persero) Tbk",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.1000.02.04",
+    "nama_akun": "PT Bank Central Asia Tbk",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "04.1000.01.01",
+    "nama_akun": "Pendapatan Jasa Audit",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.2000.01.01",
+    "nama_akun": "Pendapatan Jasa Kompilasi",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "01.2000.01.01",
+    "nama_akun": "Piutang Usaha",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.01.02",
+    "nama_akun": "Cadangan Kerugian Piutang Taktertagih",
+    "kategori": "aset",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.02.01",
+    "nama_akun": "Persediaan",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.03.01",
+    "nama_akun": "Piutang LainLain",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.04.01",
+    "nama_akun": "Biaya Dibayar Dimuka",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.04.02",
+    "nama_akun": "Uang Muka Pembelian",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.05.01",
+    "nama_akun": "Uang Muka Pajak",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.06.01",
+    "nama_akun": "Aset Lain-Lain",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000.01.01",
+    "nama_akun": "Tanah",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000.01.02",
+    "nama_akun": "Gedung",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000.01.03",
+    "nama_akun": "Kendaraan",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000.01.04",
+    "nama_akun": "Inventaris",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000.02.01",
+    "nama_akun": "Akumulasi Gedung",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000.02.02",
+    "nama_akun": "Akumulasi Kendaraan",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.3000.02.03",
+    "nama_akun": "Akumulasi Inventaris",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.1000.01.01",
+    "nama_akun": "Utang Usaha",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.1000.02.01",
+    "nama_akun": "Utang Pajak",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.1000.03.01",
+    "nama_akun": "Pendapatan diterima dimuka",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.2000.01.01",
+    "nama_akun": "Utang Bank",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.2000.02.01",
+    "nama_akun": "Utang Sewa",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "02.2000.03.01",
+    "nama_akun": "Utang Lain-Lain",
+    "kategori": "kewajiban",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.1000.01.01",
+    "nama_akun": "Modal disetor",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.2000.01.01",
+    "nama_akun": "Cadagan",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.2000.02.01",
+    "nama_akun": "Saldo Laba",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "03.2000.03.01",
+    "nama_akun": "Laba Rugi Tahun Berjalan",
+    "kategori": "ekuitas",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "05.1000.01.01",
+    "nama_akun": "Beban Gaji",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.1000.01.02",
+    "nama_akun": "Beban Bonus dan Tunjangan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.1000.01.03",
+    "nama_akun": "Beban BPJS Kesehatan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.1000.01.04",
+    "nama_akun": "Beban BPJS Ketenagakerjaan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.1000.01.05",
+    "nama_akun": "Beban THR",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.01",
+    "nama_akun": "Beban Listrik",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.02",
+    "nama_akun": "Beban Telpon",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.03",
+    "nama_akun": "Beban Air",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.04",
+    "nama_akun": "Biaya Makan Karyawan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.05",
+    "nama_akun": "Biaya Rumah Tangga Kantor",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.02.01",
+    "nama_akun": "Biaya Pemeliharaan Kendaraan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.02.02",
+    "nama_akun": "Biaya Pemeliharaan Peralatan Kantor",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.03.01",
+    "nama_akun": "Beban Penyusutan Gedung",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.03.02",
+    "nama_akun": "Beban Penyusutan Kendaraan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.03.03",
+    "nama_akun": "Beban Penyusutan Inventaris",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000.01.01",
+    "nama_akun": "Beban PPh Pasal 21",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000.02.01",
+    "nama_akun": "Beban PPh Pasal 23",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000.03.01",
+    "nama_akun": "Taksiran Pajak Pengahasilan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000.04.01",
+    "nama_akun": "Beban Kerugian Piutang Tak tertagih",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.1000.01.02",
+    "nama_akun": "Pendapatan Jasa Riviu",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.1000.01.03",
+    "nama_akun": "Pendapatan Jasa Investigasi",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.1000.01.04",
+    "nama_akun": "Pendapatan Jasa Assurance Lainnya",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.2000.01.02",
+    "nama_akun": "Pendapatan Jasa AUP",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.2000.01.03",
+    "nama_akun": "Pendapatan Jasa Non Assurance Lainnya",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "04.3000.01.01",
+    "nama_akun": "Pendapatan Lain-lain",
+    "kategori": "pendapatan",
+    "saldo_normal": "kredit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.1000.01.06",
+    "nama_akun": "Beban Perjalanan Dinas",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.1000.01.07",
+    "nama_akun": "Beban Uang Makan Perjalanan Dinas",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.1000.01.08",
+    "nama_akun": "Beban Pendidikan dan Pelatihan Karyawan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.06",
+    "nama_akun": "Beban BBM",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.07",
+    "nama_akun": "Beban Obat-obatan",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.08",
+    "nama_akun": "Beban Admistrasi",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.09",
+    "nama_akun": "Beban Sewa",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.10",
+    "nama_akun": "Beban Kartu Kredit",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.11",
+    "nama_akun": "Beban Lain-lain",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.3000.03.02",
+    "nama_akun": "Beban Pajak Lainnya",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.12",
+    "nama_akun": "Beban Wifi",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.13",
+    "nama_akun": "Beban Pulsa",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "05.2000.01.14",
+    "nama_akun": "Beban Iuran Asosiasi dan OJK",
+    "kategori": "beban",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LR"
+  },
+  {
+    "kode_akun": "01.2000.02.02",
+    "nama_akun": "Perlengkapan Kantor",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.07.01",
+    "nama_akun": "Aset Tidak Berwujud",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  },
+  {
+    "kode_akun": "01.2000.07.02",
+    "nama_akun": "Akumulasi Amortisasi ATB",
+    "kategori": "aset",
+    "saldo_normal": "debit",
+    "jenis_laporan": "LPK"
+  }
+]
