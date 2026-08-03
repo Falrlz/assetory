@@ -5,7 +5,12 @@ use App\Http\Controllers\BeginningBalanceController;
 use App\Http\Controllers\CoaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JournalController;
-use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Reports\BalanceSheetController;
+use App\Http\Controllers\Reports\CalkController;
+use App\Http\Controllers\Reports\CashFlowController;
+use App\Http\Controllers\Reports\EquityChangeController;
+use App\Http\Controllers\Reports\ProfitLossController;
+use App\Http\Controllers\Reports\TrialBalanceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -31,13 +36,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('journals/depreciation', [JournalController::class, 'postDepreciation'])->name('journals.depreciation');
 
     // Financial Reports
-    Route::get('reports/trial-balance', [ReportController::class, 'trialBalance'])->name('reports.trial-balance');
-    Route::get('reports/balance-sheet', [ReportController::class, 'balanceSheet'])->name('reports.balance-sheet');
-    Route::get('reports/profit-loss', [ReportController::class, 'profitLoss'])->name('reports.profit-loss');
-    Route::get('reports/cash-flow', [ReportController::class, 'cashFlow'])->name('reports.cash-flow');
-    Route::get('reports/equity-change', [ReportController::class, 'equityChange'])->name('reports.equity-change');
-    Route::get('reports/calk', [ReportController::class, 'calk'])->name('reports.calk');
-    Route::post('reports/calk', [ReportController::class, 'updateCalk'])->name('reports.calk.update');
+    Route::get('reports/trial-balance', [TrialBalanceController::class, 'trialBalance'])->name('reports.trial-balance');
+    Route::get('reports/balance-sheet', [BalanceSheetController::class, 'balanceSheet'])->name('reports.balance-sheet');
+    Route::get('reports/profit-loss', [ProfitLossController::class, 'profitLoss'])->name('reports.profit-loss');
+    Route::get('reports/cash-flow', [CashFlowController::class, 'cashFlow'])->name('reports.cash-flow');
+    Route::get('reports/equity-change', [EquityChangeController::class, 'equityChange'])->name('reports.equity-change');
+    Route::get('reports/calk', [CalkController::class, 'calk'])->name('reports.calk');
+    Route::post('reports/calk', [CalkController::class, 'updateCalk'])->name('reports.calk.update');
 });
 
 require __DIR__.'/settings.php';
