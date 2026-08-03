@@ -11,6 +11,11 @@ class Journal extends Model
 {
     use HasFactory;
 
+    /**
+     * Atribut jurnal yang boleh diisi secara massal.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'user_id',
         'tanggal',
@@ -26,7 +31,7 @@ class Journal extends Model
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Menentukan tipe data atribut yang dibaca dari dan ditulis ke database.
      *
      * @return array<string, string>
      */
@@ -38,7 +43,7 @@ class Journal extends Model
     }
 
     /**
-     * Get the user that owns the journal.
+     * Mendapatkan pengguna pemilik jurnal.
      */
     public function user(): BelongsTo
     {
@@ -46,7 +51,7 @@ class Journal extends Model
     }
 
     /**
-     * Get the items for the journal.
+     * Mendapatkan seluruh baris debit dan kredit dalam jurnal.
      */
     public function items(): HasMany
     {
@@ -54,7 +59,7 @@ class Journal extends Model
     }
 
     /**
-     * Get the associated asset if the journal is related to an asset.
+     * Mendapatkan aset terkait jika jurnal berasal dari transaksi aset.
      */
     public function asset(): BelongsTo
     {
@@ -62,7 +67,7 @@ class Journal extends Model
     }
 
     /**
-     * Get the journal that reversed this journal.
+     * Mendapatkan jurnal pembalik yang membatalkan jurnal ini.
      */
     public function reversedBy(): BelongsTo
     {
@@ -70,7 +75,7 @@ class Journal extends Model
     }
 
     /**
-     * Get the journal that this journal reverses.
+     * Mendapatkan jurnal asal yang dibatalkan oleh jurnal ini.
      */
     public function reversesJournal(): BelongsTo
     {
@@ -78,7 +83,7 @@ class Journal extends Model
     }
 
     /**
-     * Generate a unique sequential journal number for a user.
+     * Membuat nomor jurnal berurutan untuk pengguna dan bulan berjalan.
      */
     public static function generateNumber($user, string $prefix = 'JV'): string
     {

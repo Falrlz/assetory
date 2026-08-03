@@ -15,12 +15,10 @@ use Illuminate\Support\Facades\Schema;
 
 class SimulationSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
+    /** Membentuk simulasi transaksi akuntansi selama tiga tahun untuk setiap pengguna. */
     public function run(): void
     {
-        // 1. Clean up existing data to ensure clean slate simulation
+        // Bersihkan data transaksi agar simulasi selalu dimulai dari kondisi yang sama.
         Schema::disableForeignKeyConstraints();
         JournalItem::truncate();
         Journal::truncate();
@@ -31,20 +29,20 @@ class SimulationSeeder extends Seeder
         $depreciationService = app(DepreciationService::class);
 
         foreach ($users as $user) {
-            // Find necessary COAs
-            $coaKas = Coa::where('user_id', $user->id)->where('kode_akun', '01.1000.01.02')->first(); // Kas Besar
-            $coaRuko = Coa::where('user_id', $user->id)->where('kode_akun', '01.3000.01.02')->first(); // Gedung
-            $coaPeralatan = Coa::where('user_id', $user->id)->where('kode_akun', '01.3000.01.04')->first(); // Inventaris
-            $coaModal = Coa::where('user_id', $user->id)->where('kode_akun', '03.1000.01.01')->first(); // Modal disetor
-            $coaPendapatanJasa = Coa::where('user_id', $user->id)->where('kode_akun', '04.1000.01.04')->first(); // Pendapatan Jasa Assurance Lainnya
-            $coaBebanGaji = Coa::where('user_id', $user->id)->where('kode_akun', '05.1000.01.01')->first(); // Beban Gaji
-            $coaBebanListrik = Coa::where('user_id', $user->id)->where('kode_akun', '05.2000.01.01')->first(); // Beban Listrik
+            // Ambil seluruh akun yang wajib tersedia untuk membentuk transaksi simulasi.
+            $coaKas = Coa::where('user_id', $user->id)->where('kode_akun', '01.1000.01.02')->first(); // Kas Besar.
+            $coaRuko = Coa::where('user_id', $user->id)->where('kode_akun', '01.3000.01.02')->first(); // Gedung.
+            $coaPeralatan = Coa::where('user_id', $user->id)->where('kode_akun', '01.3000.01.04')->first(); // Inventaris.
+            $coaModal = Coa::where('user_id', $user->id)->where('kode_akun', '03.1000.01.01')->first(); // Modal disetor.
+            $coaPendapatanJasa = Coa::where('user_id', $user->id)->where('kode_akun', '04.1000.01.04')->first(); // Pendapatan jasa.
+            $coaBebanGaji = Coa::where('user_id', $user->id)->where('kode_akun', '05.1000.01.01')->first(); // Beban gaji.
+            $coaBebanListrik = Coa::where('user_id', $user->id)->where('kode_akun', '05.2000.01.01')->first(); // Beban listrik.
 
             if (! $coaKas || ! $coaRuko || ! $coaPeralatan || ! $coaModal || ! $coaPendapatanJasa || ! $coaBebanGaji || ! $coaBebanListrik) {
                 continue;
             }
 
-            // Reset lock date for simulation to run without lock conflicts
+            // Buka periode sementara agar seluruh transaksi simulasi dapat diposting.
             $user->update(['lock_date' => null]);
 
             // ==========================================
@@ -65,7 +63,7 @@ class SimulationSeeder extends Seeder
             // PEMBELIAN ASET TETAP - 2 Januari 2024
             // ==========================================
 
-            // 1. Gedung Ruko (Umur 20 Tahun)
+            // Gedung ruko dengan umur manfaat 20 tahun.
             Asset::create([
                 'user_id' => $user->id,
                 'coa_debit_id' => $coaRuko->id,
@@ -75,10 +73,10 @@ class SimulationSeeder extends Seeder
                 'harga_perolehan' => 400000000.00,
                 'nilai_residu' => 1.00,
                 'tanggal_perolehan' => '2024-01-02',
-                'periode' => 'periode_4', // 20 tahun
+                'periode' => 'periode_4', // Umur manfaat 20 tahun.
             ]);
 
-            // 2. Peralatan Kantor (Umur 4 Tahun)
+            // Peralatan kantor dengan umur manfaat 4 tahun.
             Asset::create([
                 'user_id' => $user->id,
                 'coa_debit_id' => $coaPeralatan->id,
@@ -88,10 +86,10 @@ class SimulationSeeder extends Seeder
                 'harga_perolehan' => 48000000.00,
                 'nilai_residu' => 1.00,
                 'tanggal_perolehan' => '2024-01-02',
-                'periode' => 'periode_1', // 4 tahun
+                'periode' => 'periode_1', // Umur manfaat 4 tahun.
             ]);
 
-            // Jurnal Perolehan Aset Tetap secara manual
+            // Catat perolehan kedua aset sebagai jurnal berpasangan.
             $jAssets = Journal::create([
                 'user_id' => $user->id,
                 'tanggal' => '2024-01-02',
@@ -111,7 +109,7 @@ class SimulationSeeder extends Seeder
             for ($i = 0; $i < 36; $i++) {
                 $yearMonth = $currentDate->format('Y-m');
 
-                // 1. Tanggal 10: Penerimaan Pendapatan Jasa (Rp 25.000.000) - Arus Kas Masuk Operasional
+                // Tanggal 10: penerimaan jasa sebagai arus kas masuk operasional.
                 $jRev = Journal::create([
                     'user_id' => $user->id,
                     'tanggal' => $yearMonth.'-10',
@@ -125,7 +123,7 @@ class SimulationSeeder extends Seeder
                 $jRev->items()->create(['coa_id' => $coaKas->id, 'debit' => 25000000.00, 'kredit' => 0.00]);
                 $jRev->items()->create(['coa_id' => $coaPendapatanJasa->id, 'debit' => 0.00, 'kredit' => 25000000.00]);
 
-                // 2. Tanggal 25: Pembayaran Gaji Staf (Rp 10.000.000) - Arus Kas Keluar Operasional
+                // Tanggal 25: pembayaran gaji sebagai arus kas keluar operasional.
                 $jSal = Journal::create([
                     'user_id' => $user->id,
                     'tanggal' => $yearMonth.'-25',
@@ -139,13 +137,13 @@ class SimulationSeeder extends Seeder
                 $jSal->items()->create(['coa_id' => $coaBebanGaji->id, 'debit' => 10000000.00, 'kredit' => 0.00]);
                 $jSal->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 10000000.00]);
 
-                // 3. Tanggal 28: Pembayaran Listrik & Telepon (Rp 1.000.000) - Arus Kas Keluar Operasional
-                // Khusus Bulan November 2025 (Bulan ke-23 / $i = 22), kita simulasikan salah input biaya listrik dan gembok periode
+                // Tanggal 28: pembayaran listrik sebagai arus kas keluar operasional.
+                // November 2025 mensimulasikan salah input pada periode yang kemudian dikunci.
                 if ($i === 22) {
-                    // Set lock date sementara ke akhir Oktober 2025 untuk mengunci transaksi November
+                    // Kunci pembukuan sampai akhir Oktober sebelum transaksi salah dicatat.
                     $user->update(['lock_date' => '2025-10-31']);
 
-                    // Buat Jurnal yang Salah (Beban Rp 5.000.000, padahal aslinya Rp 1.000.000)
+                    // Catat nilai salah Rp5.000.000, sementara nilai sebenarnya Rp1.000.000.
                     $jErr = Journal::create([
                         'user_id' => $user->id,
                         'tanggal' => '2025-11-15',
@@ -159,7 +157,7 @@ class SimulationSeeder extends Seeder
                     $jErr->items()->create(['coa_id' => $coaBebanListrik->id, 'debit' => 5000000.00, 'kredit' => 0.00]);
                     $jErr->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 5000000.00]);
 
-                    // Gembok tanggal diperbarui ke November 2025
+                    // Perluas periode terkunci hingga akhir November 2025.
                     $user->update(['lock_date' => '2025-11-30']);
 
                     // ==========================================
@@ -176,14 +174,14 @@ class SimulationSeeder extends Seeder
                         'kode_arus_kas' => 'JK-O',
                         'reverses_journal_id' => $jErr->id,
                     ]);
-                    // Balik posisi debit kredit
+                    // Tukar posisi debit dan kredit untuk meniadakan jurnal yang salah.
                     $jRev->items()->create(['coa_id' => $coaKas->id, 'debit' => 5000000.00, 'kredit' => 0.00]);
                     $jRev->items()->create(['coa_id' => $coaBebanListrik->id, 'debit' => 0.00, 'kredit' => 5000000.00]);
 
-                    // Hubungkan jurnal asli ke jurnal pembalik
+                    // Simpan hubungan dua arah antara jurnal asli dan jurnal pembalik.
                     $jErr->update(['reversed_by_id' => $jRev->id]);
 
-                    // Posting Jurnal Koreksi yang Benar (Rp 1.000.000)
+                    // Posting kembali transaksi dengan nilai yang benar, yaitu Rp1.000.000.
                     $jCorrect = Journal::create([
                         'user_id' => $user->id,
                         'tanggal' => '2025-12-01',
@@ -197,7 +195,7 @@ class SimulationSeeder extends Seeder
                     $jCorrect->items()->create(['coa_id' => $coaBebanListrik->id, 'debit' => 1000000.00, 'kredit' => 0.00]);
                     $jCorrect->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 1000000.00]);
                 } else {
-                    // Transaksi Normal Listrik Bulanan
+                    // Bulan lainnya menggunakan transaksi listrik normal.
                     $jUtl = Journal::create([
                         'user_id' => $user->id,
                         'tanggal' => $yearMonth.'-28',
@@ -212,10 +210,10 @@ class SimulationSeeder extends Seeder
                     $jUtl->items()->create(['coa_id' => $coaKas->id, 'debit' => 0.00, 'kredit' => 1000000.00]);
                 }
 
-                // 4. Akhir Bulan: Posting Depresiasi Bulanan (Jurnal Penyesuaian)
+                // Akhir bulan: posting penyusutan sebagai jurnal penyesuaian.
                 $depreciationService->postDepreciationForUser($user, $yearMonth);
 
-                // Di akhir bulan Desember (bulan ke-12 dan 24, yaitu 2024 dan 2025), jalankan Jurnal Penutup
+                // Tutup akun nominal pada akhir 2024 dan 2025.
                 if ($currentDate->month === 12) {
                     $year = $currentDate->year;
                     if ($year < 2026) {
@@ -226,18 +224,18 @@ class SimulationSeeder extends Seeder
                 $currentDate->addMonth();
             }
 
-            // Di akhir simulasi 3 tahun, kunci pembukuan per 31 Desember 2026
+            // Setelah simulasi selesai, kunci pembukuan sampai 31 Desember 2026.
             $user->update(['lock_date' => '2026-12-31']);
         }
     }
 
     /**
-     * Post Year-End Closing Entries (Jurnal Penutup) to zero out Revenue/Expenses
-     * and transfer net profit to Retained Earnings (Saldo Laba).
+     * Membuat jurnal penutup untuk menihilkan pendapatan dan beban,
+     * lalu memindahkan laba atau rugi bersih ke akun saldo laba.
      */
     private function postClosingEntries(User $user, int $year): void
     {
-        $coaSaldoLaba = Coa::where('user_id', $user->id)->where('kode_akun', '03.2000.02.01')->first(); // Saldo Laba
+        $coaSaldoLaba = Coa::where('user_id', $user->id)->where('kode_akun', '03.2000.02.01')->first(); // Saldo laba.
         if (! $coaSaldoLaba) {
             return;
         }
@@ -245,7 +243,7 @@ class SimulationSeeder extends Seeder
         $startDate = "{$year}-01-01";
         $endDate = "{$year}-12-31";
 
-        // Fetch transaction-level COA accounts (level 4)
+        // Jurnal hanya diposting ke akun transaksi tingkat 4.
         $coas = $user->coas()
             ->get()
             ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4);
@@ -260,7 +258,7 @@ class SimulationSeeder extends Seeder
                 continue;
             }
 
-            // Sum transactions for this COA in this year, excluding setup beginning balance and existing closing entries
+            // Jumlahkan mutasi tahun berjalan tanpa saldo awal dan jurnal penutup sebelumnya.
             $sums = DB::table('journal_items')
                 ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                 ->where('journals.user_id', $user->id)
@@ -304,7 +302,7 @@ class SimulationSeeder extends Seeder
                 'jenis_transaksi' => 'jurnal_penutup',
             ]);
 
-            // 1. Debit all revenue accounts to close them to zero
+            // Debit seluruh akun pendapatan agar saldonya menjadi nol.
             foreach ($revenueItems as $item) {
                 $journal->items()->create([
                     'coa_id' => $item['coa_id'],
@@ -313,7 +311,7 @@ class SimulationSeeder extends Seeder
                 ]);
             }
 
-            // 2. Credit all expense accounts to close them to zero
+            // Kredit seluruh akun beban agar saldonya menjadi nol.
             foreach ($expenseItems as $item) {
                 $journal->items()->create([
                     'coa_id' => $item['coa_id'],
@@ -322,16 +320,16 @@ class SimulationSeeder extends Seeder
                 ]);
             }
 
-            // 3. Transfer net income to Retained Earnings (Saldo Laba)
+            // Pindahkan laba atau rugi bersih ke saldo laba.
             if (round($netIncome, 2) > 0.00) {
-                // Profit increases Retained Earnings (Credit)
+                // Laba menambah saldo laba pada sisi kredit.
                 $journal->items()->create([
                     'coa_id' => $coaSaldoLaba->id,
                     'debit' => 0.00,
                     'kredit' => $netIncome,
                 ]);
             } elseif (round($netIncome, 2) < 0.00) {
-                // Loss decreases Retained Earnings (Debit)
+                // Rugi mengurangi saldo laba pada sisi debit.
                 $journal->items()->create([
                     'coa_id' => $coaSaldoLaba->id,
                     'debit' => abs($netIncome),

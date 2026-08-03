@@ -3,18 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
+    /** Menjalankan seluruh seeder utama aplikasi dalam urutan yang dibutuhkan. */
     public function run(): void
     {
-        // User::factory(10)->create();
-
+        // Pengguna ini menyediakan akun standar untuk pengembangan dan pengujian manual.
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',

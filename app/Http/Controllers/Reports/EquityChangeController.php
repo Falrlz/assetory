@@ -8,10 +8,13 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Menyusun perubahan saldo akun ekuitas selama satu periode laporan.
+ */
 class EquityChangeController extends Controller
 {
     /**
-     * Display the Statement of Changes in Equity (Laporan Perubahan Ekuitas).
+     * Menampilkan laporan perubahan ekuitas untuk tahun yang dipilih.
      */
     public function equityChange(Request $request): Response
     {
@@ -41,7 +44,7 @@ class EquityChangeController extends Controller
         $startDate = "{$year}-01-01";
         $endDate = "{$year}-12-31";
 
-        // Get equity accounts (Prefix 03 or kategori ekuitas)
+        // Ambil akun transaksi ekuitas berdasarkan awalan kode atau kategorinya.
         $equityCoas = $user->coas()
             ->where(function ($query) {
                 $query->where('kode_akun', 'LIKE', '03.%')
@@ -58,7 +61,7 @@ class EquityChangeController extends Controller
         $totalLabaNet = 0;
         $totalAkhir = 0;
 
-        // 1. Calculate Net Profit for current period
+        // Hitung laba bersih periode yang akan menambah ekuitas tahun berjalan.
         $allCoasForPL = $user->coas()
             ->orderBy('kode_akun')
             ->get()
@@ -91,9 +94,9 @@ class EquityChangeController extends Controller
         $totalExpenses = $allCoasForPL->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '05.') || $coa->kategori === 'beban') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
         $netProfit = $totalRevenues - $totalExpenses;
 
-        // Process each equity account
+        // Uraikan saldo awal, penambahan, laba bersih, dan saldo akhir setiap akun ekuitas.
         foreach ($equityCoas as $coa) {
-            // A. Opening balance (before start_date OR is setup beginning balance)
+            // Saldo awal berasal dari transaksi sebelum periode atau jurnal saldo awal.
             $openingSums = DB::table('journal_items')
                 ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                 ->where('journals.user_id', $user->id)
@@ -107,8 +110,8 @@ class EquityChangeController extends Controller
 
             $balAwal = (float) $openingSums->total_kredit - (float) $openingSums->total_debit;
 
-            // B. Additions (Modal Tambahan / changes during period, excluding setup beginning balance)
-            // Exclude Saldo Laba (03.2000.02.01) and Laba Rugi Tahun Berjalan (03.2000.03.01) from manual additions
+            // Penambahan berasal dari mutasi periode, tetapi tidak mencakup jurnal saldo awal dan penutup.
+            // Saldo laba serta laba rugi tahun berjalan tidak dihitung sebagai penambahan manual.
             $balTambahan = 0.00;
             if ($coa->kode_akun !== '03.2000.02.01' && $coa->kode_akun !== '03.2000.03.01') {
                 $periodSums = DB::table('journal_items')
@@ -125,7 +128,7 @@ class EquityChangeController extends Controller
                 $balTambahan = (float) $periodSums->total_kredit - (float) $periodSums->total_debit;
             }
 
-            // C. Net Profit Addition (Specifically for Laba Rugi Tahun Berjalan account)
+            // Laba bersih hanya ditempatkan pada akun laba rugi tahun berjalan.
             $labaNet = 0.00;
             if ($coa->kode_akun === '03.2000.03.01') {
                 $labaNet = $netProfit;

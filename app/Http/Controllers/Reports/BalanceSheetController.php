@@ -8,10 +8,13 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Menyusun posisi aset, kewajiban, dan ekuitas pada akhir tahun laporan.
+ */
 class BalanceSheetController extends Controller
 {
     /**
-     * Display the Balance Sheet (Neraca Keuangan).
+     * Menampilkan neraca keuangan beserta perbandingan dengan tahun sebelumnya.
      */
     public function balanceSheet(Request $request): Response
     {
@@ -48,26 +51,26 @@ class BalanceSheetController extends Controller
         $prevYear = $year - 1;
         $prevEndDate = "{$prevYear}-12-31";
 
-        // Get all accounts
+        // Saldo neraca bersifat kumulatif, sehingga jurnal dijumlahkan sampai tanggal akhir tahun.
         $allCoas = $user->coas()
             ->orderBy('kode_akun')
             ->get()
             ->map(function ($coa) use ($user, $endDate, $prevEndDate) {
-                // Current Year
+                // Saldo kumulatif tahun yang dipilih.
                 $sums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
                     ->where('journal_items.coa_id', $coa->id)
-                    ->where('journals.tanggal', '<=', $endDate) // Cumulative since beginning
+                    ->where('journals.tanggal', '<=', $endDate) // Kumulatif sejak awal pencatatan.
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
 
-                // Last Year
+                // Saldo kumulatif tahun sebelumnya sebagai pembanding.
                 $prevSums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
                     ->where('journal_items.coa_id', $coa->id)
-                    ->where('journals.tanggal', '<=', $prevEndDate) // Cumulative since beginning of last year
+                    ->where('journals.tanggal', '<=', $prevEndDate) // Kumulatif sampai akhir tahun sebelumnya.
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
 
@@ -77,7 +80,7 @@ class BalanceSheetController extends Controller
                 $coa->total_debit_last_year = (float) $prevSums->total_debit;
                 $coa->total_kredit_last_year = (float) $prevSums->total_kredit;
 
-                // Net balance Current Year
+                // Rumus saldo bersih mengikuti saldo normal masing-masing akun.
                 if ($coa->saldo_normal === 'debit') {
                     $coa->saldo = $coa->total_debit - $coa->total_kredit;
                     $coa->saldo_last_year = $coa->total_debit_last_year - $coa->total_kredit_last_year;
@@ -89,12 +92,12 @@ class BalanceSheetController extends Controller
                 return $coa;
             });
 
-        // Filter and group by Prefix Kode COA (01: Aset, 02: Kewajiban, 03: Ekuitas, 04: Pendapatan, 05: Beban)
+        // Kelompokkan akun transaksi level empat berdasarkan kode atau kategori COA.
         $assets = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '01.') || $coa->kategori === 'aset') && count(explode('.', $coa->kode_akun)) === 4)->values();
         $liabilities = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '02.') || $coa->kategori === 'kewajiban') && count(explode('.', $coa->kode_akun)) === 4)->values();
         $equity = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '03.') || $coa->kategori === 'ekuitas') && count(explode('.', $coa->kode_akun)) === 4)->values();
 
-        // Calculate Net Income (Laba Rugi Tahun Berjalan) from Prefix 04 (Pendapatan) & 05 (Beban)
+        // Laba tahun berjalan dihitung dari pendapatan dikurangi beban.
         $revenues = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '04.') || $coa->kategori === 'pendapatan') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
         $expenses = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '05.') || $coa->kategori === 'beban') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo');
         $currentEarnings = $revenues - $expenses;
@@ -103,7 +106,7 @@ class BalanceSheetController extends Controller
         $expensesLastYear = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '05.') || $coa->kategori === 'beban') && count(explode('.', $coa->kode_akun)) === 4)->sum('saldo_last_year');
         $currentEarningsLastYear = $revenuesLastYear - $expensesLastYear;
 
-        // Assign current earnings to existing Laba Rugi Tahun Berjalan account or push virtual account
+        // Gunakan akun laba rugi tahun berjalan yang ada, atau tambahkan akun virtual untuk penyajian laporan.
         $currentEarningsCoa = $equity->first(fn ($coa) => $coa->kode_akun === '03.2000.03.01' || str_contains(strtolower($coa->nama_akun), 'laba rugi tahun berjalan'));
 
         if ($currentEarningsCoa) {

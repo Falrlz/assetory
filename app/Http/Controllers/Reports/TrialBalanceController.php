@@ -10,10 +10,13 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Menyusun saldo awal, mutasi, dan saldo akhir setiap akun transaksi.
+ */
 class TrialBalanceController extends Controller
 {
     /**
-     * Display the Trial Balance (Neraca Saldo).
+     * Menampilkan neraca saldo untuk rentang tanggal dalam satu tahun yang sama.
      */
     public function trialBalance(Request $request): Response
     {
@@ -33,14 +36,14 @@ class TrialBalanceController extends Controller
             ]);
         }
 
-        // Get transactional COAs (Level 4, i.e. 4 segments separated by dots)
+        // Hanya akun level empat yang dapat menerima pencatatan transaksi.
         $coas = $user->coas()
             ->orderBy('kode_akun')
             ->get()
             ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4)
             ->values()
             ->map(function ($coa) use ($user, $startDate, $endDate) {
-                // 1. Saldo Awal (before start_date or is setup beginning balance)
+                // Saldo awal berasal dari transaksi sebelum tanggal mulai atau jurnal saldo awal.
                 $openingSums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
@@ -65,7 +68,7 @@ class TrialBalanceController extends Controller
                     $coa->saldo_awal_kredit = $netBefore >= 0 ? $netBefore : 0;
                 }
 
-                // 2. Mutasi (between start_date and end_date, excluding setup beginning balance)
+                // Mutasi mencakup transaksi dalam periode, tanpa saldo awal dan jurnal penutup.
                 $mutationSums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
@@ -81,7 +84,7 @@ class TrialBalanceController extends Controller
                 $coa->mutasi_debit = (float) $mutationSums->total_debit;
                 $coa->mutasi_kredit = (float) $mutationSums->total_kredit;
 
-                // 3. Saldo Akhir (up to end_date)
+                // Saldo akhir merupakan saldo kumulatif sampai tanggal akhir periode.
                 $endingSums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
@@ -106,7 +109,7 @@ class TrialBalanceController extends Controller
                 return $coa;
             });
 
-        // Calculate totals
+        // Jumlahkan setiap kolom untuk memeriksa keseimbangan debit dan kredit.
         $totalAwalDebit = $coas->sum('saldo_awal_debit');
         $totalAwalKredit = $coas->sum('saldo_awal_kredit');
         $totalMutasiDebit = $coas->sum('mutasi_debit');

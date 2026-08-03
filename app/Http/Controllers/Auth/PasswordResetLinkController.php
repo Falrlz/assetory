@@ -13,7 +13,7 @@ use Inertia\Response;
 class PasswordResetLinkController extends Controller
 {
     /**
-     * Show the password reset link request page.
+     * Menampilkan halaman permintaan tautan reset kata sandi.
      */
     public function create(Request $request): Response
     {
@@ -23,7 +23,7 @@ class PasswordResetLinkController extends Controller
     }
 
     /**
-     * Handle an incoming password reset link request.
+     * Mengirim tautan reset kata sandi ke email yang terdaftar.
      *
      * @throws ValidationException
      */

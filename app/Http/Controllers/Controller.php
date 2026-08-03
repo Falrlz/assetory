@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-abstract class Controller
-{
-    //
-}
+/**
+ * Kelas dasar untuk seluruh controller aplikasi.
+ */
+abstract class Controller {}

@@ -7,10 +7,16 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Memvalidasi data saat pengguna memperbarui profilnya.
+ */
 class ProfileUpdateRequest extends FormRequest
 {
     /**
-     * Get the validation rules that apply to the request.
+     * Mendapatkan aturan validasi untuk perubahan profil pengguna.
+     *
+     * Alamat email harus unik, kecuali alamat milik pengguna yang sedang
+     * memperbarui profilnya sendiri.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */

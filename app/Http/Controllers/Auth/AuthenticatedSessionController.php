@@ -14,7 +14,7 @@ use Inertia\Response;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Show the login page.
+     * Menampilkan halaman masuk beserta status sesi yang tersedia.
      */
     public function create(Request $request): Response
     {
@@ -25,7 +25,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * Memproses autentikasi dan memperbarui ID sesi setelah berhasil masuk.
      */
     public function store(LoginRequest $request): RedirectResponse
     {
@@ -37,7 +37,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Destroy an authenticated session.
+     * Mengakhiri sesi pengguna dan membuat ulang token CSRF.
      */
     public function destroy(Request $request): RedirectResponse
     {

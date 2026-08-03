@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+// Aktifkan kontrak MustVerifyEmail jika verifikasi email ingin diwajibkan.
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,7 +16,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * Atribut pengguna yang boleh diisi secara massal.
      *
      * @var list<string>
      */
@@ -28,7 +29,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Atribut sensitif yang tidak disertakan saat model diubah menjadi array atau JSON.
      *
      * @var list<string>
      */
@@ -38,7 +39,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Menentukan tipe data dan transformasi otomatis untuk atribut pengguna.
      *
      * @return array<string, string>
      */
@@ -52,7 +53,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the assets for the user.
+     * Mendapatkan seluruh aset milik pengguna.
      *
      * @return HasMany<Asset>
      */
@@ -62,7 +63,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the chart of accounts for the user.
+     * Mendapatkan seluruh daftar akun milik pengguna.
      *
      * @return HasMany<Coa>
      */
@@ -72,7 +73,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the journals for the user.
+     * Mendapatkan seluruh jurnal milik pengguna.
      *
      * @return HasMany<Journal>
      */

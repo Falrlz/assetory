@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    /** Membuat tabel aset tetap beserta akun debit dan kredit perolehannya. */
     public function up(): void
     {
         Schema::create('assets', function (Blueprint $table) {
@@ -26,9 +24,7 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    /** Menghapus tabel aset tetap. */
     public function down(): void
     {
         Schema::dropIfExists('assets');

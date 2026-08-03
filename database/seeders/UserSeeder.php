@@ -7,9 +7,7 @@ use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
+    /** Membuat akun contoh yang dapat digunakan pada lingkungan pengembangan. */
     public function run(): void
     {
         User::factory()->create([

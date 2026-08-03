@@ -9,10 +9,13 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Mengelola daftar akun (Chart of Accounts/COA) milik pengguna.
+ */
 class CoaController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan seluruh akun milik pengguna yang sedang login.
      */
     public function index(): Response
     {
@@ -26,7 +29,7 @@ class CoaController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menyimpan akun baru dengan kode yang unik untuk pengguna tersebut.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -53,7 +56,7 @@ class CoaController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Memperbarui akun milik pengguna tanpa mengubah batas kepemilikannya.
      */
     public function update(Request $request, int $id): RedirectResponse
     {
@@ -82,7 +85,7 @@ class CoaController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus akun jika belum pernah digunakan pada item jurnal.
      */
     public function destroy(int $id): RedirectResponse
     {

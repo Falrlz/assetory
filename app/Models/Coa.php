@@ -11,6 +11,11 @@ class Coa extends Model
 {
     use HasFactory;
 
+    /**
+     * Atribut akun yang boleh diisi secara massal.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'user_id',
         'kode_akun',
@@ -21,7 +26,7 @@ class Coa extends Model
     ];
 
     /**
-     * Get the user that owns the account.
+     * Mendapatkan pengguna pemilik akun.
      */
     public function user(): BelongsTo
     {
@@ -29,7 +34,7 @@ class Coa extends Model
     }
 
     /**
-     * Get the journal items for the COA account.
+     * Mendapatkan seluruh baris jurnal yang menggunakan akun ini.
      */
     public function journalItems(): HasMany
     {

@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    /** Membuat tabel antrean, kelompok pekerjaan, dan pekerjaan yang gagal. */
     public function up(): void
     {
         Schema::create('jobs', function (Blueprint $table) {
@@ -45,9 +43,7 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    /** Menghapus seluruh tabel yang digunakan oleh sistem antrean. */
     public function down(): void
     {
         Schema::dropIfExists('jobs');

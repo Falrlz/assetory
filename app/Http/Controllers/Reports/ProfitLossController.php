@@ -8,10 +8,13 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Menyusun pendapatan, beban, dan laba bersih selama satu tahun laporan.
+ */
 class ProfitLossController extends Controller
 {
     /**
-     * Display the Profit & Loss statement (Laba Rugi).
+     * Menampilkan laporan laba rugi beserta perbandingan tahun sebelumnya.
      */
     public function profitLoss(Request $request): Response
     {
@@ -23,7 +26,7 @@ class ProfitLossController extends Controller
 
         $yearInput = $request->input('year');
 
-        // If no year filter parameters are sent, return initial empty state (Lazy Loading)
+        // Tampilkan keadaan awal kosong agar perhitungan dijalankan setelah pengguna memilih tahun.
         if (! $yearInput) {
             return Inertia::render('reports/profit-loss', [
                 'revenues' => [],
@@ -49,12 +52,12 @@ class ProfitLossController extends Controller
         $prevStartDate = "{$prevYear}-01-01";
         $prevEndDate = "{$prevYear}-12-31";
 
-        // Get accounts
+        // Hitung mutasi setiap akun untuk tahun berjalan dan tahun pembanding.
         $allCoas = $user->coas()
             ->orderBy('kode_akun')
             ->get()
             ->map(function ($coa) use ($user, $startDate, $endDate, $prevStartDate, $prevEndDate) {
-                // Current Year
+                // Mutasi tahun yang dipilih, tanpa saldo awal dan jurnal penutup.
                 $sums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
@@ -67,7 +70,7 @@ class ProfitLossController extends Controller
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
 
-                // Last Year
+                // Mutasi tahun sebelumnya dengan aturan yang sama.
                 $prevSums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
@@ -86,7 +89,7 @@ class ProfitLossController extends Controller
                 $coa->total_debit_last_year = (float) $prevSums->total_debit;
                 $coa->total_kredit_last_year = (float) $prevSums->total_kredit;
 
-                // Net balance
+                // Rumus saldo bersih mengikuti saldo normal masing-masing akun.
                 if ($coa->saldo_normal === 'debit') {
                     $coa->saldo = $coa->total_debit - $coa->total_kredit;
                     $coa->saldo_last_year = $coa->total_debit_last_year - $coa->total_kredit_last_year;
@@ -98,7 +101,7 @@ class ProfitLossController extends Controller
                 return $coa;
             });
 
-        // Filter Revenues (Prefix 04) and Expenses (Prefix 05)
+        // Sajikan hanya akun transaksi level empat dalam kelompok pendapatan dan beban.
         $revenues = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '04.') || $coa->kategori === 'pendapatan') && count(explode('.', $coa->kode_akun)) === 4)->values();
         $expenses = $allCoas->filter(fn ($coa) => (str_starts_with($coa->kode_akun, '05.') || $coa->kategori === 'beban') && count(explode('.', $coa->kode_akun)) === 4)->values();
 

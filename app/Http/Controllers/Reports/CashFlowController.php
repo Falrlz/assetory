@@ -8,10 +8,13 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Menyusun penerimaan dan pengeluaran kas berdasarkan kategori aktivitasnya.
+ */
 class CashFlowController extends Controller
 {
     /**
-     * Display the Cash Flow statement (Laporan Arus Kas).
+     * Menampilkan laporan arus kas beserta perbandingan tahun sebelumnya.
      */
     public function cashFlow(Request $request): Response
     {
@@ -67,7 +70,7 @@ class CashFlowController extends Controller
         $prevStartDate = "{$prevYear}-01-01";
         $prevEndDate = "{$prevYear}-12-31";
 
-        // Retrieve cash flow items matching cash accounts (excluding setup beginning balance)
+        // Ambil transaksi tahun berjalan yang menyentuh akun kas, tanpa jurnal saldo awal.
         $cashItems = DB::table('journal_items')
             ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
             ->join('coas', 'journal_items.coa_id', '=', 'coas.id')
@@ -78,7 +81,7 @@ class CashFlowController extends Controller
                     ->orWhereNull('journals.jenis_transaksi');
             })
             ->where(function ($query) {
-                // Match cash and bank accounts (kategori aset, and either starts with 01.1 / 1-1, or has Kas/Bank in name)
+                // Kenali akun kas/bank dari kategori, awalan kode, atau nama akun.
                 $query->where('coas.kategori', 'aset')
                     ->where(function ($q) {
                         $q->where('coas.kode_akun', 'like', '01.1%')
@@ -97,7 +100,7 @@ class CashFlowController extends Controller
             )
             ->get();
 
-        // Last Year items
+        // Ambil transaksi kas tahun sebelumnya sebagai pembanding.
         $prevCashItems = DB::table('journal_items')
             ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
             ->join('coas', 'journal_items.coa_id', '=', 'coas.id')
@@ -126,7 +129,7 @@ class CashFlowController extends Controller
             )
             ->get();
 
-        // Group by cash flow categories
+        // Kelompokkan transaksi menurut aktivitas operasional, investasi, dan pendanaan.
         $operating = $cashItems->filter(fn ($item) => $item->kategori_arus_kas === 'operasional');
         $investing = $cashItems->filter(fn ($item) => $item->kategori_arus_kas === 'investasi');
         $financing = $cashItems->filter(fn ($item) => $item->kategori_arus_kas === 'pendanaan');
@@ -142,7 +145,7 @@ class CashFlowController extends Controller
         $totalFinancingIn = (float) $financing->sum('cash_in');
         $totalFinancingOut = (float) $financing->sum('cash_out');
 
-        // Last Year groups
+        // Terapkan pengelompokan yang sama pada data tahun sebelumnya.
         $prevOperating = $prevCashItems->filter(fn ($item) => $item->kategori_arus_kas === 'operasional');
         $prevInvesting = $prevCashItems->filter(fn ($item) => $item->kategori_arus_kas === 'investasi');
         $prevFinancing = $prevCashItems->filter(fn ($item) => $item->kategori_arus_kas === 'pendanaan');
@@ -158,11 +161,11 @@ class CashFlowController extends Controller
         $totalFinancingInLastYear = (float) $prevFinancing->sum('cash_in');
         $totalFinancingOutLastYear = (float) $prevFinancing->sum('cash_out');
 
-        // Net change in cash
+        // Perubahan bersih kas adalah jumlah arus kas dari ketiga aktivitas.
         $netChange = $totalOperating + $totalInvesting + $totalFinancing;
         $netChangeLastYear = $totalOperatingLastYear + $totalInvestingLastYear + $totalFinancingLastYear;
 
-        // Calculate beginning cash (transactions before start_date or setup beginning balance)
+        // Saldo kas awal mencakup transaksi sebelum periode dan jurnal saldo awal.
         $beginningCash = DB::table('journal_items')
             ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
             ->join('coas', 'journal_items.coa_id', '=', 'coas.id')
@@ -183,7 +186,7 @@ class CashFlowController extends Controller
             ->selectRaw('COALESCE(SUM(journal_items.debit - journal_items.kredit), 0) as balance')
             ->value('balance');
 
-        // Calculate beginning cash for last year
+        // Hitung saldo kas awal untuk periode pembanding.
         $beginningCashLastYear = DB::table('journal_items')
             ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
             ->join('coas', 'journal_items.coa_id', '=', 'coas.id')

@@ -11,7 +11,7 @@ use Inertia\Response;
 class AccountingSettingsController extends Controller
 {
     /**
-     * Show the accounting settings form.
+     * Menampilkan pengaturan tanggal penguncian periode akuntansi.
      */
     public function edit(Request $request): Response
     {
@@ -21,7 +21,7 @@ class AccountingSettingsController extends Controller
     }
 
     /**
-     * Update the accounting lock date.
+     * Memperbarui batas tanggal transaksi yang sudah dikunci.
      */
     public function update(Request $request): RedirectResponse
     {

@@ -6,10 +6,13 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
+/**
+ * Menyiapkan template utama dan data bersama untuk setiap respons Inertia.
+ */
 class HandleInertiaRequests extends Middleware
 {
     /**
-     * The root template that's loaded on the first page visit.
+     * Template utama yang dimuat saat halaman pertama kali dikunjungi.
      *
      * @see https://inertiajs.com/server-side-setup#root-template
      *
@@ -18,7 +21,7 @@ class HandleInertiaRequests extends Middleware
     protected $rootView = 'app';
 
     /**
-     * Determines the current asset version.
+     * Menentukan versi aset frontend untuk mekanisme pembaruan Inertia.
      *
      * @see https://inertiajs.com/asset-versioning
      */
@@ -28,7 +31,10 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Define the props that are shared by default.
+     * Menentukan props yang tersedia secara otomatis pada seluruh halaman Inertia.
+     *
+     * Data bersama mencakup identitas aplikasi, kutipan acak, dan pengguna
+     * yang sedang terautentikasi.
      *
      * @see https://inertiajs.com/shared-data
      *

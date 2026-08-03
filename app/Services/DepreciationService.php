@@ -9,10 +9,16 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Menangani pembukuan penyusutan aset tetap milik pengguna.
+ */
 class DepreciationService
 {
     /**
-     * Post monthly depreciation journals for all active assets of a user.
+     * Membukukan jurnal penyusutan bulanan untuk seluruh aset aktif milik pengguna.
+     *
+     * Proses ini menolak periode yang telah dikunci atau sudah pernah dibukukan,
+     * lalu membuat pasangan debit dan kredit untuk setiap aset dalam satu transaksi.
      *
      * @throws ValidationException
      * @throws \Exception
@@ -28,7 +34,7 @@ class DepreciationService
             ]);
         }
 
-        // Check if already posted
+        // Satu pengguna hanya boleh memiliki satu proses penyusutan per bulan.
         $alreadyPosted = $user->journals()
             ->where('tipe_jurnal', 'penyusutan')
             ->whereYear('tanggal', $targetDate->year)
@@ -41,7 +47,7 @@ class DepreciationService
             ]);
         }
 
-        // Get all active assets for that month
+        // Aset yang diperoleh setelah akhir bulan target belum dapat disusutkan.
         $assets = $user->assets()
             ->where('tanggal_perolehan', '<=', $targetDate)
             ->get();
@@ -53,6 +59,7 @@ class DepreciationService
             $diffInMonths = $perolehan->diffInMonths(Carbon::parse($bulan.'-01'));
             $maxMonths = (Asset::PERIODE_TAHUN[$asset->periode] ?? 4) * 12;
 
+            // Penyusutan berhenti ketika masa manfaat aset telah habis.
             if ($targetDate->isAfter($perolehan) || $targetDate->isSameDay($perolehan->endOfMonth())) {
                 if ($diffInMonths < $maxMonths) {
                     $depreciatedAssets[] = $asset;
@@ -68,13 +75,14 @@ class DepreciationService
 
         DB::transaction(function () use ($user, $depreciatedAssets, $targetDate, $bulan) {
             foreach ($depreciatedAssets as $asset) {
-                // Find Expense COA dynamically
+                // Utamakan pencarian akun berdasarkan nama agar sesuai dengan jenis aset.
                 $bebanCoa = $user->coas()
                     ->where('nama_akun', 'like', 'Beban Penyusutan%')
                     ->where('nama_akun', 'like', '%'.$asset->jenis.'%')
                     ->first();
 
                 if (! $bebanCoa) {
+                    // Kode akun baku menjadi cadangan jika nama akun telah disesuaikan pengguna.
                     $suffixMap = ['gedung' => '01', 'kendaraan' => '02', 'inventaris' => '03'];
                     $suffix = $suffixMap[$asset->jenis] ?? '';
                     $bebanCoa = $user->coas()
@@ -82,7 +90,7 @@ class DepreciationService
                         ->first();
                 }
 
-                // Find Accumulation COA dynamically
+                // Akun akumulasi penyusutan dicari dengan strategi yang sama.
                 $akmCoa = $user->coas()
                     ->where('nama_akun', 'like', 'Akumulasi%')
                     ->where('nama_akun', 'like', '%'.$asset->jenis.'%')
@@ -111,14 +119,14 @@ class DepreciationService
                     'ref_id' => $asset->id,
                 ]);
 
-                // Debit: Beban Penyusutan
+                // Beban penyusutan bertambah di sisi debit.
                 $journal->items()->create([
                     'coa_id' => $bebanCoa->id,
                     'debit' => $asset->penyusutan_bulanan,
                     'kredit' => 0.00,
                 ]);
 
-                // Kredit: Akumulasi Penyusutan
+                // Akumulasi penyusutan bertambah di sisi kredit.
                 $journal->items()->create([
                     'coa_id' => $akmCoa->id,
                     'debit' => 0.00,

@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    /** Membuat rincian debit dan kredit untuk setiap kepala jurnal. */
     public function up(): void
     {
         Schema::create('journal_items', function (Blueprint $table) {
@@ -21,9 +19,7 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    /** Menghapus tabel rincian jurnal. */
     public function down(): void
     {
         Schema::dropIfExists('journal_items');

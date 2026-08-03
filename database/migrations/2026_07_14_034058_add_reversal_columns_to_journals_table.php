@@ -6,9 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    /** Menambahkan hubungan antara jurnal asli dan jurnal pembaliknya. */
     public function up(): void
     {
         Schema::table('journals', function (Blueprint $table) {
@@ -17,9 +15,7 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
+    /** Menghapus relasi jurnal pembalik beserta kunci asingnya. */
     public function down(): void
     {
         Schema::table('journals', function (Blueprint $table) {

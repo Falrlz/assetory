@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class AssetFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * Membuat data aset acak untuk kebutuhan pengujian.
      *
      * @return array<string, mixed>
      */

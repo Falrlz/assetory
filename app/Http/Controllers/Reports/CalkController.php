@@ -11,10 +11,13 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Menyusun rincian pendukung dan catatan naratif laporan keuangan.
+ */
 class CalkController extends Controller
 {
     /**
-     * Display the Notes to Financial Statements (Catatan Atas Laporan Keuangan - CALK).
+     * Menampilkan Catatan Atas Laporan Keuangan (CALK) untuk tahun yang dipilih.
      */
     public function calk(Request $request): Response
     {
@@ -47,7 +50,7 @@ class CalkController extends Controller
         $startDate = "{$year}-01-01";
         $endDate = "{$year}-12-31";
 
-        // 1. Get detailed Assets Schedule
+        // Susun rincian aset dan penyusutannya sampai akhir tahun laporan.
         $assets = $user->assets()
             ->where('tanggal_perolehan', '<=', $endDate)
             ->get()
@@ -73,7 +76,7 @@ class CalkController extends Controller
                 return $asset;
             });
 
-        // 2. Get Cash and Bank details (Breakdown of Kas & Setara Kas)
+        // Rinci saldo akun kas dan bank sebagai komponen kas dan setara kas.
         $cashCoas = $user->coas()
             ->where('kategori', 'aset')
             ->orderBy('kode_akun')
@@ -112,7 +115,7 @@ class CalkController extends Controller
     }
 
     /**
-     * Update the CALK narrative notes.
+     * Memperbarui catatan naratif CALK milik pengguna yang sedang login.
      */
     public function updateCalk(Request $request): RedirectResponse
     {
