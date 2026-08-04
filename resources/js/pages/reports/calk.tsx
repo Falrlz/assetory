@@ -50,6 +50,8 @@ interface CalkProps {
     hasAppliedFilter?: boolean;
     filters: {
         year?: string;
+        start_date?: string;
+        end_date?: string;
     };
 }
 
@@ -71,6 +73,8 @@ export default function Calk({ assets = [], cashItems = [], calkNotes, hasApplie
 
     const currentCalendarYear = new Date().getFullYear();
     const availableYears = Array.from({ length: 7 }, (_, i) => (currentCalendarYear - 5 + i).toString());
+
+    const endDate = filters?.end_date || (selectedYear ? `${selectedYear}-12-31` : `${currentCalendarYear}-12-31`);
 
     useEffect(() => {
         if (calkNotes) {
@@ -122,19 +126,22 @@ export default function Calk({ assets = [], cashItems = [], calkNotes, hasApplie
         );
     };
 
-    const formatRupiah = (value: number) =>
-        new Intl.NumberFormat('id-ID', {
+    const formatRupiah = (value: number | string) => {
+        const num = typeof value === 'number' ? value : Number(value);
+        if (isNaN(num)) return 'Rp 0';
+        return new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,
-        }).format(value);
+        }).format(num);
+    };
 
     const translatePeriode = (p: string) => (p ? p.replace('_', ' ') : '');
 
-    const totalAssetsPerolehan = (assets || []).reduce((sum, item) => sum + (item.harga_perolehan || 0), 0);
-    const totalAssetsAkm = (assets || []).reduce((sum, item) => sum + (item.akumulasi_penyusutan || 0), 0);
-    const totalAssetsBuku = (assets || []).reduce((sum, item) => sum + (item.nilai_buku || 0), 0);
+    const totalAssetsPerolehan = (assets || []).reduce((sum, item) => sum + (Number(item.harga_perolehan) || 0), 0);
+    const totalAssetsAkm = (assets || []).reduce((sum, item) => sum + (Number(item.akumulasi_penyusutan) || 0), 0);
+    const totalAssetsBuku = (assets || []).reduce((sum, item) => sum + (Number(item.nilai_buku) || 0), 0);
 
     const totalCash = (cashItems || []).reduce((sum, item) => sum + (item.saldo || 0), 0);
 
@@ -293,7 +300,7 @@ export default function Calk({ assets = [], cashItems = [], calkNotes, hasApplie
                                         assets.map((asset) => (
                                             <TableRow key={asset.id}>
                                                 <TableCell>
-                                                    <span className="text-foreground block font-medium">{asset.nama_aset}</span>
+                                                    <span className="text-foreground block font-medium">{asset.nama_aset || asset.nama}</span>
                                                     <span className="text-muted-foreground block text-xs">
                                                         Perolehan {formatDateSlash(asset.tanggal_perolehan)}
                                                     </span>
