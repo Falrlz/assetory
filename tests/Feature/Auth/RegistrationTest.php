@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\User;
+
 test('registration screen can be rendered', function () {
     $response = $this->get('/register');
 
@@ -17,6 +19,6 @@ test('new users can register and receive default chart of accounts', function ()
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
 
-    $user = \App\Models\User::where('email', 'test@example.com')->first();
+    $user = User::where('email', 'test@example.com')->first();
     expect($user->coas()->count())->toBeGreaterThan(0);
 });
