@@ -23,18 +23,30 @@ class TrialBalanceController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'year' => 'nullable|numeric|digits:4',
         ]);
 
-        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+        $yearInput = $request->input('year');
 
-        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
-            throw ValidationException::withMessages([
-                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
+        if (! $yearInput) {
+            return Inertia::render('reports/trial-balance', [
+                'coas' => [],
+                'totalAwalDebit' => 0,
+                'totalAwalKredit' => 0,
+                'totalMutasiDebit' => 0,
+                'totalMutasiKredit' => 0,
+                'totalAkhirDebit' => 0,
+                'totalAkhirKredit' => 0,
+                'hasAppliedFilter' => false,
+                'filters' => [
+                    'year' => '',
+                ],
             ]);
         }
+
+        $year = (int) $yearInput;
+        $startDate = "{$year}-01-01";
+        $endDate = "{$year}-12-31";
 
         // Hanya akun level empat yang dapat menerima pencatatan transaksi.
         $coas = $user->coas()
@@ -43,14 +55,17 @@ class TrialBalanceController extends Controller
             ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4)
             ->values()
             ->map(function ($coa) use ($user, $startDate, $endDate) {
-                // Saldo awal berasal dari transaksi sebelum tanggal mulai atau jurnal saldo awal.
+                // Saldo awal berasal dari transaksi sebelum tanggal mulai atau jurnal saldo awal pada/sebelum tanggal mulai.
                 $openingSums = DB::table('journal_items')
                     ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                     ->where('journals.user_id', $user->id)
                     ->where('journal_items.coa_id', $coa->id)
                     ->where(function ($query) use ($startDate) {
                         $query->where('journals.tanggal', '<', $startDate)
-                            ->orWhere('journals.jenis_transaksi', 'saldo_awal');
+                            ->orWhere(function ($q) use ($startDate) {
+                                $q->where('journals.jenis_transaksi', 'saldo_awal')
+                                    ->where('journals.tanggal', '<=', $startDate);
+                            });
                     })
                     ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                     ->first();
@@ -125,7 +140,9 @@ class TrialBalanceController extends Controller
             'totalMutasiKredit' => $totalMutasiKredit,
             'totalAkhirDebit' => $totalAkhirDebit,
             'totalAkhirKredit' => $totalAkhirKredit,
+            'hasAppliedFilter' => true,
             'filters' => [
+                'year' => (string) $year,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],
