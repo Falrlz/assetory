@@ -165,16 +165,20 @@ class CashFlowController extends Controller
         $netChange = $totalOperating + $totalInvesting + $totalFinancing;
         $netChangeLastYear = $totalOperatingLastYear + $totalInvestingLastYear + $totalFinancingLastYear;
 
-        // Saldo kas awal mencakup transaksi sebelum periode dan jurnal saldo awal.
+        // Saldo kas awal mencakup transaksi sebelum periode dan jurnal saldo awal pada atau sebelum tanggal mulai.
         $beginningCash = DB::table('journal_items')
             ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
             ->join('coas', 'journal_items.coa_id', '=', 'coas.id')
             ->where('journals.user_id', $user->id)
             ->where(function ($query) use ($startDate) {
                 $query->where('journals.tanggal', '<', $startDate)
-                    ->orWhere('journals.jenis_transaksi', 'saldo_awal');
+                    ->orWhere(function ($q) use ($startDate) {
+                        $q->where('journals.jenis_transaksi', 'saldo_awal')
+                            ->where('journals.tanggal', '<=', $startDate);
+                    });
             })
             ->where(function ($query) {
+                // Kenali akun kas/bank dari kategori, awalan kode, atau nama akun.
                 $query->where('coas.kategori', 'aset')
                     ->where(function ($q) {
                         $q->where('coas.kode_akun', 'like', '01.1%')
@@ -193,7 +197,10 @@ class CashFlowController extends Controller
             ->where('journals.user_id', $user->id)
             ->where(function ($query) use ($prevStartDate) {
                 $query->where('journals.tanggal', '<', $prevStartDate)
-                    ->orWhere('journals.jenis_transaksi', 'saldo_awal');
+                    ->orWhere(function ($q) use ($prevStartDate) {
+                        $q->where('journals.jenis_transaksi', 'saldo_awal')
+                            ->where('journals.tanggal', '<=', $prevStartDate);
+                    });
             })
             ->where(function ($query) {
                 $query->where('coas.kategori', 'aset')
