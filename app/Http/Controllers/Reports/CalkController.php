@@ -81,12 +81,12 @@ class CalkController extends Controller
             ->where('kategori', 'aset')
             ->orderBy('kode_akun')
             ->get()
-            ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4)
+            ->filter(fn($coa) => count(explode('.', $coa->kode_akun)) === 4)
             ->filter(function ($coa) {
                 return str_starts_with($coa->kode_akun, '01.1') ||
-                       str_starts_with($coa->kode_akun, '1-1') ||
-                       stripos($coa->nama_akun, 'Kas') !== false ||
-                       stripos($coa->nama_akun, 'Bank') !== false;
+                    str_starts_with($coa->kode_akun, '1-1') ||
+                    stripos($coa->nama_akun, 'Kas') !== false ||
+                    stripos($coa->nama_akun, 'Bank') !== false;
             })
             ->map(function ($coa) use ($user, $endDate) {
                 $sums = DB::table('journal_items')
@@ -100,14 +100,16 @@ class CalkController extends Controller
 
                 return $coa;
             })
-            ->filter(fn ($coa) => $coa->saldo != 0)
+            ->filter(fn($coa) => $coa->saldo != 0)
             ->values();
 
         return Inertia::render('reports/calk', [
             'assets' => $assets,
             'cashItems' => $cashCoas,
             'calkNotes' => $user->calk_notes,
+            'hasAppliedFilter' => true,
             'filters' => [
+                'year' => (string) $year,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],
