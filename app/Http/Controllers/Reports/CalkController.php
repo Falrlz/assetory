@@ -67,10 +67,12 @@ class CalkController extends Controller
                 $masaPenggunaanBulan = min($masaPenggunaanBulan, $maxMonths);
 
                 $akmPenyusutan = $asset->penyusutan_bulanan * $masaPenggunaanBulan;
-                $nilaiBuku = max($asset->harga_perolehan - $akmPenyusutan, $asset->nilai_residu);
+                $nilaiBuku = max((float) $asset->harga_perolehan - $akmPenyusutan, (float) $asset->nilai_residu);
 
-                $asset->akumulasi_penyusutan = $akmPenyusutan;
-                $asset->nilai_buku = $nilaiBuku;
+                $asset->harga_perolehan = (float) $asset->harga_perolehan;
+                $asset->nama_aset = $asset->nama;
+                $asset->akumulasi_penyusutan = (float) $akmPenyusutan;
+                $asset->nilai_buku = (float) $nilaiBuku;
                 $asset->sisa_bulan = max($maxMonths - $masaPenggunaanBulan, 0);
 
                 return $asset;
@@ -81,7 +83,7 @@ class CalkController extends Controller
             ->where('kategori', 'aset')
             ->orderBy('kode_akun')
             ->get()
-            ->filter(fn($coa) => count(explode('.', $coa->kode_akun)) === 4)
+            ->filter(fn ($coa) => count(explode('.', $coa->kode_akun)) === 4)
             ->filter(function ($coa) {
                 return str_starts_with($coa->kode_akun, '01.1') ||
                     str_starts_with($coa->kode_akun, '1-1') ||
@@ -100,7 +102,7 @@ class CalkController extends Controller
 
                 return $coa;
             })
-            ->filter(fn($coa) => $coa->saldo != 0)
+            ->filter(fn ($coa) => $coa->saldo != 0)
             ->values();
 
         return Inertia::render('reports/calk', [
