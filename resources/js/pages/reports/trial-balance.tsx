@@ -1,7 +1,6 @@
 import { Field, PageShell } from '@/components/page-header';
 import { formatDateRange, ReportFilterCard, ReportToolbar } from '@/components/reports/report-layout';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableContainer, TableEmpty, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -32,9 +31,11 @@ interface TrialBalanceProps {
     totalMutasiKredit: number;
     totalAkhirDebit: number;
     totalAkhirKredit: number;
+    hasAppliedFilter?: boolean;
     filters: {
-        start_date: string;
-        end_date: string;
+        year?: string;
+        start_date?: string;
+        end_date?: string;
     };
 }
 
@@ -42,28 +43,28 @@ interface TrialBalanceProps {
 const GROUP_DIVIDER = 'border-border/60 border-r';
 
 export default function TrialBalance({
-    coas,
-    totalAwalDebit,
-    totalAwalKredit,
-    totalMutasiDebit,
-    totalMutasiKredit,
-    totalAkhirDebit,
-    totalAkhirKredit,
+    coas = [],
+    totalAwalDebit = 0,
+    totalAwalKredit = 0,
+    totalMutasiDebit = 0,
+    totalMutasiKredit = 0,
+    totalAkhirDebit = 0,
+    totalAkhirKredit = 0,
+    hasAppliedFilter = false,
     filters,
 }: TrialBalanceProps) {
     const { errors } = usePage().props;
-    const [startDate, setStartDate] = useState(filters.start_date);
-    const [endDate, setEndDate] = useState(filters.end_date);
+    const [selectedYear, setSelectedYear] = useState<string>(filters?.year || '');
     const [localError, setLocalError] = useState<string | null>(null);
+
+    const currentCalendarYear = new Date().getFullYear();
+    const availableYears = Array.from({ length: 7 }, (_, i) => (currentCalendarYear - 5 + i).toString());
 
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const startYear = new Date(startDate).getFullYear();
-        const endYear = new Date(endDate).getFullYear();
-
-        if (startYear !== endYear) {
-            setLocalError('Rentang tanggal tidak boleh melewati dua tahun yang berbeda.');
+        if (!selectedYear) {
+            setLocalError('Silakan pilih Tahun Buku laporan terlebih dahulu.');
             return;
         }
 
@@ -71,8 +72,7 @@ export default function TrialBalance({
         router.get(
             route('reports.trial-balance'),
             {
-                start_date: startDate,
-                end_date: endDate,
+                year: selectedYear,
             },
             {
                 preserveState: true,
@@ -82,15 +82,8 @@ export default function TrialBalance({
 
     const handleReset = () => {
         setLocalError(null);
-        const currentYear = new Date().getFullYear();
-        const start = `${currentYear}-01-01`;
-        const end = new Date().toISOString().split('T')[0];
-        setStartDate(start);
-        setEndDate(end);
-        router.get(route('reports.trial-balance'), {
-            start_date: start,
-            end_date: end,
-        });
+        setSelectedYear('');
+        router.get(route('reports.trial-balance'));
     };
 
     const formatRupiah = (value: number) =>
@@ -130,26 +123,47 @@ export default function TrialBalance({
             <PageShell className="print:p-0">
                 <ReportToolbar title="Neraca Saldo" description="Ringkasan saldo awal, mutasi berjalan, dan saldo akhir untuk setiap akun." />
 
-                {(localError || (errors && errors.start_date)) && (
+                {(localError || (errors && errors.year)) && (
                     <Alert variant="destructive" className="print:hidden">
                         <AlertCircle className="size-4" />
                         <AlertTitle>Kesalahan</AlertTitle>
-                        <AlertDescription>{localError || (errors.start_date as string)}</AlertDescription>
+                        <AlertDescription>{localError || (errors.year as string)}</AlertDescription>
                     </Alert>
                 )}
 
-                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset}>
-                    <Field className="w-48">
-                        <Label htmlFor="start_date">Tanggal Mulai</Label>
-                        <DatePicker id="start_date" value={startDate} onChange={setStartDate} />
-                    </Field>
-                    <Field className="w-48">
-                        <Label htmlFor="end_date">Tanggal Selesai</Label>
-                        <DatePicker id="end_date" value={endDate} onChange={setEndDate} />
+                <ReportFilterCard onSubmit={handleFilter} onReset={handleReset} disabled={!selectedYear}>
+                    <Field className="w-56">
+                        <Label htmlFor="year">Pilih Tahun Buku</Label>
+                        <select
+                            id="year"
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(e.target.value)}
+                            className="border-input bg-background text-foreground ring-offset-background focus:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm shadow-xs focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                        >
+                            <option value="">-- Pilih Tahun --</option>
+                            {availableYears.map((y) => (
+                                <option key={y} value={y}>
+                                    Tahun Buku {y}
+                                </option>
+                            ))}
+                        </select>
                     </Field>
                 </ReportFilterCard>
 
-                <TableContainer className="print:rounded-none print:border-none print:shadow-none">
+                {!hasAppliedFilter ? (
+                    <div className="bg-card flex flex-col items-center justify-center rounded-xl border p-12 text-center shadow-xs">
+                        <div className="bg-muted flex size-12 items-center justify-center rounded-full">
+                            <AlertCircle className="text-muted-foreground size-6" />
+                        </div>
+                        <h3 className="text-foreground mt-4 text-base font-semibold">Silakan Pilih Tahun Buku Laporan</h3>
+                        <p className="text-muted-foreground mt-1.5 max-w-sm text-xs">
+                            Pilih <span className="font-semibold">Tahun Buku</span> di atas, lalu klik tombol{' '}
+                            <span className="font-semibold">"Tampilkan Laporan"</span> untuk memuat Neraca Saldo.
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        <TableContainer className="print:rounded-none print:border-none print:shadow-none">
                     <header className="space-y-1 border-b px-4 py-4 text-center sm:px-6">
                         <p className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Assetory</p>
                         <h2 className="text-foreground text-xl font-bold tracking-tight">Neraca Saldo (Trial Balance)</h2>
@@ -374,6 +388,8 @@ export default function TrialBalance({
                             <span className="font-mono tabular-nums">{formatRupiah(difference)}</span>.
                         </span>
                     </div>
+                )}
+                    </>
                 )}
             </PageShell>
         </AppLayout>

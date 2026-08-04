@@ -41,6 +41,7 @@ interface IndexProps {
     grandTotalDebit: number;
     grandTotalKredit: number;
     ledgerFilters?: {
+        year?: string;
         start_date: string;
         end_date: string;
     };
@@ -113,8 +114,7 @@ export default function Index({
     }, [page.url]);
 
     const [isOpen, setIsOpen] = useState(false);
-    const [ledgerStartDate, setLedgerStartDate] = useState(ledgerFilters?.start_date || `${new Date().getFullYear()}-01-01`);
-    const [ledgerEndDate, setLedgerEndDate] = useState(ledgerFilters?.end_date || new Date().toISOString().split('T')[0]);
+    const [ledgerYear, setLedgerYear] = useState<string>(ledgerFilters?.year || '');
     const [ledgerSearch, setLedgerSearch] = useState('');
     const [selectedLedgerCoa, setSelectedLedgerCoa] = useState('all');
     const [ledgerError, setLedgerError] = useState<string | null>(null);
@@ -263,21 +263,12 @@ export default function Index({
     const handleLedgerFilterSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const startYear = new Date(ledgerStartDate).getFullYear();
-        const endYear = new Date(ledgerEndDate).getFullYear();
-
-        if (startYear !== endYear) {
-            setLedgerError('Rentang tanggal tidak boleh melewati dua tahun yang berbeda.');
-            return;
-        }
-
         setLedgerError(null);
         router.get(
             route('journals.index'),
             {
                 tab: 'ledger',
-                start_date: ledgerStartDate,
-                end_date: ledgerEndDate,
+                year: ledgerYear,
             },
             {
                 preserveState: true,
@@ -289,18 +280,13 @@ export default function Index({
 
     const handleLedgerFilterReset = () => {
         setLedgerError(null);
-        const currentYear = new Date().getFullYear();
-        const start = `${currentYear}-01-01`;
-        const end = new Date().toLocaleDateString('en-CA');
-        setLedgerStartDate(start);
-        setLedgerEndDate(end);
+        setLedgerYear('');
         setSelectedLedgerCoa('all');
+        setLedgerSearch('');
         router.get(
             route('journals.index'),
             {
                 tab: 'ledger',
-                start_date: start,
-                end_date: end,
             },
             {
                 preserveState: true,
@@ -444,9 +430,15 @@ export default function Index({
                         activeTab === 'ledger' ? (
                             <>
                                 Lihat ringkasan mutasi debit dan kredit serta saldo berjalan untuk setiap akun.
-                                <span className="text-foreground mt-1 block font-medium">
-                                    Periode: {formatDate(ledgerStartDate)} – {formatDate(ledgerEndDate)}
-                                </span>
+                                {ledgerYear ? (
+                                    <span className="text-foreground mt-1 block font-medium">
+                                        Tahun Buku {ledgerYear} (1 Jan {ledgerYear} – 31 Des {ledgerYear})
+                                    </span>
+                                ) : (
+                                    <span className="text-foreground mt-1 block font-medium">
+                                        Semua Periode Tahun Buku
+                                    </span>
+                                )}
                             </>
                         ) : activeTab === 'depresiasi' ? (
                             'Kelola dan lakukan posting penyusutan nilai buku aset secara berkala.'
@@ -746,13 +738,20 @@ export default function Index({
                                 <form onSubmit={handleLedgerFilterSubmit}>
                                     <FilterBar className="sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
                                         <Field>
-                                            <Label htmlFor="ledger_start_date">Tanggal Mulai</Label>
-                                            <DatePicker id="ledger_start_date" size="sm" value={ledgerStartDate} onChange={setLedgerStartDate} />
-                                        </Field>
-
-                                        <Field>
-                                            <Label htmlFor="ledger_end_date">Tanggal Selesai</Label>
-                                            <DatePicker id="ledger_end_date" size="sm" value={ledgerEndDate} onChange={setLedgerEndDate} />
+                                            <Label htmlFor="ledger_year_select">Pilih Tahun Buku</Label>
+                                            <NativeSelect
+                                                id="ledger_year_select"
+                                                selectSize="sm"
+                                                value={ledgerYear}
+                                                onChange={(e) => setLedgerYear(e.target.value)}
+                                            >
+                                                <option value="">Semua Tahun</option>
+                                                {Array.from({ length: 7 }, (_, i) => (new Date().getFullYear() - 5 + i).toString()).map((yr) => (
+                                                    <option key={yr} value={yr}>
+                                                        Tahun Buku {yr}
+                                                    </option>
+                                                ))}
+                                            </NativeSelect>
                                         </Field>
 
                                         <Field>

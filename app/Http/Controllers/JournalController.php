@@ -42,17 +42,19 @@ class JournalController extends Controller
 
         // 3. Buku besar menampilkan seluruh akun transaksi yang aktif dalam periode.
         $request->validate([
+            'year' => 'nullable|numeric|digits:4',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
-        $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->toDateString());
-
-        if (Carbon::parse($startDate)->year !== Carbon::parse($endDate)->year) {
-            throw ValidationException::withMessages([
-                'start_date' => 'Rentang tanggal tidak boleh melewati dua tahun yang berbeda.',
-            ]);
+        $yearInput = $request->input('year');
+        if ($yearInput) {
+            $year = (int) $yearInput;
+            $startDate = "{$year}-01-01";
+            $endDate = "{$year}-12-31";
+        } else {
+            $startDate = $request->input('start_date', Carbon::now()->startOfYear()->toDateString());
+            $endDate = $request->input('end_date', Carbon::now()->toDateString());
         }
 
         // Kode dengan empat segmen merupakan akun level 4 yang dapat menerima transaksi.
@@ -71,14 +73,17 @@ class JournalController extends Controller
             $coaId = $coa->id;
             $saldoNormal = $coa->saldo_normal;
 
-            // Saldo awal mencakup transaksi sebelum periode dan jurnal saldo awal.
+            // Saldo awal mencakup transaksi sebelum periode dan jurnal saldo awal pada/sebelum tanggal mulai.
             $openingSums = DB::table('journal_items')
                 ->join('journals', 'journal_items.journal_id', '=', 'journals.id')
                 ->where('journals.user_id', $user->id)
                 ->where('journal_items.coa_id', $coaId)
                 ->where(function ($query) use ($startDate) {
                     $query->where('journals.tanggal', '<', $startDate)
-                        ->orWhere('journals.jenis_transaksi', 'saldo_awal');
+                        ->orWhere(function ($q) use ($startDate) {
+                            $q->where('journals.jenis_transaksi', 'saldo_awal')
+                                ->where('journals.tanggal', '<=', $startDate);
+                        });
                 })
                 ->selectRaw('COALESCE(SUM(journal_items.debit), 0) as total_debit, COALESCE(SUM(journal_items.kredit), 0) as total_kredit')
                 ->first();
@@ -167,6 +172,7 @@ class JournalController extends Controller
             'grandTotalDebit' => $grandTotalDebit,
             'grandTotalKredit' => $grandTotalKredit,
             'ledgerFilters' => [
+                'year' => $yearInput ? (string) $yearInput : '',
                 'start_date' => $startDate,
                 'end_date' => $endDate,
             ],
